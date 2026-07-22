@@ -16,7 +16,10 @@ a private note can be read only by the member who wrote it.
 - On native, the session is persisted in secure device storage; on web, in the
   default browser storage.
 - The client uses only the anonymous public key. The service-role key never
-  ships in the app; privileged actions run in edge functions.
+  ships in the app; privileged writes use the `create_trip` and
+  `accept_trip_invite` security-definer RPCs.
+- A secret-exposure audit of the exported bundle found only public values: the
+  Supabase URL, Supabase anon key, and EAS project ID.
 
 ### Client-side hardening
 
@@ -32,8 +35,8 @@ a private note can be read only by the member who wrote it.
   to `authenticated` and a passing RLS policy; these are two separate gates.
 - Membership is resolved through one security-definer helper function so that
   policies never reference each other in a way that recurses.
-- Membership helpers grant `execute` to `authenticated` only, never to `anon`
-  or `PUBLIC`.
+- Membership helpers revoke `execute` from `PUBLIC` and `anon` and grant it to
+  `authenticated` only.
 - Writes validate both membership and ownership. For example, a note insert must
   set `author_id = auth.uid()` and target a trip the user belongs to.
 - Adding access is done through reviewed policies, never by loosening a table to
@@ -261,6 +264,9 @@ create policy notes_delete on trip_notes for delete
 Objects live under a path whose first folder is the owning id. Policies on
 `storage.objects` reuse the membership rules.
 
+Trip covers are readable and writable by trip members. Avatars are readable by
+their owner or a trip-mate and writable by their owner only.
+
 ```sql
 -- trip-covers/{trip_id}/{file}
 create policy trip_covers_rw on storage.objects for all
@@ -301,8 +307,9 @@ create policy avatars_delete on storage.objects for delete using (
 
 ## 7. RLS test matrix
 
-Every row below is an automated test. "A" and "B" are members of Trip 1; "C" is
-not a member. All tests run inside a transaction that is rolled back.
+The 33-test pgTAP suite covers every scenario below; a scenario row can contain
+multiple assertions. "A" and "B" are members of Trip 1; "C" is not a member.
+All tests run inside a transaction that is rolled back.
 
 | ID | Scenario | Expected |
 | --- | --- | --- |

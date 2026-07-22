@@ -20,7 +20,7 @@ on iOS, Android, and web.
   provable isolation between private and shared data.
 - Demonstrate native capability integration (scheduled notifications) and
   deliberate, non-template product design.
-- Demonstrate a complete delivery: migrations, tests, CI gates, EAS builds,
+- Demonstrate a complete delivery: migrations, tests, CI gates, EAS configuration,
   documentation, and a public repository with a clear README.
 - Use a safe domain. No health, children's, financial, or otherwise regulated
   data, so the app can be public without compliance exposure.
@@ -37,7 +37,9 @@ onboarding, trip listing and creation, itinerary planning, packing, shared and
 private notes, deep-link invite joining, local reminders, offline handling,
 and storage for covers and avatars are working. A 33-test pgTAP RLS suite runs
 GREEN in CI, proving private-versus-shared isolation. The remaining portfolio
-and release work is listed in the roadmap below.
+and release work is listed in the roadmap below. EAS is configured for the
+`@chutluis/waymark` project with development, preview, and production profiles;
+builds have not yet run.
 
 ### Running
 
@@ -52,15 +54,30 @@ pnpm test              # Vitest (pure logic)
 supabase test db       # pgTAP RLS suite
 ```
 
-## Roadmap (not yet done)
+## Roadmap
 
-- Live web deploy.
+### Done
+
+- Storage RLS tests S18-S20.
+- EAS configuration for `@chutluis/waymark`, including development, preview,
+  and production profiles bound to EAS environments.
+
+### Remaining
+
 - Portfolio screenshots.
-- EAS builds (development, preview, and production) plus TestFlight and Play
-  Store distribution.
+- EAS builds: validate a development build on a device, then distribute preview
+  builds through TestFlight and Play internal testing. The development profile
+  requires EAS environment values for `EXPO_PUBLIC_SUPABASE_*` and
+  `expo-dev-client`.
 - Demo video.
 - Minor iOS date-picker polish: tapping outside the picker sheet should commit
   the selection.
+- Optional follow-up: an invite-creation RPC and trips-list query consolidation.
+
+### Dropped
+
+- Live web deploy. Expo web remains a supported target; no hosted portfolio
+  preview is planned.
 
 ## Documentation
 
@@ -70,17 +87,20 @@ supabase test db       # pgTAP RLS suite
   patterns, build and release, testing strategy.
 - `docs/SECURITY.md` - authentication, Row Level Security model, policies, the
   private-versus-shared rule, and the RLS test matrix.
-- `docs/DESIGN_HANDOFF.md` - the brief to hand to a design agent to produce the
-  UI system and screens.
+- `docs/DESIGN_DECISIONS.md` - the shipped design system and the decisions
+  behind it.
+- `docs/ONBOARDING.md` - developer orientation: mental model, repo tour, setup,
+  and change workflow.
 
 ## Prerequisites
 
-- Node 20+, pnpm, Xcode, Android Studio, an iOS Simulator and Android emulator.
+- Node 24, pnpm 11 via Corepack, Xcode, Android Studio, an iOS Simulator and
+  Android emulator.
 - A Supabase project (local development via the Supabase CLI, plus a hosted
   project for shared builds).
 - Optional for store release: an Apple Developer account and a Google Play
-  Console account. The portfolio value is achievable via a public web build plus
-  TestFlight and Play internal testing even before paid store listings.
+  Console account. Portfolio evidence comes from supported web, TestFlight, and
+  Play internal testing even before paid store listings.
 
 ## Non-goals for v1
 

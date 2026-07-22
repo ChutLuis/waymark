@@ -2,25 +2,22 @@
 
 ## 1. Stack
 
-Verify the latest stable versions at project initialization; the values below
-reflect the intended baseline (mid-2026).
-
 | Concern | Choice | Notes |
 | --- | --- | --- |
-| Framework | Expo (SDK 57 or latest) | The recommended way to build production React Native apps |
-| Runtime | React Native 0.8x, React 19 | Follow the Expo SDK's pinned versions |
-| Language | TypeScript 5.x, strict | `strict: true`, no implicit any |
-| Navigation | Expo Router (file-based) | Typed routes; groups for auth and app areas |
-| Backend | Supabase | Postgres, Auth, Storage, Edge Functions |
+| Framework | Expo SDK 57 | Production React Native framework |
+| Runtime | React Native 0.86, React 19 | Expo-pinned runtime |
+| Language | TypeScript 6, strict | `strict: true`, no implicit any |
+| Navigation | Expo Router | File-based navigation with typed routes and auth/app groups |
+| Backend | Supabase | Postgres, Auth, Storage, and security-definer RPCs for privileged writes |
 | Data fetching | TanStack Query v5 | Caching, loading and error states, retries |
 | Forms and validation | React Hook Form + Zod | One Zod schema per form; shared types |
 | Notifications | expo-notifications | Local scheduled notifications in v1 |
 | Secure storage | expo-secure-store | Supabase session persistence on native |
 | Media | expo-image, expo-image-picker | Cover images and avatars |
-| Package manager | pnpm | Node 20+ |
+| Package manager | pnpm 11 via Corepack | Node 24 |
 | Unit tests | Vitest + React Native Testing Library | Logic and component-state tests |
 | DB policy tests | pgTAP via Supabase CLI | Adversarial RLS tests |
-| Builds | EAS Build and EAS Update | Development and production profiles |
+| Builds | EAS Build | Development, preview, and production profiles |
 
 ## 2. Principles
 
@@ -77,7 +74,6 @@ waymark/
     theme/                  # tokens: colors, typography, spacing, radius, motion
   supabase/
     migrations/             # SQL migrations (schema + RLS)
-    functions/              # edge functions (invite acceptance if server-side)
     tests/                  # pgTAP RLS tests
   eas.json
   app.config.ts
@@ -90,8 +86,8 @@ waymark/
 - `(app)` group is guarded; an unauthenticated user is redirected to `(auth)`.
 - First-run users without a display name are routed to onboarding.
 - Trip detail uses a tab layout: Itinerary, Packing, Notes, plus Settings.
-- Deep link targets: `join` (invite acceptance) and a trip/item route opened
-  from a reminder notification.
+- Deep link targets: `join` (invite acceptance through a security-definer RPC)
+  and a trip/item route opened from a reminder notification.
 
 ## 5. Data model
 
@@ -210,35 +206,43 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
   start time, offset by a chosen lead time.
 - A priming screen explains the value before the OS permission prompt.
 - A notification response handler routes to the trip and item.
-- Server-driven push (Expo push tokens plus an edge function) is deferred to
-  v1.1; the schema leaves room to add a `device_push_tokens` table later.
+- Server-driven push is deferred to v1.1; the schema leaves room to add a
+  `device_push_tokens` table later.
 
 ## 9. Storage
 
 - Buckets: `trip-covers` and `avatars`.
 - Object path convention encodes ownership: `trip-covers/{trip_id}/{file}` and
   `avatars/{user_id}/{file}`.
-- Storage access is controlled by policies on `storage.objects` that reuse the
-  same membership rules as the database (see `SECURITY.md`).
+- Trip covers are readable and writable by trip members. Avatars are readable
+  by their owner or a trip-mate and writable by their owner only. See
+  `SECURITY.md` for the `storage.objects` policies.
 
 ## 10. Configuration and environments
 
 - Application configuration lives in `app.config.ts`, which reads the Supabase
   URL and anon key from environment variables (they are public by design).
-- No service-role key ever ships in the client. Any privileged operation runs in
-  an edge function.
+- No service-role key ships in the client. Privileged writes use the
+  `create_trip` and `accept_trip_invite` PostgreSQL security-definer RPCs; v1
+  has no edge functions.
 - Environments: local (Supabase CLI), a hosted staging project for shared builds,
-  and production. EAS build profiles map to these.
+  and production. EAS build profiles bind development, preview, and production
+  to their EAS environments.
 
 ## 11. Build and release (EAS)
 
-- `development` profile: development client builds for the iOS Simulator, a
-  physical iPhone, and Android.
-- `preview` profile: internal distribution builds for testers.
-- `production` profile: store-ready binaries.
-- EAS Update delivers JavaScript updates to the development and preview channels.
-- Web is exported as a static build and deployed to a static host for the live
-  portfolio preview.
+- EAS is configured for the `@chutluis/waymark` project. `app.config.ts` sets
+  `owner: 'chutluis'`, the iOS bundle identifier and Android package to
+  `app.waymark`, and `extra.eas.projectId`.
+- `development` is an internal-distribution development-client profile bound to
+  the `development` EAS environment. `preview` is an internal-distribution
+  profile bound to `preview`; `production` is store-ready and bound to
+  `production`.
+- Builds have not run. They require EAS environment values for
+  `EXPO_PUBLIC_SUPABASE_*`; the development profile also requires
+  `expo-dev-client`.
+- Expo web runs as a supported target. Notifications no-op and the Supabase
+  session uses browser storage on web; no live web deployment is pursued.
 
 ## 12. Testing strategy
 
@@ -247,7 +251,8 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
 - Components: React Native Testing Library assertions on loading, empty, and
   error states.
 - Database policies: pgTAP tests run by the Supabase CLI, asserting the
-  private-versus-shared and membership rules. This is the headline test suite.
+  private-versus-shared and membership rules. The 33-test suite is the headline
+  test suite.
 - Optional end-to-end (Maestro or Detox) for the core happy path is a stretch
   goal, not a v1 gate.
 
@@ -261,14 +266,14 @@ A change is done only when all of these pass:
 - `supabase test db` (pgTAP RLS)
 
 GitHub Actions CI runs typecheck, lint, Vitest, and `supabase test db` on every
-push and pull request. EAS builds run on demand or on tags.
+push and pull request. EAS builds remain unrun pending their required EAS
+environment values and the development-client dependency.
 
-## 14. Analytics and observability (lightweight)
+## 14. Analytics and observability
 
-- A minimal, privacy-respecting analytics wrapper records only anonymous screen
-  and action events; note content is never captured.
-- Client errors are logged to the console in development; a hosted error
-  reporter can be added later without changing feature code.
+- No analytics wrapper ships in v1. No analytics events are collected.
+- Client errors are logged to the console in development. Hosted error reporting
+  is deferred.
 
 ## 15. Key risks and mitigations
 

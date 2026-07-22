@@ -78,9 +78,9 @@ the trip.
   an 8-character code and a shareable link.
 - INV-2: An invited person accepts by entering the code or opening the link
   while signed in; they become a member.
-  - Acceptance: acceptance is performed by a server-side routine, not a direct
-    client insert into membership; an expired or already-accepted invite is
-    rejected with a clear message.
+  - Acceptance: acceptance is performed by the `accept_trip_invite`
+    security-definer RPC, not a direct client insert into membership; an expired
+    or already-accepted invite is rejected with a clear message.
 - INV-3: An invite has an expiry.
 - INV-4: Accepting an invite never grants access to any trip other than the one
   the invite targets.
@@ -147,15 +147,17 @@ by automated tests (see `SECURITY.md`).
   recent mid-range device; lists stay smooth at a few hundred items.
 - NFR-7 Design fidelity: the UI uses a defined token system; no hard-coded
   colors, spacing, or fonts in feature code.
-- NFR-8 Privacy: collect only what the features need; no analytics on note
-  content; a plain-language privacy note is available.
+- NFR-8 Privacy: collect only what the features need; no analytics is collected
+  in v1, and note content is never collected; a plain-language privacy note is
+  available.
 
 ## 6. Success criteria (portfolio)
 
 - A public repository with a clear README, architecture docs, and screenshots.
-- A live web build and a runnable development build on a physical iPhone.
-- Passing pgTAP RLS tests demonstrating private-versus-shared isolation, visible
-  in CI.
+- Expo web as a supported target and a runnable development build on a physical
+  iPhone.
+- Passing 33-test pgTAP RLS suite demonstrating private-versus-shared isolation,
+  visible in CI.
 - A short demo video walking the create-trip, invite, plan, and private-note
   flows.
 - Two to four polished portfolio screenshots suitable for the Upwork profile.
