@@ -18,15 +18,26 @@ a private note can be read only by the member who wrote it.
 - The client uses only the anonymous public key. The service-role key never
   ships in the app; privileged actions run in edge functions.
 
+### Client-side hardening
+
+- Sessions use `expo-secure-store` through a chunked adapter with
+  `keychainAccessible: AFTER_FIRST_UNLOCK` on native.
+- Auth uses the PKCE flow.
+- The TanStack Query cache is cleared whenever the authenticated user changes,
+  preventing cross-user data bleed on shared devices.
+
 ## 3. Principles
 
-- Row Level Security is enabled and forced on every table that holds user data.
+- RLS is enabled and forced on every table. Access requires both a table grant
+  to `authenticated` and a passing RLS policy; these are two separate gates.
 - Membership is resolved through one security-definer helper function so that
   policies never reference each other in a way that recurses.
 - Writes validate both membership and ownership. For example, a note insert must
   set `author_id = auth.uid()` and target a trip the user belongs to.
 - Adding access is done through reviewed policies, never by loosening a table to
   "authenticated can do anything".
+- Trip creation and invite acceptance go through the `create_trip` and
+  `accept_trip_invite` security-definer RPCs.
 
 ## 4. Membership helper (avoids recursion)
 

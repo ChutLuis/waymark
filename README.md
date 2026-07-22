@@ -1,5 +1,7 @@
 # Waymark
 
+[![CI](https://github.com/ChutLuis/waymark/actions/workflows/ci.yml/badge.svg)](https://github.com/ChutLuis/waymark/actions/workflows/ci.yml)
+
 Working codename for a shared trip-planning mobile app. This is the flagship
 React Native portfolio piece: a small, real, polished product rather than a
 demo. The name is a placeholder and can be changed before any public release.
@@ -29,20 +31,18 @@ Expo delivery, and a real native-integration example.
 
 ## Status
 
-In progress. All v1 screens are implemented against the live Supabase backend:
-auth (email + password, secure-store sessions on native), trips list and
-creation (via the `create_trip` RPC), invites (accepted via
-`accept_trip_invite`), the full trip detail (itinerary, packing, notes with
-the private-versus-shared rule enforced by RLS), trip settings, profile, and
-onboarding. Storage covers trip covers and avatars through private buckets
-and signed URLs. A 24-test pgTAP suite proves the RLS isolation. Remaining:
-CI wiring, EAS builds, the notification priming screen, storage policy tests,
-and itinerary drag-reorder.
+The full v1 is implemented against a LIVE Supabase backend (Postgres, Auth,
+Storage, and RLS) and deployed to a hosted project. Email authentication and
+onboarding, trip listing and creation, itinerary planning, packing, shared and
+private notes, deep-link invite joining, local reminders, offline handling,
+and storage for covers and avatars are working. A 24-test pgTAP RLS suite runs
+GREEN in CI, proving private-versus-shared isolation. The remaining portfolio
+and release work is listed in the roadmap below.
 
 ### Running
 
 ```
-cp .env.example .env   # fill from `supabase start` (local) or the Dashboard
+cp .env.example .env   # fill with local values printed by `supabase start`
 supabase start         # local Postgres + Auth + Storage
 pnpm install
 pnpm start             # Expo dev server (press i / a / w)
@@ -51,6 +51,17 @@ pnpm lint              # ESLint
 pnpm test              # Vitest (pure logic)
 supabase test db       # pgTAP RLS suite
 ```
+
+## Roadmap (not yet done)
+
+- Live web deploy.
+- Portfolio screenshots.
+- EAS builds (development, preview, and production) plus TestFlight and Play
+  Store distribution.
+- Demo video.
+- Storage RLS tests (S18–S20).
+- Minor iOS date-picker polish: tapping outside the picker sheet should commit
+  the selection.
 
 ## Documentation
 
@@ -63,7 +74,7 @@ supabase test db       # pgTAP RLS suite
 - `docs/DESIGN_HANDOFF.md` - the brief to hand to a design agent to produce the
   UI system and screens.
 
-## Prerequisites to confirm before implementation
+## Prerequisites
 
 - Node 20+, pnpm, Xcode, Android Studio, an iOS Simulator and Android emulator.
 - A Supabase project (local development via the Supabase CLI, plus a hosted

@@ -223,8 +223,8 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
 
 ## 10. Configuration and environments
 
-- `app.config.ts` reads public configuration from environment variables (the
-  Supabase URL and anon key are public by design).
+- Application configuration lives in `app.config.ts`, which reads the Supabase
+  URL and anon key from environment variables (they are public by design).
 - No service-role key ever ships in the client. Any privileged operation runs in
   an edge function.
 - Environments: local (Supabase CLI), a hosted staging project for shared builds,
@@ -258,9 +258,10 @@ A change is done only when all of these pass:
 - `pnpm typecheck`
 - `pnpm lint`
 - `pnpm test` (Vitest)
-- `supabase db test` (pgTAP RLS)
+- `supabase test db` (pgTAP RLS)
 
-CI runs these on every pull request. EAS builds run on demand or on tags.
+GitHub Actions CI runs typecheck, lint, Vitest, and `supabase test db` on every
+push and pull request. EAS builds run on demand or on tags.
 
 ## 14. Analytics and observability (lightweight)
 
