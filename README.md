@@ -35,7 +35,7 @@ The full v1 is implemented against a LIVE Supabase backend (Postgres, Auth,
 Storage, and RLS) and deployed to a hosted project. Email authentication and
 onboarding, trip listing and creation, itinerary planning, packing, shared and
 private notes, deep-link invite joining, local reminders, offline handling,
-and storage for covers and avatars are working. A 24-test pgTAP RLS suite runs
+and storage for covers and avatars are working. A 33-test pgTAP RLS suite runs
 GREEN in CI, proving private-versus-shared isolation. The remaining portfolio
 and release work is listed in the roadmap below.
 
@@ -59,7 +59,6 @@ supabase test db       # pgTAP RLS suite
 - EAS builds (development, preview, and production) plus TestFlight and Play
   Store distribution.
 - Demo video.
-- Storage RLS tests (S18–S20).
 - Minor iOS date-picker polish: tapping outside the picker sheet should commit
   the selection.
 

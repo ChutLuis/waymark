@@ -32,6 +32,8 @@ a private note can be read only by the member who wrote it.
   to `authenticated` and a passing RLS policy; these are two separate gates.
 - Membership is resolved through one security-definer helper function so that
   policies never reference each other in a way that recurses.
+- Membership helpers grant `execute` to `authenticated` only, never to `anon`
+  or `PUBLIC`.
 - Writes validate both membership and ownership. For example, a note insert must
   set `author_id = auth.uid()` and target a trip the user belongs to.
 - Adding access is done through reviewed policies, never by loosening a table to
@@ -272,15 +274,29 @@ create policy trip_covers_rw on storage.objects for all
   );
 
 -- avatars/{user_id}/{file}
-create policy avatars_rw on storage.objects for all
-  using (
-    bucket_id = 'avatars'
-    and ((storage.foldername(name))[1])::uuid = auth.uid()
+create policy avatars_read on storage.objects for select using (
+  bucket_id = 'avatars' and (
+    ((storage.foldername(name))[1])::uuid = auth.uid()
+    or exists (
+      select 1 from trip_members me
+      join trip_members them on them.trip_id = me.trip_id
+      where me.user_id = auth.uid()
+        and them.user_id = ((storage.foldername(name))[1])::uuid
+    )
   )
-  with check (
-    bucket_id = 'avatars'
-    and ((storage.foldername(name))[1])::uuid = auth.uid()
-  );
+);
+
+create policy avatars_insert on storage.objects for insert with check (
+  bucket_id = 'avatars' and ((storage.foldername(name))[1])::uuid = auth.uid()
+);
+create policy avatars_update on storage.objects for update using (
+  bucket_id = 'avatars' and ((storage.foldername(name))[1])::uuid = auth.uid()
+) with check (
+  bucket_id = 'avatars' and ((storage.foldername(name))[1])::uuid = auth.uid()
+);
+create policy avatars_delete on storage.objects for delete using (
+  bucket_id = 'avatars' and ((storage.foldername(name))[1])::uuid = auth.uid()
+);
 ```
 
 ## 7. RLS test matrix
@@ -307,9 +323,10 @@ not a member. All tests run inside a transaction that is rolled back.
 | S15 | Anyone accepts an already-used invite | denied |
 | S16 | Non-owner updates Trip 1 details | denied |
 | S17 | Owner deletes Trip 1 | cascades remove items, notes, invites |
-| S18 | C reads a cover image under trip-covers/Trip 1 | denied |
+| S18 | C reads or inserts a cover image under trip-covers/Trip 1 | denied |
 | S19 | B reads a cover image under trip-covers/Trip 1 | allowed |
-| S20 | A reads B's avatar object path | denied for write, read per policy |
+| S20 | A reads own avatar; B reads A's avatar; C reads A's avatar; B writes A's avatar | own and trip-mate reads allowed; non-member read and non-owner write denied |
+| F1 | anon and authenticated call `is_trip_member` | anon denied; authenticated allowed |
 
 ## 8. pgTAP example (S7, the core guarantee)
 
