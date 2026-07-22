@@ -8,6 +8,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'Waymark',
   slug: 'waymark',
+  owner: 'chutluis',
   version: '0.1.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
@@ -15,8 +16,10 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     icon: './assets/expo.icon',
+    bundleIdentifier: 'app.waymark',
   },
   android: {
+    package: 'app.waymark',
     adaptiveIcon: {
       backgroundColor: '#FAF7F1',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -52,6 +55,9 @@ const config: ExpoConfig = {
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    eas: {
+      projectId: '92b7c7a4-1fe5-481c-9805-638d2c6d62c1',
+    },
   },
 };
 
