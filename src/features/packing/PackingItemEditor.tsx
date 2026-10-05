@@ -102,7 +102,7 @@ export function PackingItemEditor({
         name="quantity"
         render={({ field }) => (
           <View>
-            <AppText role="label" style={styles.groupLabel}>
+            <AppText role="kicker" tone="secondary" style={styles.groupLabel}>
               Quantity
             </AppText>
             <View style={styles.stepperRow}>
@@ -115,15 +115,15 @@ export function PackingItemEditor({
                 style={({ pressed }) => [
                   styles.stepperButton,
                   {
-                    backgroundColor: colors.surface.bg,
-                    borderColor: colors.hairline.strong,
+                    backgroundColor: colors.bg,
+                    borderColor: colors.border,
                     opacity: field.value <= 1 ? 0.4 : pressed ? 0.7 : 1,
                   },
                 ]}
               >
-                <Minus size={16} color={colors.text.secondary} strokeWidth={2} />
+                <Minus size={16} color={colors.ink2} strokeWidth={2} />
               </Pressable>
-              <AppText role="heading" style={styles.stepperValue}>
+              <AppText role="button" style={styles.stepperValue}>
                 {field.value}
               </AppText>
               <Pressable
@@ -133,13 +133,13 @@ export function PackingItemEditor({
                 style={({ pressed }) => [
                   styles.stepperButton,
                   {
-                    backgroundColor: colors.surface.bg,
-                    borderColor: colors.hairline.strong,
+                    backgroundColor: colors.bg,
+                    borderColor: colors.border,
                     opacity: pressed ? 0.7 : 1,
                   },
                 ]}
               >
-                <Plus size={16} color={colors.text.secondary} strokeWidth={2} />
+                <Plus size={16} color={colors.ink2} strokeWidth={2} />
               </Pressable>
             </View>
           </View>
@@ -150,7 +150,7 @@ export function PackingItemEditor({
         name="assignedTo"
         render={({ field }) => (
           <View>
-            <AppText role="label" style={styles.groupLabel}>
+            <AppText role="kicker" tone="secondary" style={styles.groupLabel}>
               Who&apos;s bringing it?
             </AppText>
             <View style={styles.assigneeRow}>
@@ -165,7 +165,7 @@ export function PackingItemEditor({
                       name={member.profile.displayName}
                       avatarPath={member.profile.avatarPath}
                       size={26}
-                      toneIndex={index}
+                      filled={index === 0}
                     />
                   }
                 />
@@ -186,7 +186,7 @@ export function PackingItemEditor({
           onPress={onDelete}
           style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
         >
-          <AppText role="label" tone="danger">
+          <AppText role="button" tone="danger">
             Delete item
           </AppText>
         </Pressable>
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   stepperButton: {
     width: 44,
     height: 44,
-    borderRadius: radius.md,
+    borderRadius: radius.input,
     borderWidth: hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,21 +1,45 @@
-import Svg, { Circle } from 'react-native-svg';
-import { useTheme } from '@/theme';
+import { StyleSheet, View } from 'react-native';
+import { AirmailStripes } from './airmail/AirmailBorder';
+import { AppText } from './AppText';
+import { radius, useTheme } from '@/theme';
 
-/** The dashed-compass mark used on auth screens. */
-export function BrandMark({ size = 44 }: { size?: number }) {
+/** The airmail square: stripes, a paper inset, and a "W". */
+export function BrandMark({ size = 26 }: { size?: number }) {
   const { colors } = useTheme();
+  const pad = 3;
   return (
-    <Svg width={size} height={size} viewBox="0 0 44 44" accessibilityLabel="Waymark">
-      <Circle
-        cx={22}
-        cy={22}
-        r={20}
-        fill="none"
-        stroke={colors.hairline.strong}
-        strokeWidth={1.6}
-        strokeDasharray="3.5 4.5"
-      />
-      <Circle cx={22} cy={22} r={5} fill={colors.accent.base} />
-    </Svg>
+    <View
+      accessibilityLabel="Waymark"
+      style={[
+        styles.mark,
+        { width: size, height: size, padding: pad, borderRadius: radius.brandOuter },
+      ]}
+    >
+      <AirmailStripes size="brand" />
+      <View
+        style={[
+          styles.inset,
+          {
+            borderRadius: radius.brandInner,
+            backgroundColor: colors.paper,
+          },
+        ]}
+      >
+        <AppText role="brandLetter" style={{ color: colors.ink }}>
+          W
+        </AppText>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  mark: {
+    overflow: 'hidden',
+  },
+  inset: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

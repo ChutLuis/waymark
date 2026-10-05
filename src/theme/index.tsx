@@ -13,14 +13,15 @@ import { palettes, type Palette } from './tokens';
 
 export {
   fontFamilies,
-  floatingShadow,
   hairlineWidth,
   hitTargetMin,
   iconSizes,
   iconStrokeWidth,
   motion,
   radius,
+  shadows,
   spacing,
+  stampText,
   typeScale,
 } from './tokens';
 export type { Palette, TypeRole } from './tokens';

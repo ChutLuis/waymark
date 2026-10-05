@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { onlineManager } from '@tanstack/react-query';
 import { WifiOff } from 'lucide-react-native';
 import { AppText } from './AppText';
-import { hairlineWidth, radius, spacing, useTheme } from '@/theme';
+import { iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
 
 function useIsOnline(): boolean {
   return useSyncExternalStore(
@@ -26,13 +26,10 @@ export function OfflineBanner() {
     <View style={styles.host}>
       <View
         accessibilityRole="alert"
-        style={[
-          styles.pill,
-          { backgroundColor: colors.surface.sunken, borderColor: colors.hairline.default },
-        ]}
+        style={[styles.pill, { backgroundColor: colors.paper, borderColor: colors.border }]}
       >
-        <WifiOff size={13} color={colors.text.secondary} strokeWidth={1.8} />
-        <AppText role="caption" tone="secondary" style={styles.label}>
+        <WifiOff size={13} color={colors.ink2} strokeWidth={iconStrokeWidth} />
+        <AppText role="bodySm" tone="secondary" style={styles.label}>
           Offline — showing what you have
         </AppText>
       </View>
@@ -49,10 +46,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.s2,
-    borderRadius: radius.full,
-    borderWidth: hairlineWidth,
+    borderRadius: radius.pill,
+    borderWidth: 1,
     paddingVertical: 6,
-    paddingHorizontal: spacing.s3 + 2,
+    paddingHorizontal: spacing.s5,
   },
   label: {
     fontSize: 13,

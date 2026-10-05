@@ -5,7 +5,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
-import { fontFamilies, hitTargetMin, radius, spacing, useTheme } from '@/theme';
+import { fontFamilies, hitTargetMin, radius, spacing, typeScale, useTheme } from '@/theme';
 import { formatDate, formatDateTime, toDateOnly } from '@/lib/format/date';
 
 export interface DateTimeFieldProps {
@@ -21,6 +21,8 @@ export interface DateTimeFieldProps {
   error?: string;
   /** Sensible starting point when the field is empty (e.g. trip start date). */
   initialDate?: Date;
+  /** 'box' renders the 64-high new-trip date box (label inside). */
+  variant?: 'default' | 'box';
 }
 
 /**
@@ -38,6 +40,7 @@ export function DateTimeField({
   clearable = false,
   error,
   initialDate,
+  variant = 'default',
 }: DateTimeFieldProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -92,38 +95,53 @@ export function DateTimeField({
 
   return (
     <View>
-      <View style={styles.labelRow}>
-        <AppText role="label">{label}</AppText>
-        {optionalTag ? (
-          <AppText role="label" tone="faint" style={styles.optional}>
-            {optionalTag}
-          </AppText>
-        ) : null}
-      </View>
+      {variant === 'default' ? (
+        <View style={styles.labelRow}>
+          <AppText role="kicker" tone="secondary">{label}</AppText>
+          {optionalTag ? (
+            <AppText role="kicker" tone="muted" style={styles.optional}>
+              {optionalTag}
+            </AppText>
+          ) : null}
+        </View>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${display ?? 'not set'}`}
         onPress={openPicker}
         style={({ pressed }) => [
-          styles.field,
+          variant === 'box' ? styles.box : styles.field,
           {
-            backgroundColor: colors.surface.bg,
-            borderColor: error ? colors.semantic.danger.base : colors.hairline.strong,
+            backgroundColor: colors.paper,
+            borderColor: error ? colors.wax : colors.border,
             opacity: pressed ? 0.7 : 1,
           },
         ]}
       >
-        <AppText style={[styles.value, !value && { color: colors.text.faint }]}>
-          {display ?? placeholder}
-        </AppText>
-        {clearable && value ? (
+        {variant === 'box' ? (
+          <View>
+            <AppText role="tag" tone="secondary" style={{ letterSpacing: 0.6 }}>
+              {label}
+            </AppText>
+            <AppText
+              style={[styles.boxValue, { fontFamily: fontFamilies.semibold }, !value && { color: colors.ink3 }]}
+            >
+              {display ?? placeholder}
+            </AppText>
+          </View>
+        ) : (
+          <AppText style={[styles.value, !value && { color: colors.ink3 }]}>
+            {display ?? placeholder}
+          </AppText>
+        )}
+        {clearable && value && variant === 'default' ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Clear ${label}`}
             hitSlop={10}
             onPress={() => onChange(null)}
           >
-            <AppText role="label" tone="muted">
+            <AppText role="link" tone="muted">
               Clear
             </AppText>
           </Pressable>
@@ -145,14 +163,14 @@ export function DateTimeField({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Cancel date picker"
-              style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay.scrim }]}
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }]}
               onPress={() => setIosPickerVisible(false)}
             />
             <View
               style={[
                 styles.iosPickerSheet,
                 {
-                  backgroundColor: colors.surface.raised,
+                  backgroundColor: colors.paper,
                   paddingBottom: Math.max(insets.bottom, spacing.s6) + spacing.s4,
                 },
               ]}
@@ -165,7 +183,7 @@ export function DateTimeField({
                   onPress={() => setIosPickerVisible(false)}
                   style={({ pressed }) => [styles.iosPickerHeaderAction, pressed && styles.pressed]}
                 >
-                  <AppText role="label" tone="muted">
+                  <AppText role="link" tone="muted">
                     Cancel
                   </AppText>
                 </Pressable>
@@ -183,7 +201,7 @@ export function DateTimeField({
                     pressed && styles.pressed,
                   ]}
                 >
-                  <AppText role="label" tone="accent">
+                  <AppText role="link" style={{ color: colors.ink }}>
                     Done
                   </AppText>
                 </Pressable>
@@ -195,7 +213,7 @@ export function DateTimeField({
                 onChange={(_event, date) => {
                   if (date) setIosPending(date);
                 }}
-                accentColor={colors.accent.base}
+                accentColor={colors.ink}
                 style={styles.iosPicker}
               />
             </View>
@@ -216,27 +234,39 @@ export function DateTimeField({
 const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
-    marginBottom: spacing.s1 + 2,
+    gap: spacing.s2,
+    marginBottom: spacing.s2,
   },
   optional: {
-    fontFamily: fontFamilies.textRegular,
+    textTransform: 'lowercase',
     marginLeft: spacing.s1,
   },
   field: {
-    minHeight: 46,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    paddingHorizontal: spacing.s3 + 2,
+    minHeight: 52,
+    borderRadius: radius.input,
+    borderWidth: 1.5,
+    paddingHorizontal: spacing.s7,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   value: {
-    fontSize: 15,
-    lineHeight: 20,
+    ...typeScale.body,
+  },
+  box: {
+    minHeight: 64,
+    borderRadius: radius.input,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    gap: 2,
+  },
+  boxValue: {
+    fontSize: 18,
+    lineHeight: 24,
   },
   error: {
-    marginTop: spacing.s1 + 2,
+    marginTop: spacing.s2,
   },
   iosModalHost: {
     flex: 1,
@@ -245,8 +275,8 @@ const styles = StyleSheet.create({
   iosPickerSheet: {
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
-    paddingTop: spacing.s4,
-    paddingHorizontal: spacing.screenGutter,
+    paddingTop: spacing.s7,
+    paddingHorizontal: spacing.gutter,
   },
   iosPickerHeader: {
     flexDirection: 'row',

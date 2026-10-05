@@ -7,7 +7,7 @@ export default function NotFound() {
   const router = useRouter();
   const { colors } = useTheme();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <EmptyState
         title="This page wandered off"
         body="The link points somewhere that does not exist."

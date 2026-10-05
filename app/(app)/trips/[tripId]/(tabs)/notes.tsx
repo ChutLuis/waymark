@@ -1,26 +1,65 @@
 import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Fab } from '@/components/Fab';
-import { SectionLabel } from '@/components/SectionLabel';
+import { Lock, Plus, Users } from 'lucide-react-native';
+import { AppText } from '@/components/AppText';
+import { SegmentedControl } from '@/components/SegmentedControl';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateViews';
-import { NoteCard } from '@/features/notes/NoteCard';
+import { KraftEnvelope, WaxSeal } from '@/components/airmail/KraftEnvelope';
 import { NoteEditor } from '@/features/notes/NoteEditor';
 import { useNotes } from '@/features/notes/hooks';
-import { useTripMembers } from '@/features/trips/hooks';
-import { spacing, useTheme } from '@/theme';
+import { DestinationStamp } from '@/features/trips/SceneStamp';
+import { memberNamesWording, matchDestination, tripDays } from '@/features/trips/destinations';
+import { useTrip, useTripMembers } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
+import { hairlineWidth, spacing, useTheme } from '@/theme';
+import { formatShortDate } from '@/lib/format/date';
 import type { TripNote } from '@/lib/types';
 
-type NotesRow = { type: 'note'; note: TripNote } | { type: 'divider' };
+type Filter = 'all' | 'shared' | 'private';
+
+function TitleRow({ subtitle, onAdd }: { subtitle: string; onAdd: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.titleRow}>
+      <View style={styles.titleBlock}>
+        <AppText role="tripTitle">Notes</AppText>
+        {subtitle ? (
+          <AppText role="meta" tone="secondary" style={styles.subtitle}>
+            {subtitle}
+          </AppText>
+        ) : null}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Write a new note"
+        onPress={onAdd}
+        style={({ pressed }) => [styles.actionPill, { backgroundColor: colors.ink }, pressed && styles.pressed]}
+      >
+        <Plus size={18} color={colors.paper} strokeWidth={2.4} />
+        <AppText role="button" style={[styles.actionLabel, { color: colors.paper }]}>
+          New note
+        </AppText>
+      </Pressable>
+    </View>
+  );
+}
+
+/** Relative label: "TODAY", "YESTERDAY", else a short date. */
+function relativeLabel(iso: string): string {
+  const label = formatShortDate(iso);
+  return label.toUpperCase();
+}
 
 export default function NotesScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const { colors } = useTheme();
   const { userId } = useAuth();
+  const trip = useTrip(tripId);
   const notes = useNotes(tripId);
   const members = useTripMembers(tripId);
 
+  const [filter, setFilter] = useState<Filter>('all');
   const [editorVisible, setEditorVisible] = useState(false);
   const [editingNote, setEditingNote] = useState<TripNote | null>(null);
 
@@ -29,68 +68,141 @@ export default function NotesScreen() {
     setEditorVisible(true);
   };
 
-  // Own private notes always on top; shared notes follow under a divider.
-  const rows = useMemo<NotesRow[]>(() => {
+  const all = notes.data ?? [];
+  const shared = all.filter((n) => !n.isPrivate);
+  const mine = all.filter((n) => n.isPrivate);
+
+  const visible = useMemo(() => {
     const byNewest = (a: TripNote, b: TripNote) => b.updatedAt.localeCompare(a.updatedAt);
-    const mine = (notes.data ?? []).filter((n) => n.isPrivate).sort(byNewest);
-    const shared = (notes.data ?? []).filter((n) => !n.isPrivate).sort(byNewest);
-    const result: NotesRow[] = mine.map((note) => ({ type: 'note', note }));
-    if (shared.length > 0) {
-      if (mine.length > 0) result.push({ type: 'divider' });
-      result.push(...shared.map((note): NotesRow => ({ type: 'note', note })));
-    }
-    return result;
-  }, [notes.data]);
+    const list = filter === 'shared' ? shared : filter === 'private' ? mine : all;
+    // Private notes first, then shared, newest first within each.
+    return [...list.filter((n) => n.isPrivate), ...list.filter((n) => !n.isPrivate)].sort(byNewest);
+  }, [filter, all, shared, mine]);
+
+  const country = matchDestination(trip.data?.destination ?? null);
+  const days = tripDays(trip.data?.startDate ?? null, trip.data?.endDate ?? null);
+
+  const others = (members.data ?? [])
+    .filter((m) => m.userId !== userId)
+    .map((m) => m.profile.displayName);
+  const names = memberNamesWording(others).replace(/^with /, '');
+  const pronoun = others.length > 1 ? 'they' : 'he';
 
   const firstNameOf = (authorId: string): string => {
     const member = members.data?.find((m) => m.userId === authorId);
     return member?.profile.displayName.split(' ')[0] ?? 'A member';
   };
+  const initialOf = (authorId: string): string =>
+    (firstNameOf(authorId)[0] ?? '?').toUpperCase();
 
   if (notes.isPending) return <LoadingState />;
   if (notes.isError) {
     return <ErrorState title="Couldn't load the notes" onRetry={() => notes.refetch()} />;
   }
 
+  const options = [
+    { value: 'all' as const, label: `All · ${all.length}` },
+    { value: 'shared' as const, label: `Shared · ${shared.length}` },
+    { value: 'private' as const, label: `Only you · ${mine.length}` },
+  ];
+
   return (
     <View style={styles.screen}>
-      {rows.length === 0 ? (
-        <EmptyState
-          title="No notes yet"
-          body="Keep anything here — confirmation numbers, ideas, surprises. Notes start private to you."
-          actionLabel="Write a note"
-          onAction={() => openEditor(null)}
-        />
-      ) : (
-        <FlatList
-          data={rows}
-          keyExtractor={(row, index) => (row.type === 'note' ? row.note.id : `divider-${index}`)}
-          contentContainerStyle={styles.content}
-          renderItem={({ item: row }) =>
-            row.type === 'divider' ? (
-              <View style={styles.divider}>
-                <View style={[styles.dividerLine, { backgroundColor: colors.hairline.default }]} />
-                <SectionLabel style={styles.dividerLabel}>Shared with the trip</SectionLabel>
-                <View style={[styles.dividerLine, { backgroundColor: colors.hairline.default }]} />
-              </View>
-            ) : (
-              <View style={styles.cardWrap}>
-                <NoteCard
-                  note={row.note}
-                  isOwn={row.note.authorId === userId}
-                  authorName={firstNameOf(row.note.authorId)}
-                  onPress={
-                    row.note.authorId === userId
-                      ? () => openEditor(row.note)
-                      : undefined
-                  }
-                />
-              </View>
-            )
-          }
-        />
-      )}
-      <Fab accessibilityLabel="Write a note" onPress={() => openEditor(null)} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <TitleRow subtitle={trip.data?.name ?? ''} onAdd={() => openEditor(null)} />
+
+        <AppText role="body" style={[styles.intro, { color: colors.inkBody }]}>
+          {others.length === 0
+            ? `Postcards are shared with anyone you invite. Sealed notes are only for you.`
+            : `Postcards are shared with ${names}. Sealed notes are only for you: ${pronoun} can't open yours, and you can't open ${pronoun === 'they' ? 'theirs' : 'his'}.`}
+        </AppText>
+
+        <View style={styles.filterWrap}>
+          <SegmentedControl
+            options={options}
+            value={filter}
+            onChange={setFilter}
+            accessibilityLabel="Filter notes"
+            stretch
+          />
+        </View>
+
+        {visible.length === 0 ? (
+          <EmptyState
+            title="No notes yet"
+            body="Keep anything here — confirmation numbers, ideas, surprises. Notes start private to you."
+            actionLabel="Write a note"
+            onAction={() => openEditor(null)}
+          />
+        ) : (
+          <View style={styles.list}>
+            {visible.map((note) =>
+              note.isPrivate ? (
+                <Pressable
+                  key={note.id}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit private note"
+                  onPress={() => (note.authorId === userId ? openEditor(note) : undefined)}
+                  style={({ pressed }) => pressed && styles.pressed}
+                >
+                  <KraftEnvelope style={styles.envelope}>
+                    <View style={styles.envelopeBody}>
+                      <View style={styles.envelopeHeader}>
+                        <View style={styles.headerLeft}>
+                          <Lock size={14} color={colors.kraftText} strokeWidth={2.4} />
+                          <AppText role="kicker" style={{ color: colors.kraftText, letterSpacing: 0.6 }}>
+                            ONLY YOU
+                          </AppText>
+                        </View>
+                        <AppText role="kicker" style={{ color: colors.kraftInk, letterSpacing: 0.6 }}>
+                          {relativeLabel(note.updatedAt)}
+                        </AppText>
+                      </View>
+                      <AppText role="noteBody" style={[styles.envelopeText, { color: colors.kraftText }]}>
+                        {note.body}
+                      </AppText>
+                    </View>
+                    <View style={styles.sealWrap}>
+                      <WaxSeal initial={initialOf(note.authorId)} />
+                    </View>
+                  </KraftEnvelope>
+                </Pressable>
+              ) : (
+                <Pressable
+                  key={note.id}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit shared note"
+                  onPress={() => (note.authorId === userId ? openEditor(note) : undefined)}
+                  style={({ pressed }) => pressed && styles.pressed}
+                >
+                  <View style={[styles.postcard, { backgroundColor: colors.paper }]}>
+                    <View style={styles.postcardHeader}>
+                      <View style={styles.headerLeft}>
+                        <Users size={15} color={colors.ink} strokeWidth={2.2} />
+                        <AppText role="kicker" style={{ letterSpacing: 0.6 }}>
+                          {note.authorId === userId
+                            ? 'SHARED · FROM YOU'
+                            : `SHARED · FROM ${firstNameOf(note.authorId).toUpperCase()}`}
+                        </AppText>
+                      </View>
+                      {country ? (
+                        <DestinationStamp country={country} band="xs" days={days} />
+                      ) : null}
+                    </View>
+                    <AppText role="noteBody" style={styles.postcardText}>
+                      {note.body}
+                    </AppText>
+                    <AppText role="metaSm" tone="muted" style={styles.postcardTime}>
+                      {formatShortDate(note.updatedAt)}
+                    </AppText>
+                  </View>
+                </Pressable>
+              ),
+            )}
+          </View>
+        )}
+      </ScrollView>
+
       <NoteEditor
         visible={editorVisible}
         onClose={() => setEditorVisible(false)}
@@ -102,29 +214,41 @@ export default function NotesScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
+  screen: { flex: 1 },
+  content: { paddingBottom: 100 },
+  titleRow: {
+    paddingTop: spacing.s6,
+    paddingHorizontal: 20,
+    paddingLeft: spacing.gutter,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.s5,
   },
-  content: {
-    paddingHorizontal: spacing.screenGutter,
-    paddingTop: spacing.s4,
-    paddingBottom: 120,
-  },
-  cardWrap: {
-    marginBottom: spacing.s2 + 2,
-  },
-  divider: {
+  titleBlock: { flexShrink: 1 },
+  subtitle: { marginTop: 2 },
+  actionPill: {
+    height: 44,
+    paddingLeft: spacing.s5,
+    paddingRight: spacing.s7,
+    borderRadius: 999,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s2 + 2,
-    paddingTop: spacing.s2 - 2,
-    paddingBottom: spacing.s2 + 2,
+    gap: 6,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerLabel: {
-    letterSpacing: 1.2,
-  },
+  actionLabel: { fontSize: 15, lineHeight: 20 },
+  pressed: { opacity: 0.7 },
+  intro: { paddingTop: spacing.s7, paddingHorizontal: spacing.gutter, fontSize: 16, lineHeight: 23 },
+  filterWrap: { marginTop: spacing.s7, marginHorizontal: spacing.cardGutter },
+  list: { paddingTop: spacing.s7, paddingHorizontal: spacing.cardGutter, gap: spacing.s4 },
+  envelope: { paddingBottom: spacing.s6 },
+  envelopeBody: { paddingTop: 32, paddingHorizontal: 16, paddingBottom: 14 },
+  envelopeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  envelopeText: { marginTop: 26 },
+  sealWrap: { position: 'absolute', top: 15, left: '50%', marginLeft: -17 },
+  postcard: { borderRadius: 4, paddingTop: 12, paddingBottom: 12, paddingLeft: 16, paddingRight: 14 },
+  postcardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  postcardText: { marginTop: 4 },
+  postcardTime: { marginTop: 6 },
 });

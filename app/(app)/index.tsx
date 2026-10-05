@@ -2,48 +2,30 @@ import { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
-import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
-import { Fab } from '@/components/Fab';
+import { BrandMark } from '@/components/BrandMark';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { EmptyState, ErrorState } from '@/components/StateViews';
-import { useMyProfile } from '@/features/auth/hooks';
+import { AvatarStamp } from '@/features/trips/SceneStamp';
 import { TripCard } from '@/features/trips/TripCard';
 import { TripCardSkeleton } from '@/features/trips/TripCardSkeleton';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { splitTrips } from '@/features/trips/sort';
+import { greetingFor } from '@/features/trips/destinations';
+import { useMyProfile } from '@/features/auth/hooks';
 import { spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
 
-function PeaksMark() {
-  const { colors } = useTheme();
-  return (
-    <Svg width={56} height={56} viewBox="0 0 56 56">
-      <Path
-        d="M8 44 24 12l8 16 6-8 10 24Z"
-        fill="none"
-        stroke={colors.text.faint}
-        strokeWidth={1.6}
-        strokeLinejoin="round"
-      />
-      <Circle
-        cx={42}
-        cy={14}
-        r={4}
-        fill="none"
-        stroke={colors.accent.base}
-        strokeWidth={1.6}
-        strokeDasharray="2.5 3"
-      />
-    </Svg>
-  );
-}
+type Row =
+  | { type: 'kicker'; label: string }
+  | { type: 'trip'; trip: TripListItem; variant: 'onNow' | 'upcoming' | 'past' };
 
-type TripsRow =
-  | { type: 'trip'; trip: TripListItem; isPast: boolean }
-  | { type: 'past-divider' };
+function isOnNow(trip: TripListItem, today: string): boolean {
+  if (!trip.startDate || !trip.endDate) return false;
+  return trip.startDate <= today && today <= trip.endDate;
+}
 
 export default function TripsListScreen() {
   const { colors } = useTheme();
@@ -54,48 +36,72 @@ export default function TripsListScreen() {
   const profile = useMyProfile();
 
   const isWide = width >= 720;
+  const today = toDateOnly(new Date());
 
-  const rows = useMemo<TripsRow[]>(() => {
-    const { current, past } = splitTrips(trips.data ?? [], toDateOnly(new Date()));
-    const result: TripsRow[] = current.map((trip) => ({ type: 'trip', trip, isPast: false }));
+  const rows = useMemo<Row[]>(() => {
+    const all = trips.data ?? [];
+    const { current, past } = splitTrips(all, today);
+    const onNow: TripListItem[] = [];
+    const upcoming: TripListItem[] = [];
+    for (const trip of current) (isOnNow(trip, today) ? onNow : upcoming).push(trip);
+
+    const result: Row[] = [];
+    if (onNow.length > 0 || upcoming.length > 0) result.push({ type: 'kicker', label: 'COMING UP' });
+    result.push(...onNow.map((trip): Row => ({ type: 'trip', trip, variant: 'onNow' })));
+    result.push(...upcoming.map((trip): Row => ({ type: 'trip', trip, variant: 'upcoming' })));
     if (past.length > 0) {
-      if (result.length > 0) result.push({ type: 'past-divider' });
-      result.push(...past.map((trip): TripsRow => ({ type: 'trip', trip, isPast: true })));
+      result.push({ type: 'kicker', label: 'PAST TRIPS' });
+      result.push(...past.map((trip): Row => ({ type: 'trip', trip, variant: 'past' })));
     }
     return result;
-  }, [trips.data]);
+  }, [trips.data, today]);
+
+  const firstName = (profile.data?.displayName ?? '').split(' ')[0] || 'traveler';
+  const hasTrips = rows.length > 0;
 
   return (
-    <View
-      style={[
-        styles.screen,
-        { backgroundColor: colors.surface.bg, paddingTop: insets.top + spacing.s3 },
-      ]}
-    >
+    <View style={[styles.screen, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
       <View style={[styles.column, isWide && styles.columnWide]}>
         <View style={styles.header}>
-          <AppText role="title">Your trips</AppText>
+          <View style={styles.brandRow}>
+            <BrandMark />
+            <AppText role="wordmark">Waymark</AppText>
+          </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Profile and settings"
-            hitSlop={8}
             onPress={() => router.push('/profile')}
-            style={({ pressed }) => pressed && styles.pressed}
+            style={({ pressed }) => [styles.avatarTarget, pressed && styles.pressed]}
           >
-            <Avatar name={profile.data?.displayName ?? '?'} size={34} />
+            <AvatarStamp
+              size="sm"
+              initial={(firstName[0] ?? '?').toUpperCase()}
+              frame="paper"
+            />
           </Pressable>
         </View>
+
+        <View style={styles.titleBlock}>
+          <AppText role="display">Your trips</AppText>
+          <AppText role="meta" tone="secondary" style={styles.greeting}>
+            {greetingFor(new Date(), firstName)}
+          </AppText>
+        </View>
+
         <OfflineBanner />
+
         {trips.isPending ? (
           <View style={styles.list}>
             <TripCardSkeleton withCover />
+            <View style={styles.skeletonGap} />
+            <TripCardSkeleton />
+            <View style={styles.skeletonGap} />
             <TripCardSkeleton />
           </View>
         ) : trips.isError ? (
           <ErrorState title="Couldn't load your trips" onRetry={() => trips.refetch()} />
-        ) : rows.length === 0 ? (
+        ) : !hasTrips ? (
           <EmptyState
-            mark={<PeaksMark />}
             title="Somewhere to be?"
             body="Start a trip and invite the person you're going with — or join theirs with an invite code."
             actionLabel="Start a trip"
@@ -111,16 +117,19 @@ export default function TripsListScreen() {
         ) : (
           <FlatList
             data={rows}
-            keyExtractor={(row, index) => (row.type === 'trip' ? row.trip.id : `divider-${index}`)}
-            contentContainerStyle={styles.listContent}
+            keyExtractor={(row, index) => (row.type === 'trip' ? row.trip.id : `kicker-${index}`)}
+            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 120 }]}
+            showsVerticalScrollIndicator={false}
             renderItem={({ item: row }) =>
-              row.type === 'past-divider' ? (
-                <View style={styles.pastDivider} />
+              row.type === 'kicker' ? (
+                <AppText role="kicker" tone="secondary" style={styles.sectionKicker}>
+                  {row.label}
+                </AppText>
               ) : (
                 <View style={styles.cardWrap}>
                   <TripCard
                     trip={row.trip}
-                    isPast={row.isPast}
+                    variant={row.variant}
                     onPress={() => router.push(`/trips/${row.trip.id}` as never)}
                   />
                 </View>
@@ -129,51 +138,67 @@ export default function TripsListScreen() {
           />
         )}
       </View>
-      {!trips.isPending && rows.length > 0 ? (
-        <Fab accessibilityLabel="Start a trip" onPress={() => router.push('/trips/new')} />
+
+      {!trips.isPending && hasTrips ? (
+        <View
+          style={[
+            styles.actionBar,
+            {
+              backgroundColor: colors.bg,
+              paddingBottom: insets.bottom + spacing.s7,
+              borderTopColor: colors.divider,
+            },
+          ]}
+        >
+          <View style={styles.actionCol}>
+            <Button
+              label="New trip"
+              size="lg"
+              leading={<Plus size={20} color={colors.paper} strokeWidth={2.4} />}
+              onPress={() => router.push('/trips/new')}
+            />
+          </View>
+          <View style={styles.actionCol}>
+            <Button
+              label="Join with a code"
+              variant="secondary"
+              size="lg"
+              onPress={() => router.push('/join')}
+            />
+          </View>
+        </View>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  column: {
-    flex: 1,
-  },
-  columnWide: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-  },
-  header: {
+  screen: { flex: 1 },
+  column: { flex: 1 },
+  columnWide: { width: '100%', maxWidth: 680, alignSelf: 'center' },
+  header: { height: 52, paddingLeft: spacing.gutter, paddingRight: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatarTarget: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.7 },
+  titleBlock: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
+  greeting: { marginTop: 2 },
+  list: { paddingHorizontal: spacing.cardGutter, paddingTop: spacing.s7 },
+  skeletonGap: { height: spacing.s5 },
+  listContent: { paddingTop: spacing.s3, paddingHorizontal: spacing.cardGutter },
+  sectionKicker: { paddingTop: spacing.s8, paddingBottom: spacing.s4, paddingHorizontal: spacing.s4 },
+  cardWrap: { marginBottom: spacing.s5 },
+  emptySecondary: { marginTop: spacing.s3 },
+  actionBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.screenGutter,
+    gap: spacing.s4,
+    paddingTop: spacing.s7,
+    paddingHorizontal: spacing.s7,
+    borderTopWidth: 1,
+    boxShadow: '0 -1px 0 #C9D3DB',
   },
-  pressed: {
-    opacity: 0.7,
-  },
-  list: {
-    paddingHorizontal: spacing.screenGutter,
-    paddingTop: spacing.s4,
-    gap: spacing.s3 + 2,
-  },
-  listContent: {
-    paddingHorizontal: spacing.screenGutter,
-    paddingTop: spacing.s4,
-    paddingBottom: 120,
-  },
-  cardWrap: {
-    marginBottom: spacing.s3 + 2,
-  },
-  pastDivider: {
-    height: spacing.s3,
-  },
-  emptySecondary: {
-    marginTop: spacing.s2,
-  },
+  actionCol: { flex: 1 },
 });

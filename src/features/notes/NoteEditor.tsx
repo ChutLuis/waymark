@@ -79,12 +79,12 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
             <View style={styles.privacyRow}>
               <View style={styles.privacyTitleRow}>
                 {field.value ? (
-                  <Lock size={17} color={colors.accent.ink} strokeWidth={1.6} />
+                  <Lock size={17} color={colors.ink} strokeWidth={2} />
                 ) : (
-                  <Users size={17} color={colors.text.muted} strokeWidth={1.6} />
+                  <Users size={17} color={colors.ink3} strokeWidth={2} />
                 )}
                 <View style={styles.privacyCopy}>
-                  <AppText role="bodyStrong" style={styles.privacyTitle}>
+                  <AppText role="button" style={styles.privacyTitle}>
                     {field.value ? 'Only you can see this' : 'Shared with the trip'}
                   </AppText>
                   <AppText role="caption" tone="muted" style={styles.privacyCaption}>
@@ -136,7 +136,7 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
           onPress={onDelete}
           style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
         >
-          <AppText role="label" tone="danger">
+          <AppText role="button" tone="danger">
             Delete note
           </AppText>
         </Pressable>

@@ -8,16 +8,15 @@ import * as Linking from 'expo-linking';
 import NetInfo from '@react-native-community/netinfo';
 import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import {
-  Newsreader_400Regular,
-  Newsreader_400Regular_Italic,
-  Newsreader_500Medium,
+  Besley_400Regular,
+  Besley_400Regular_Italic,
+  Besley_600SemiBold,
+  Besley_600SemiBold_Italic,
+  Besley_700Bold,
+  Besley_800ExtraBold,
   useFonts,
-} from '@expo-google-fonts/newsreader';
-import {
-  SourceSans3_400Regular,
-  SourceSans3_500Medium,
-  SourceSans3_600SemiBold,
-} from '@expo-google-fonts/source-sans-3';
+} from '@expo-google-fonts/besley';
+import { CourierPrime_700Bold } from '@expo-google-fonts/courier-prime';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { useMyProfile } from '@/features/auth/hooks';
 import { setPendingInviteCode, takePendingInviteCode } from '@/features/invites/pendingInvite';
@@ -106,7 +105,7 @@ function RootStack() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.surface.bg },
+          contentStyle: { backgroundColor: colors.bg },
         }}
       />
     </>
@@ -115,12 +114,13 @@ function RootStack() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Newsreader_400Regular,
-    Newsreader_400Regular_Italic,
-    Newsreader_500Medium,
-    SourceSans3_400Regular,
-    SourceSans3_500Medium,
-    SourceSans3_600SemiBold,
+    Besley_400Regular,
+    Besley_400Regular_Italic,
+    Besley_600SemiBold,
+    Besley_600SemiBold_Italic,
+    Besley_700Bold,
+    Besley_800ExtraBold,
+    CourierPrime_700Bold,
   });
 
   useEffect(() => {

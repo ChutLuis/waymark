@@ -1,29 +1,43 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
-import { hairlineWidth, radius, useTheme } from '@/theme';
+import { radius, spacing, useTheme } from '@/theme';
 
 interface SegmentedControlProps<T extends string> {
   options: { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
   accessibilityLabel: string;
+  /** Track surface: `paper` on the page, `bg` on a paper card. */
+  track?: 'paper' | 'bg';
+  /** 44 pt segments by default; 34 pt for the profile Appearance row. */
+  size?: 'default' | 'compact';
+  /** Let each segment size to its content instead of equal columns. */
+  stretch?: boolean;
 }
 
-/** Sunken track with a raised active chip; used for itinerary status. */
+/** Pill segmented control; selected segment is ink on paper. */
 export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
   accessibilityLabel,
+  track = 'paper',
+  size = 'default',
+  stretch = true,
 }: SegmentedControlProps<T>) {
   const { colors } = useTheme();
+  const height = size === 'compact' ? 34 : 44;
+  const padding = size === 'compact' ? 3 : 4;
   return (
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
       style={[
         styles.track,
-        { backgroundColor: colors.surface.sunken, borderColor: colors.hairline.default },
+        {
+          backgroundColor: track === 'paper' ? colors.paper : colors.bg,
+          padding,
+        },
       ]}
     >
       {options.map((option) => {
@@ -37,18 +51,18 @@ export function SegmentedControl<T extends string>({
             onPress={() => onChange(option.value)}
             style={({ pressed }) => [
               styles.segment,
-              selected && {
-                backgroundColor: colors.surface.raised,
-                borderColor: colors.hairline.default,
-                borderWidth: hairlineWidth,
-              },
+              stretch && styles.segmentStretch,
+              { height, paddingHorizontal: size === 'compact' ? 11 : 14 },
+              selected && { backgroundColor: colors.ink },
               pressed && !selected ? { opacity: 0.7 } : null,
             ]}
           >
             <AppText
-              role={selected ? 'label' : 'body'}
-              tone={selected ? 'primary' : 'secondary'}
-              style={styles.label}
+              role={selected ? 'button' : 'link'}
+              style={[
+                { color: selected ? colors.paper : colors.ink },
+                size === 'compact' && { fontSize: 14, lineHeight: 18 },
+              ]}
             >
               {option.label}
             </AppText>
@@ -62,20 +76,16 @@ export function SegmentedControl<T extends string>({
 const styles = StyleSheet.create({
   track: {
     flexDirection: 'row',
-    borderRadius: radius.md,
-    borderWidth: hairlineWidth,
-    padding: 3,
-    gap: 2,
+    borderRadius: radius.pill,
+    gap: spacing.s1,
+    alignSelf: 'flex-start',
   },
   segment: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
   },
-  label: {
-    fontSize: 13,
-    lineHeight: 18,
+  segmentStretch: {
+    flex: 1,
   },
 });

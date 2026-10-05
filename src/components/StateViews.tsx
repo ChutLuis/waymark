@@ -3,23 +3,20 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { AppText } from './AppText';
 import { Button } from './Button';
-import { fontFamilies, spacing, useTheme } from '@/theme';
+import { radius, spacing, useTheme } from '@/theme';
 
-/** Restrained route mark used by empty states. */
-export function RouteMark() {
+/** 56x72 dashed empty stamp slot, the mark used by trip empty states. */
+export function EmptyStampSlot({ width = 56, height = 72 }: { width?: number; height?: number }) {
   const { colors } = useTheme();
   return (
-    <Svg width={48} height={48} viewBox="0 0 48 48">
+    <Svg width={width} height={height} viewBox="0 0 56 72" accessibilityLabel="No stamp yet">
       <Path
-        d="M8 40c8-4 8-14 16-18s16-2 16-2"
+        d="M2 2h52v68H2z"
         fill="none"
-        stroke={colors.text.faint}
-        strokeWidth={1.6}
-        strokeDasharray="3 4"
-        strokeLinecap="round"
+        stroke={colors.slot}
+        strokeWidth={1.5}
+        strokeDasharray="4 3"
       />
-      <Circle cx={8} cy={40} r={3.5} fill={colors.accent.base} />
-      <Circle cx={40} cy={20} r={4} fill="none" stroke={colors.accent.base} strokeWidth={1.6} />
     </Svg>
   );
 }
@@ -33,16 +30,10 @@ function AlertMark() {
         cy={12}
         r={9}
         fill="none"
-        stroke={colors.semantic.danger.base}
-        strokeWidth={1.4}
+        stroke={colors.wax}
+        strokeWidth={1.6}
       />
-      <Path
-        d="M12 8v5M12 16.5v.5"
-        fill="none"
-        stroke={colors.semantic.danger.base}
-        strokeWidth={1.4}
-        strokeLinecap="round"
-      />
+      <Path d="M12 8v5M12 16.5v.5" fill="none" stroke={colors.wax} strokeWidth={1.6} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -55,7 +46,7 @@ export function LoadingState({ message }: { message?: string }) {
   const { colors } = useTheme();
   return (
     <StateShell>
-      <ActivityIndicator accessibilityLabel={message ?? 'Loading'} color={colors.accent.base} />
+      <ActivityIndicator accessibilityLabel={message ?? 'Loading'} color={colors.ink2} />
       {message ? (
         <AppText tone="muted" style={styles.loadingMessage}>
           {message}
@@ -78,8 +69,10 @@ interface EmptyStateProps {
 export function EmptyState({ title, body, actionLabel, onAction, mark, children }: EmptyStateProps) {
   return (
     <StateShell>
-      {mark ?? <RouteMark />}
-      <AppText style={styles.title}>{title}</AppText>
+      {mark ?? <EmptyStampSlot />}
+      <AppText role="cardTitle" style={styles.title}>
+        {title}
+      </AppText>
       <AppText tone="secondary" style={styles.body}>
         {body}
       </AppText>
@@ -105,7 +98,9 @@ export function ErrorState({
   return (
     <StateShell>
       <AlertMark />
-      <AppText style={[styles.title, styles.titleError]}>{title}</AppText>
+      <AppText role="cardTitle" style={[styles.title, styles.titleError]}>
+        {title}
+      </AppText>
       <AppText tone="secondary" style={styles.body}>
         {body}
       </AppText>
@@ -120,14 +115,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    paddingHorizontal: spacing.s8,
-    paddingBottom: spacing.s9 * 2,
+    paddingHorizontal: 30,
+    paddingBottom: 80,
   },
   title: {
-    fontFamily: fontFamilies.displayRegular,
-    fontSize: 24,
-    lineHeight: 30,
-    marginTop: spacing.s4,
+    marginTop: spacing.s7,
     textAlign: 'center',
   },
   titleError: {
@@ -143,9 +135,9 @@ const styles = StyleSheet.create({
   loadingMessage: {
     fontSize: 14,
     lineHeight: 19,
-    marginTop: spacing.s4,
+    marginTop: spacing.s7,
   },
   action: {
-    marginTop: spacing.s5,
+    marginTop: spacing.s9,
   },
 });

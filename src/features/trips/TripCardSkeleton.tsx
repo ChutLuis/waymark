@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { Card } from '@/components/Card';
 import { useReducedMotion } from '@/components/useReducedMotion';
 import { useLazyAnimatedValue } from '@/components/useLazyAnimatedValue';
 import { radius, spacing, useTheme } from '@/theme';
@@ -33,42 +32,37 @@ export function TripCardSkeleton({ withCover = false }: { withCover?: boolean })
     return () => loop.stop();
   }, [pulse, reducedMotion]);
 
-  const block = { backgroundColor: colors.surface.sunken };
+  const block = { backgroundColor: colors.artPlaceholder };
 
   return (
     <Animated.View style={{ opacity: pulse }} accessibilityLabel="Loading trip">
-      <Card style={styles.card}>
-        {withCover ? <View style={[styles.cover, block]} /> : null}
-        <View style={styles.body}>
-          <View style={[styles.titleBlock, block]} />
-          <View style={[styles.metaBlock, block]} />
-        </View>
-      </Card>
+      <View style={[styles.card, { backgroundColor: colors.paper }]}>
+        {withCover ? (
+          <View style={[styles.cover, block]} />
+        ) : (
+          <View style={styles.row}>
+            <View style={styles.body}>
+              <View style={[styles.titleBlock, block]} />
+              <View style={[styles.metaBlock, block]} />
+            </View>
+            <View style={[styles.stampBlock, block]} />
+          </View>
+        )}
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
+    borderRadius: 4,
     overflow: 'hidden',
+    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
   },
-  cover: {
-    height: 120,
-    width: '100%',
-  },
-  body: {
-    paddingVertical: spacing.s3 + 2,
-    paddingHorizontal: spacing.s4,
-  },
-  titleBlock: {
-    width: '60%',
-    height: 18,
-    borderRadius: radius.xs,
-  },
-  metaBlock: {
-    width: '42%',
-    height: 12,
-    borderRadius: radius.xs,
-    marginTop: spacing.s2,
-  },
+  cover: { height: 112, width: '100%' },
+  row: { flexDirection: 'row', alignItems: 'center', padding: spacing.s6 + 1, gap: spacing.s5 },
+  body: { flex: 1 },
+  titleBlock: { width: '60%', height: 20, borderRadius: radius.chip },
+  metaBlock: { width: '42%', height: 12, borderRadius: radius.chip, marginTop: spacing.s3 },
+  stampBlock: { width: 56, height: 72, borderRadius: 2 },
 });

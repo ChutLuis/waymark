@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Pressable,
   StyleSheet,
   TextInput,
   View,
@@ -8,13 +9,15 @@ import {
   type TextStyle,
 } from 'react-native';
 import { AppText } from './AppText';
-import { fontFamilies, radius, spacing, useTheme } from '@/theme';
+import { radius, spacing, typeScale, useTheme } from '@/theme';
 
 interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   label: string;
   optionalTag?: string;
   error?: string;
   multiline?: boolean;
+  /** Show a trailing Show/Hide link? */
+  revealable?: boolean;
   /** Extra input styling (e.g. the mono invite-code field). */
   inputStyle?: StyleProp<TextStyle>;
 }
@@ -25,56 +28,80 @@ export function TextField({
   optionalTag,
   error,
   multiline = false,
+  revealable = false,
   inputStyle,
+  secureTextEntry,
   ...inputProps
 }: TextFieldProps) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
-  const borderColor = error
-    ? colors.semantic.danger.base
-    : focused
-      ? colors.accent.base
-      : colors.hairline.strong;
+  const borderColor = error ? colors.wax : focused ? colors.ink : colors.border;
+  const borderWidth = focused || error ? 2 : 1.5;
 
   return (
     <View>
       <View style={styles.labelRow}>
-        <AppText role="label">{label}</AppText>
+        <AppText role="kicker" tone="secondary">
+          {label}
+        </AppText>
         {optionalTag ? (
-          <AppText role="label" tone="faint" style={styles.optional}>
+          <AppText role="kicker" tone="muted" style={styles.optional}>
             {optionalTag}
           </AppText>
         ) : null}
       </View>
-      <TextInput
-        {...inputProps}
-        accessibilityLabel={label}
-        multiline={multiline}
-        onFocus={(e) => {
-          setFocused(true);
-          inputProps.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setFocused(false);
-          inputProps.onBlur?.(e);
-        }}
-        placeholderTextColor={colors.text.faint}
-        selectionColor={colors.accent.base}
+      <View
         style={[
-          styles.input,
-          multiline && styles.inputMultiline,
+          styles.field,
           {
-            backgroundColor: colors.surface.bg,
+            backgroundColor: colors.paper,
             borderColor,
-            borderWidth: focused || error ? 1.5 : 1,
-            color: colors.text.primary,
+            borderWidth,
           },
-          inputStyle,
+          multiline && styles.fieldMultiline,
         ]}
-      />
+      >
+        <TextInput
+          {...inputProps}
+          accessibilityLabel={label}
+          multiline={multiline}
+          secureTextEntry={revealable ? secureTextEntry && !revealed : secureTextEntry}
+          onFocus={(e) => {
+            setFocused(true);
+            inputProps.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            inputProps.onBlur?.(e);
+          }}
+          placeholderTextColor={colors.ink3}
+          selectionColor={colors.ink}
+          style={[
+            typeScale.body,
+            styles.input,
+            { color: colors.ink },
+            multiline && styles.inputMultiline,
+            inputStyle,
+          ]}
+        />
+        {revealable ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
+            onPress={() => setRevealed((v) => !v)}
+            hitSlop={10}
+            style={({ pressed }) => pressed && styles.pressed}
+          >
+            <AppText role="link" style={[styles.reveal, { color: colors.ink }]}>
+              {revealed ? 'Hide' : 'Show'}
+            </AppText>
+          </Pressable>
+        ) : null}
+      </View>
       {error ? (
-        <AppText role="caption" tone="danger" style={styles.error}>
+        <AppText role="bodySm" style={[styles.error, { color: colors.wax }]}>
           {error}
         </AppText>
       ) : null}
@@ -85,27 +112,43 @@ export function TextField({
 const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
-    marginBottom: spacing.s1 + 2,
+    gap: spacing.s2,
+    marginBottom: spacing.s2,
   },
   optional: {
-    fontFamily: fontFamilies.textRegular,
-    marginLeft: spacing.s1,
+    textTransform: 'lowercase',
+  },
+  field: {
+    minHeight: 52,
+    borderRadius: radius.input,
+    paddingHorizontal: spacing.s7,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fieldMultiline: {
+    minHeight: 160,
+    alignItems: 'flex-start',
+    paddingVertical: spacing.s5,
   },
   input: {
-    minHeight: 46,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.s3 + 2,
+    flex: 1,
     paddingVertical: 0,
-    fontFamily: fontFamilies.textRegular,
-    fontSize: 16,
   },
   inputMultiline: {
-    minHeight: 200,
-    paddingVertical: spacing.s3 + 2,
+    minHeight: 130,
     textAlignVertical: 'top',
     lineHeight: 24,
   },
+  reveal: {
+    fontSize: 15,
+    lineHeight: 20,
+    textDecorationLine: 'underline',
+    marginLeft: spacing.s3,
+  },
   error: {
-    marginTop: spacing.s1 + 2,
+    marginTop: spacing.s2,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

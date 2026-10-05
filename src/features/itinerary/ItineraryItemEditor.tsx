@@ -11,7 +11,7 @@ import { SegmentedControl } from '@/components/SegmentedControl';
 import { Sheet } from '@/components/Sheet';
 import { TextField } from '@/components/TextField';
 import { Toggle } from '@/components/Toggle';
-import { spacing, useTheme } from '@/theme';
+import { iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { itineraryItemSchema, type ItineraryItemForm } from '@/lib/validation/schemas';
 import { confirmDestructive } from '@/lib/confirm';
 import { ensureNotificationPermission } from '@/lib/notifications';
@@ -238,7 +238,7 @@ export function ItineraryItemEditor({
         name="status"
         render={({ field }) => (
           <View>
-            <AppText role="label" style={styles.statusLabel}>
+            <AppText role="kicker" tone="secondary" style={styles.statusLabel}>
               Status
             </AppText>
             <SegmentedControl
@@ -254,8 +254,8 @@ export function ItineraryItemEditor({
         <Card padded style={styles.reminderCard}>
           <View style={styles.reminderHeader}>
             <View style={styles.reminderTitle}>
-              <Bell size={17} color={colors.accent.ink} strokeWidth={1.6} />
-              <AppText role="bodyStrong" style={styles.reminderTitleText}>
+              <Bell size={17} color={colors.ink} strokeWidth={iconStrokeWidth} />
+              <AppText role="button" style={styles.reminderTitleText}>
                 Remind me
               </AppText>
             </View>
@@ -301,7 +301,7 @@ export function ItineraryItemEditor({
           onPress={onDelete}
           style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
         >
-          <AppText role="label" tone="danger">
+          <AppText role="button" tone="danger">
             Delete item
           </AppText>
         </Pressable>

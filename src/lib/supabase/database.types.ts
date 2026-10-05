@@ -341,6 +341,23 @@ export type Database = {
       }
       is_trip_member: { Args: { _trip_id: string }; Returns: boolean }
       is_trip_owner: { Args: { _trip_id: string }; Returns: boolean }
+      preview_trip_invite: {
+        Args: { _code: string }
+        Returns: {
+          destination: string | null
+          end_date: string | null
+          inviter_name: string
+          name: string
+          start_date: string | null
+          trip_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "*"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       [_ in never]: never

@@ -28,6 +28,7 @@ export interface TripMember {
   tripId: string;
   userId: string;
   role: TripRole;
+  joinedAt: string | null;
   profile: Profile;
 }
 

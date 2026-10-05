@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Mail } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { BrandMark } from '@/components/BrandMark';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { TextField } from '@/components/TextField';
-import { AuthScreenShell } from '@/features/auth/AuthScreenShell';
+import { Postcard } from '@/components/airmail/Postcard';
+import { TripScene } from '@/features/trips/TripScene';
 import { useSignIn } from '@/features/auth/hooks';
-import { spacing } from '@/theme';
+import { iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { signInSchema, type SignInForm } from '@/lib/validation/schemas';
 
 function friendlyMessage(error: Error): string {
@@ -22,9 +26,48 @@ function friendlyMessage(error: Error): string {
   return 'Something went wrong signing you in. Try again.';
 }
 
+/** The stacked back postcards behind the front sign-in postcard. */
+function PostcardStack() {
+  return (
+    <View style={styles.stack}>
+      <View style={[styles.backCardWrap, styles.backLeft]}>
+        <Postcard
+          rotation={-8}
+          padding={6}
+          caption="Chiang Mai"
+          captionCorner="topLeft"
+        >
+          <TripScene country="thailand" crop="header" width={200} height={130} />
+        </Postcard>
+      </View>
+      <View style={[styles.backCardWrap, styles.backRight]}>
+        <Postcard rotation={7} padding={6} caption="Paris" captionCorner="topRight">
+          <TripScene country="france" crop="header" width={200} height={130} />
+        </Postcard>
+      </View>
+      <View style={styles.frontCardWrap}>
+        <Postcard
+          rotation={-2}
+          padding={7}
+          shadow="postcardFront"
+          caption="Kyoto"
+          captionCorner="bottomLeft"
+        >
+          <TripScene country="japan" crop="header" width={222} height={144} live />
+        </Postcard>
+      </View>
+    </View>
+  );
+}
+
 export default function SignInScreen() {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const signIn = useSignIn();
+  const router = useRouter();
   const [banner, setBanner] = useState<string | null>(null);
+  const isWide = width >= 720;
 
   const { control, handleSubmit } = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
@@ -35,81 +78,116 @@ export default function SignInScreen() {
     setBanner(null);
     try {
       await signIn.mutateAsync(form);
-      // The (auth) layout redirects once the session lands.
     } catch (error) {
       setBanner(friendlyMessage(error as Error));
     }
   });
 
   return (
-    <AuthScreenShell title="Welcome back" subtitle="Your trips are where you left them.">
-      {banner ? <ErrorBanner message={banner} /> : null}
-      <Controller
-        control={control}
-        name="email"
-        render={({ field, fieldState }) => (
-          <TextField
-            label="Email"
-            value={field.value}
-            onChangeText={field.onChange}
-            onBlur={field.onBlur}
-            error={fieldState.error?.message}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            autoFocus
-          />
-        )}
-      />
-      <Controller
-        control={control}
-        name="password"
-        render={({ field, fieldState }) => (
-          <TextField
-            label="Password"
-            value={field.value}
-            onChangeText={field.onChange}
-            onBlur={field.onBlur}
-            error={fieldState.error?.message}
-            secureTextEntry
-            autoComplete="current-password"
-            onSubmitEditing={onSubmit}
-          />
-        )}
-      />
-      <Button
-        label="Sign in"
-        onPress={onSubmit}
-        loading={signIn.isPending}
-        style={styles.submit}
-      />
-      <View style={styles.switchRow}>
-        <AppText tone="secondary" style={styles.switchText}>
-          New here?{' '}
+    <ScrollView
+      style={{ backgroundColor: colors.bg }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.brandRow}>
+        <BrandMark />
+        <AppText role="wordmark" style={styles.wordmark}>
+          Waymark
         </AppText>
-        <Link href="/sign-up" asChild>
-          <Pressable accessibilityRole="link" hitSlop={8}>
-            <AppText role="label" tone="accent">
-              Create an account
-            </AppText>
-          </Pressable>
-        </Link>
       </View>
-    </AuthScreenShell>
+
+      <PostcardStack />
+
+      <View style={styles.form}>
+        <AppText role="title">Welcome back.</AppText>
+        {banner ? (
+          <View style={styles.bannerWrap}>
+            <ErrorBanner message={banner} />
+          </View>
+        ) : null}
+        <View style={styles.fieldGap}>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field, fieldState }) => (
+              <TextField
+                label="EMAIL"
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
+                error={fieldState.error?.message}
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                autoFocus
+              />
+            )}
+          />
+        </View>
+        <View style={styles.fieldGap}>
+          <Controller
+            control={control}
+            name="password"
+            render={({ field, fieldState }) => (
+              <TextField
+                label="PASSWORD"
+                revealable
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
+                error={fieldState.error?.message}
+                secureTextEntry
+                autoComplete="current-password"
+                onSubmitEditing={onSubmit}
+              />
+            )}
+          />
+        </View>
+        <Button
+          label="Sign in"
+          size="lg"
+          onPress={onSubmit}
+          loading={signIn.isPending}
+          style={styles.submit}
+        />
+        <View style={styles.linkRow}>
+          <Link href="/sign-up" asChild>
+            <Pressable accessibilityRole="link" hitSlop={8} style={styles.linkTarget}>
+              <AppText role="button">Create an account</AppText>
+            </Pressable>
+          </Link>
+        </View>
+      </View>
+
+      <View style={[styles.bottom, { paddingBottom: insets.bottom + 34 }]}>
+        <Button
+          label="I have an invite code"
+          variant="quiet"
+          size="md"
+          leading={<Mail size={20} color={colors.ink} strokeWidth={iconStrokeWidth} />}
+          onPress={() => router.push('/join')}
+        />
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  submit: {
-    marginTop: spacing.s2,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  switchText: {
-    fontSize: 14,
-    lineHeight: 19,
-  },
+  content: { paddingBottom: 0 },
+  contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 6, paddingHorizontal: spacing.gutter },
+  wordmark: { fontSize: 22, lineHeight: 26 },
+  stack: { height: 290, position: 'relative' },
+  backCardWrap: { position: 'absolute' },
+  backLeft: { left: 10, top: 30, width: 212, height: 142 },
+  backRight: { left: 168, top: 20, width: 212, height: 142 },
+  frontCardWrap: { position: 'absolute', left: 72, top: 122, width: 236, height: 158 },
+  form: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
+  bannerWrap: { marginTop: spacing.s7 },
+  fieldGap: { marginTop: spacing.s7 },
+  submit: { marginTop: spacing.s7 },
+  linkRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  linkTarget: { height: 44, justifyContent: 'center' },
+  bottom: { paddingHorizontal: spacing.gutter, paddingTop: spacing.s3 },
 });

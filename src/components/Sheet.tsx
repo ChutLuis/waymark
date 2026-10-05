@@ -15,21 +15,13 @@ import { useLazyAnimatedValue } from './useLazyAnimatedValue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
 import { useReducedMotion } from './useReducedMotion';
-import {
-  fontFamilies,
-  hairlineWidth,
-  hitTargetMin,
-  motion,
-  radius,
-  spacing,
-  useTheme,
-} from '@/theme';
+import { hitTargetMin, motion, radius, shadows, spacing, useTheme } from '@/theme';
 
 interface SheetProps {
   visible: boolean;
   title: string;
   onClose: () => void;
-  /** Right-side header action, e.g. Save / Add. */
+  /** Right-side header action, e.g. Save / Add / Create. */
   actionLabel?: string;
   onAction?: () => void;
   actionDisabled?: boolean;
@@ -81,13 +73,9 @@ export function Sheet({
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose}>
       <Animated.View
-        style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay.scrim, opacity: progress }]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim, opacity: progress }]}
       >
-        <Pressable
-          accessibilityLabel="Close"
-          style={StyleSheet.absoluteFill}
-          onPress={onClose}
-        />
+        <Pressable accessibilityLabel="Close" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -98,35 +86,26 @@ export function Sheet({
           style={[
             styles.card,
             {
-              backgroundColor: colors.surface.raised,
-              borderColor: colors.hairline.default,
-              paddingBottom: isWide ? spacing.s6 : Math.max(insets.bottom, spacing.s6) + spacing.s4,
+              backgroundColor: colors.bg,
+              paddingBottom: isWide ? spacing.s11 : Math.max(insets.bottom, spacing.s11) + spacing.s7,
               opacity: progress,
               transform: [{ translateY }],
             },
             isWide ? styles.cardWide : styles.cardSheet,
           ]}
         >
-          {!isWide && (
-            <View style={[styles.grabber, { backgroundColor: colors.hairline.strong }]} />
-          )}
+          {!isWide && <View style={[styles.grabber, { backgroundColor: colors.border }]} />}
           <View style={styles.header}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Cancel"
               onPress={onClose}
               hitSlop={12}
-              style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.headerSide, pressed && styles.pressed]}
             >
-              <AppText role="label" tone="muted">
-                Cancel
-              </AppText>
+              <AppText role="button">{'Cancel'}</AppText>
             </Pressable>
-            <AppText
-              style={{ fontFamily: fontFamilies.displayMedium, fontSize: 19, lineHeight: 26 }}
-            >
-              {title}
-            </AppText>
+            <AppText role="button">{title}</AppText>
             {actionLabel && onAction ? (
               <Pressable
                 accessibilityRole="button"
@@ -135,20 +114,24 @@ export function Sheet({
                 disabled={actionDisabled}
                 onPress={onAction}
                 hitSlop={12}
-                style={({ pressed }) => [styles.headerAction, styles.headerActionEnd, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.headerAction,
+                  { backgroundColor: actionDisabled ? colors.border : colors.ink },
+                  pressed && styles.pressed,
+                ]}
               >
-                <AppText role="label" tone={actionDisabled ? 'faint' : 'accent'}>
+                <AppText role="bodySm" style={{ color: colors.paper }}>
                   {actionLabel}
                 </AppText>
               </Pressable>
             ) : (
-              <View style={styles.headerAction} />
+              <View style={styles.headerSide} />
             )}
           </View>
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ gap: spacing.s3 + 1 }}
+            contentContainerStyle={styles.body}
           >
             {children}
           </ScrollView>
@@ -168,41 +151,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    paddingTop: spacing.s2 + 2,
-    paddingHorizontal: spacing.screenGutter,
-    borderWidth: hairlineWidth,
-    maxHeight: '88%',
+    paddingTop: spacing.s3,
+    paddingHorizontal: spacing.s6,
+    maxHeight: '92%',
   },
   cardSheet: {
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
-    borderBottomWidth: 0,
   },
   cardWide: {
     width: 480,
     maxWidth: '92%',
     borderRadius: radius.sheet,
+    boxShadow: shadows.cardRaised,
   },
   grabber: {
     width: 36,
-    height: 4,
-    borderRadius: 2,
+    height: 5,
+    borderRadius: 3,
     alignSelf: 'center',
+    marginTop: spacing.s2,
     marginBottom: spacing.s3,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.s4 + 2,
+    minHeight: 52,
+    gap: spacing.s3,
   },
-  headerAction: {
+  headerSide: {
     minWidth: 56,
-    minHeight: hitTargetMin - 16,
+    minHeight: hitTargetMin,
     justifyContent: 'center',
   },
-  headerActionEnd: {
-    alignItems: 'flex-end',
+  headerAction: {
+    minHeight: 44,
+    paddingHorizontal: spacing.s9,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: {
+    gap: spacing.s6,
+    paddingTop: spacing.s3,
   },
   pressed: {
     opacity: 0.7,

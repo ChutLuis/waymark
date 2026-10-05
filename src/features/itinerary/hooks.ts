@@ -92,3 +92,29 @@ export function useDeleteItineraryItem(tripId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.list(tripId) }),
   });
 }
+
+/** Optimistic status change from the Plan stop stamp (planned → confirmed → done). */
+export function useSetItineraryStatus(tripId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ itemId, status }: { itemId: string; status: ItineraryItem['status'] }) => {
+      const { error } = await supabase
+        .from('itinerary_items')
+        .update({ status })
+        .eq('id', itemId);
+      if (error) throw error;
+    },
+    onMutate: async ({ itemId, status }) => {
+      await queryClient.cancelQueries({ queryKey: keys.list(tripId) });
+      const previous = queryClient.getQueryData<ItineraryItem[]>(keys.list(tripId));
+      queryClient.setQueryData<ItineraryItem[]>(keys.list(tripId), (items) =>
+        items?.map((item) => (item.id === itemId ? { ...item, status } : item)),
+      );
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(keys.list(tripId), context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.list(tripId) }),
+  });
+}

@@ -11,16 +11,22 @@ interface AvatarProps {
   /** avatars-bucket object path; initials render while it loads or when unset. */
   avatarPath?: string | null;
   size?: number;
-  /** Alternates fill between members so adjacent avatars stay distinct. */
-  toneIndex?: number;
+  /** Owner / first member: ink fill with a paper ring. Others: outlined. */
+  filled?: boolean;
   /** Ring color matching the surface behind an overlapping stack. */
   ringColor?: string;
 }
 
-export function Avatar({ name, avatarPath = null, size = 30, toneIndex = 0, ringColor }: AvatarProps) {
+export function Avatar({
+  name,
+  avatarPath = null,
+  size = 36,
+  filled = true,
+  ringColor,
+}: AvatarProps) {
   const { colors } = useTheme();
   const photoUrl = useSignedUrl('avatars', avatarPath);
-  const fontSize = Math.max(9, Math.round(size * 0.4));
+  const fontSize = Math.max(9, Math.round(size * 0.42));
   return (
     <View
       accessibilityLabel={name}
@@ -29,17 +35,18 @@ export function Avatar({ name, avatarPath = null, size = 30, toneIndex = 0, ring
         {
           width: size,
           height: size,
-          backgroundColor: toneIndex % 2 === 0 ? colors.avatar.bg : colors.avatar.bgAlt,
+          backgroundColor: filled ? colors.ink : colors.paper,
         },
-        ringColor ? { borderWidth: 2, borderColor: ringColor } : null,
+        !filled && { borderWidth: 2, borderColor: colors.ink },
+        ringColor ? { borderWidth: 3, borderColor: ringColor } : null,
       ]}
     >
       <AppText
         style={{
-          fontFamily: fontFamilies.textSemiBold,
+          fontFamily: fontFamilies.bold,
           fontSize,
           lineHeight: Math.round(fontSize * 1.2),
-          color: colors.avatar.text,
+          color: filled ? colors.paper : colors.ink,
         }}
       >
         {initials(name)}
@@ -47,7 +54,7 @@ export function Avatar({ name, avatarPath = null, size = 30, toneIndex = 0, ring
       {photoUrl.data ? (
         <Image
           source={{ uri: photoUrl.data }}
-          style={[StyleSheet.absoluteFill, { borderRadius: radius.full }]}
+          style={[StyleSheet.absoluteFill, { borderRadius: radius.pill }]}
           contentFit="cover"
           transition={100}
         />
@@ -63,16 +70,19 @@ interface AvatarStackProps {
   surfaceColor: string;
 }
 
-export function AvatarStack({ profiles, size = 30, surfaceColor }: AvatarStackProps) {
+export function AvatarStack({ profiles, size = 36, surfaceColor }: AvatarStackProps) {
   return (
-    <View style={styles.stack} accessibilityLabel={`Members: ${profiles.map((p) => p.displayName).join(', ')}`}>
+    <View
+      style={styles.stack}
+      accessibilityLabel={`Members: ${profiles.map((p) => p.displayName).join(', ')}`}
+    >
       {profiles.map((profile, index) => (
-        <View key={profile.id} style={index > 0 ? { marginLeft: -8 } : null}>
+        <View key={profile.id} style={index > 0 ? styles.overlap : null}>
           <Avatar
             name={profile.displayName}
             avatarPath={profile.avatarPath}
             size={size}
-            toneIndex={index}
+            filled={index === 0}
             ringColor={surfaceColor}
           />
         </View>
@@ -83,7 +93,7 @@ export function AvatarStack({ profiles, size = 30, surfaceColor }: AvatarStackPr
 
 const styles = StyleSheet.create({
   circle: {
-    borderRadius: radius.full,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -91,5 +101,8 @@ const styles = StyleSheet.create({
   stack: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  overlap: {
+    marginLeft: -6,
   },
 });

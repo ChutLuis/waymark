@@ -107,6 +107,8 @@ export interface CreateTripInput {
   destination: string | null;
   startDate: string | null;
   endDate: string | null;
+  /** Optional cover image, uploaded right after the trip is created. */
+  coverImage?: PickedImage | null;
 }
 
 /** Trip + owner membership are created atomically by the RPC — never insert directly. */
@@ -121,7 +123,18 @@ export function useCreateTrip() {
         ...(input.endDate ? { _end: input.endDate } : {}),
       });
       if (error) throw error;
-      return tripRowToTrip(data);
+      const trip = tripRowToTrip(data);
+      if (input.coverImage) {
+        const path = `${trip.id}/cover-${Date.now()}.${input.coverImage.extension}`;
+        await uploadImage('trip-covers', path, input.coverImage.uri, input.coverImage.contentType);
+        const { error: coverError } = await supabase
+          .from('trips')
+          .update({ cover_image_path: path })
+          .eq('id', trip.id);
+        if (coverError) throw coverError;
+        return { ...trip, coverImagePath: path };
+      }
+      return trip;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: tripKeys.list() }),
   });
@@ -138,6 +151,42 @@ export function useDeleteTrip() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tripKeys.list() });
       queryClient.invalidateQueries({ queryKey: ['trip'] });
+    },
+  });
+}
+
+/** Update trip details (name, destination, dates); RLS limits this to the owner. */
+export function useUpdateTrip(tripId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      name?: string;
+      destination?: string | null;
+      startDate?: string | null;
+      endDate?: string | null;
+    }) => {
+      const row: {
+        name?: string;
+        destination?: string | null;
+        start_date?: string | null;
+        end_date?: string | null;
+      } = {};
+      if (input.name !== undefined) row.name = input.name;
+      if (input.destination !== undefined) row.destination = input.destination;
+      if (input.startDate !== undefined) row.start_date = input.startDate;
+      if (input.endDate !== undefined) row.end_date = input.endDate;
+      const { data, error } = await supabase
+        .from('trips')
+        .update(row)
+        .eq('id', tripId)
+        .select(TRIP_SELECT)
+        .single();
+      if (error) throw error;
+      return tripRowToTrip(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tripKeys.trip(tripId) });
+      queryClient.invalidateQueries({ queryKey: tripKeys.list() });
     },
   });
 }

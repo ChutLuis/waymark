@@ -1,0 +1,138 @@
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Calendar, Luggage, Mail } from 'lucide-react-native';
+import Svg, { Line, Rect } from 'react-native-svg';
+import { AppText } from '@/components/AppText';
+import { AirmailStripes } from '@/components/airmail/AirmailBorder';
+import { fontFamilies, iconStrokeWidth, radius, shadows, useTheme } from '@/theme';
+
+export type TripTab = 'plan' | 'packing' | 'notes' | 'trip';
+
+const TABS: { key: TripTab; label: string; segment: string }[] = [
+  { key: 'plan', label: 'Plan', segment: '' },
+  { key: 'packing', label: 'Packing', segment: 'packing' },
+  { key: 'notes', label: 'Notes', segment: 'notes' },
+  { key: 'trip', label: 'Trip', segment: 'settings' },
+];
+
+/** The custom stamp icon used for the Trip tab (README: Icons). */
+function StampIcon({ color }: { color: string }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 22 22">
+      <Rect
+        x={3}
+        y={1.5}
+        width={16}
+        height={19}
+        rx={2}
+        fill="none"
+        stroke={color}
+        strokeWidth={iconStrokeWidth}
+        strokeDasharray="2 2.2"
+      />
+      <Rect x={7} y={6} width={8} height={8} rx={1} fill="none" stroke={color} strokeWidth={iconStrokeWidth} />
+      <Line x1={11} y1={14} x2={11} y2={18} stroke={color} strokeWidth={iconStrokeWidth} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function tabIcon(key: TripTab, color: string) {
+  switch (key) {
+    case 'plan':
+      return <Calendar size={22} color={color} strokeWidth={iconStrokeWidth} />;
+    case 'packing':
+      return <Luggage size={22} color={color} strokeWidth={iconStrokeWidth} />;
+    case 'notes':
+      return <Mail size={22} color={color} strokeWidth={iconStrokeWidth} />;
+    case 'trip':
+      return <StampIcon color={color} />;
+  }
+}
+
+/** Bottom tab bar for the trip shell. "Trip" is the old settings screen. */
+export function TripTabBar({ tripId, active }: { tripId: string; active: TripTab }) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  const go = (tab: TripTab) => {
+    if (tab === active) return;
+    const base = `/trips/${tripId}`;
+    const target = tab === 'plan' ? base : `${base}/${TABS.find((t) => t.key === tab)?.segment}`;
+    router.replace(target as never);
+  };
+
+  return (
+    <View
+      accessibilityRole="tablist"
+      style={[
+        styles.bar,
+        { backgroundColor: colors.paper, paddingBottom: insets.bottom, boxShadow: shadows.hairlineTop },
+      ]}
+    >
+      {TABS.map((tab) => {
+        const selected = tab.key === active;
+        return (
+          <Pressable
+            key={tab.key}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected }}
+            onPress={() => go(tab.key)}
+            style={({ pressed }) => [styles.item, pressed && styles.pressed]}
+          >
+            {selected ? (
+              <View style={styles.indicator}>
+                <AirmailStripes size="tab" />
+              </View>
+            ) : null}
+            <View style={[styles.itemInner, !selected && styles.itemInnerInactive]}>
+              {tabIcon(tab.key, selected ? colors.ink : colors.ink3)}
+              <AppText
+                role="tab"
+                style={{
+                  color: selected ? colors.ink : colors.ink3,
+                  fontFamily: selected ? fontFamilies.bold : fontFamilies.semibold,
+                }}
+              >
+                {tab.label}
+              </AppText>
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  item: {
+    flex: 1,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  indicator: {
+    position: 'absolute',
+    top: 0,
+    width: 44,
+    height: 5,
+    borderRadius: radius.chip,
+    overflow: 'hidden',
+  },
+  itemInner: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  itemInnerInactive: {
+    paddingTop: 14,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+});

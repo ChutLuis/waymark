@@ -85,3 +85,40 @@ export function formatInviteCode(code: string): string {
 export function inviteLink(code: string): string {
   return `https://waymark.app/join?code=${code}`;
 }
+
+export interface InvitePreview {
+  tripId: string;
+  name: string;
+  destination: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  inviterName: string;
+}
+
+/**
+ * Read-only preview of the trip behind a valid invite code, for the Join
+ * screen, via the security-definer `preview_trip_invite` RPC. Returns exactly
+ * the fields the preview needs; RLS on the tables is untouched.
+ */
+export function usePreviewTripInvite(code: string | null) {
+  const normalised = code && /^[A-Z0-9]{8}$/.test(code.toUpperCase()) ? code.toUpperCase() : null;
+  return useQuery({
+    queryKey: ['invite-preview', normalised],
+    enabled: normalised !== null,
+    retry: false,
+    queryFn: async (): Promise<InvitePreview> => {
+      const { data, error } = await supabase.rpc('preview_trip_invite', { _code: normalised as string });
+      if (error) throw error;
+      const row = data?.[0];
+      if (!row) throw new Error('invalid invite');
+      return {
+        tripId: row.trip_id,
+        name: row.name,
+        destination: row.destination,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        inviterName: row.inviter_name,
+      };
+    },
+  });
+}

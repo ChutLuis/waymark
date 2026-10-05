@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { AppText } from './AppText';
-import { hairlineWidth, hitTargetMin, radius, spacing, useTheme } from '@/theme';
+import { radius, useTheme } from '@/theme';
 
 interface ChipProps {
   label: string;
@@ -25,18 +25,14 @@ export function Chip({ label, selected, onPress, leading }: ChipProps) {
         styles.chip,
         leading ? styles.chipWithLeading : null,
         {
-          backgroundColor: selected ? colors.accent.wash : 'transparent',
-          borderColor: selected ? colors.accent.base : colors.hairline.strong,
+          backgroundColor: selected ? colors.ink : 'transparent',
+          borderColor: selected ? colors.ink : colors.border,
           opacity: pressed ? 0.7 : 1,
         },
       ]}
     >
       {leading}
-      <AppText
-        role={selected ? 'label' : 'body'}
-        tone={selected ? 'accent' : 'secondary'}
-        style={styles.label}
-      >
+      <AppText role="link" style={{ color: selected ? colors.paper : colors.ink }}>
         {label}
       </AppText>
     </Pressable>
@@ -47,18 +43,14 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s2,
-    paddingVertical: spacing.s2 - 1,
-    paddingHorizontal: spacing.s3 + 1,
-    borderRadius: radius.full,
-    borderWidth: hairlineWidth,
-    minHeight: Math.max(34, hitTargetMin - 10),
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    minHeight: 44,
   },
   chipWithLeading: {
-    paddingLeft: spacing.s2,
-  },
-  label: {
-    fontSize: 13,
-    lineHeight: 18,
+    paddingLeft: 8,
   },
 });

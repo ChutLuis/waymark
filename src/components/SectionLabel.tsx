@@ -3,14 +3,15 @@ import { AppText } from './AppText';
 
 interface SectionLabelProps {
   children: string;
-  tone?: 'muted' | 'accent';
+  tone?: 'secondary' | 'muted' | 'kraft';
+  long?: boolean;
   style?: StyleProp<TextStyle>;
 }
 
-/** Uppercase kicker used for section headings and date badges. */
-export function SectionLabel({ children, tone = 'muted', style }: SectionLabelProps) {
+/** Courier Prime uppercase kicker used for section headings. */
+export function SectionLabel({ children, tone = 'secondary', long = false, style }: SectionLabelProps) {
   return (
-    <AppText role="kicker" tone={tone} style={style}>
+    <AppText role={long ? 'kickerLg' : 'kicker'} tone={tone} style={style}>
       {children}
     </AppText>
   );

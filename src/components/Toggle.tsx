@@ -11,7 +11,7 @@ interface ToggleProps {
   disabled?: boolean;
 }
 
-/** Custom 50x30 switch per the component spec (thumb slide is a token motion). */
+/** Custom 52x32 switch per the component spec (thumb slide is a token motion). */
 export function Toggle({ value, onValueChange, accessibilityLabel, disabled = false }: ToggleProps) {
   const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
@@ -39,7 +39,7 @@ export function Toggle({ value, onValueChange, accessibilityLabel, disabled = fa
       style={[
         styles.track,
         {
-          backgroundColor: value ? colors.accent.base : colors.hairline.strong,
+          backgroundColor: value ? colors.ink : colors.border,
           opacity: disabled ? 0.5 : 1,
         },
       ]}
@@ -47,7 +47,7 @@ export function Toggle({ value, onValueChange, accessibilityLabel, disabled = fa
       <Animated.View
         style={[
           styles.thumb,
-          { backgroundColor: colors.surface.bg, transform: [{ translateX }] },
+          { backgroundColor: colors.paper, transform: [{ translateX }] },
         ]}
       />
     </Pressable>
@@ -56,15 +56,15 @@ export function Toggle({ value, onValueChange, accessibilityLabel, disabled = fa
 
 const styles = StyleSheet.create({
   track: {
-    width: 50,
-    height: 30,
-    borderRadius: radius.full,
-    padding: 2,
+    width: 52,
+    height: 32,
+    borderRadius: radius.pill,
+    padding: 3,
     justifyContent: 'center',
   },
   thumb: {
     width: 26,
     height: 26,
-    borderRadius: radius.full,
+    borderRadius: radius.pill,
   },
 });

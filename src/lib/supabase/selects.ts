@@ -38,7 +38,7 @@ export function tripRowToTrip(row: TripRow): Trip {
   };
 }
 
-export const TRIP_MEMBER_SELECT = 'id, tripId:trip_id, userId:user_id, role';
+export const TRIP_MEMBER_SELECT = 'id, tripId:trip_id, userId:user_id, role, joinedAt:joined_at';
 
 /** Lightweight member reference used to group members onto the trips list. */
 export const TRIP_MEMBER_REF_SELECT = 'tripId:trip_id, userId:user_id, joinedAt:joined_at';
