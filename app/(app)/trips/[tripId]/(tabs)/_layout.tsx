@@ -53,17 +53,22 @@ export default function TripTabsLayout() {
     [trip.data?.destination],
   );
 
-  // Animate the header height between 196 (Plan) and 104 (every other tab)
-  // without remounting the Lottie: it is a pure clip over one mounted scene.
-  const headerHeight = useLazyAnimatedValue(196);
+  // The design's 196/104 assume a 47 pt status bar; scale both by the device's
+  // safe-area top inset so the header row is never clipped on notched phones.
+  const heroHeight = 149 + insets.top;
+  const collapsedHeight = 57 + insets.top;
+
+  // Animate the header height without remounting the Lottie: it is a pure clip
+  // over one mounted hero scene.
+  const headerHeight = useLazyAnimatedValue(heroHeight);
   useEffect(() => {
     Animated.timing(headerHeight, {
-      toValue: isPlan ? 196 : 104,
+      toValue: isPlan ? heroHeight : collapsedHeight,
       duration: reducedMotion ? 0 : 300,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [isPlan, headerHeight, reducedMotion]);
+  }, [isPlan, headerHeight, reducedMotion, heroHeight, collapsedHeight]);
 
   const isWide = width >= 720;
 
@@ -83,12 +88,14 @@ export default function TripTabsLayout() {
         ) : (
           <>
             <Animated.View style={[styles.header, { height: headerHeight }]}>
+              {/* One hero scene, mounted once; the animated container clips it to
+                  104 on the non-Plan tabs so the Lottie never remounts. */}
               <TripScene
                 country={country}
                 coverImagePath={trip.data.coverImagePath}
-                crop={isPlan ? 'hero' : 'banner'}
+                crop="hero"
                 width={screenWidth}
-                height={isPlan ? 196 : 104}
+                height={heroHeight}
                 live
               />
               <View style={{ height: insets.top }} />

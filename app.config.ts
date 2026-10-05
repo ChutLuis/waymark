@@ -21,7 +21,7 @@ const config: ExpoConfig = {
   android: {
     package: 'app.waymark',
     adaptiveIcon: {
-      backgroundColor: '#FAF7F1',
+      backgroundColor: '#E2E9EE',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -37,11 +37,11 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#FAF7F1',
+        backgroundColor: '#E2E9EE',
         image: './assets/images/splash-icon.png',
         imageWidth: 76,
         dark: {
-          backgroundColor: '#1C1915',
+          backgroundColor: '#0F1729',
         },
       },
     ],
