@@ -36,10 +36,18 @@ Storage, and RLS) and deployed to a hosted project. Email authentication and
 onboarding, trip listing and creation, itinerary planning, packing, shared and
 private notes, deep-link invite joining, local reminders, offline handling,
 and storage for covers and avatars are working. A 33-test pgTAP RLS suite runs
-GREEN in CI, proving private-versus-shared isolation. The remaining portfolio
-and release work is listed in the roadmap below. EAS is configured for the
-`@chutluis/waymark` project with development, preview, and production profiles;
-builds have not yet run.
+GREEN in CI, proving private-versus-shared isolation.
+
+The UI is the **Airmail** design: a printed-mail visual system with animated
+destination scenes, stamps, postmarks and a bottom tab bar across all 11
+screens. Each trip takes on its destination — a Lottie scene heads the trip and
+its centre is cut into the trip's stamp — and stop status follows a letter's
+life (planned slot, stamped, postmarked). See `docs/DESIGN_DECISIONS.md` and
+`design_handoff_airmail_v3/README.md`.
+
+The remaining portfolio and release work is listed in the roadmap below. EAS is
+configured for the `@chutluis/waymark` project with development, preview, and
+production profiles; builds have not yet run.
 
 ### Running
 
@@ -64,6 +72,9 @@ supabase test db       # pgTAP RLS suite
 
 ### Remaining
 
+- Device verification of the Airmail motion: the Kyoto scene header holding
+  30 fps on a low-end Android, and Reduce Motion suppressing all animation.
+  Web export and the auth screens were checked; a device pass is outstanding.
 - Portfolio screenshots.
 - EAS builds: validate a development build on a device, then distribute preview
   builds through TestFlight and Play internal testing. The development profile

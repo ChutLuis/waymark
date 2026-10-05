@@ -1,116 +1,100 @@
 # Waymark — Design Decisions
 
-This document records the shipped design system and the reasoning behind it: Waymark is a small, deliberate product rather than a template-derived interface.
+This document records the shipped design system and the reasoning behind it. Waymark is a small, deliberate product rather than a template-derived interface.
+
+The visual system is **Airmail**: trip planning looks like two people writing to each other. Shared things are postcards; private notes are sealed kraft envelopes. A stop's status follows a letter's life — an empty stamp slot is planned, stamped is confirmed, postmarked is done — and the airmail border marks what's next. Each trip takes on its destination: an animated scene heads the trip and its centre is cut into the trip's stamp. The handoff spec the implementation follows is `design_handoff_airmail_v3/README.md`.
 
 ## 1. Design intent and positioning
 
-Waymark uses a calm, editorial travel-journal aesthetic. Flat surfaces, generous space, restrained colour, hairline borders, and considered typography make trip planning feel personal and readable. The interface is not a booking engine or a SaaS dashboard. UI copy and controls do not use emojis.
+Waymark uses a printed-mail aesthetic rather than a booking engine or SaaS dashboard: paper surfaces, a blue-grey airmail ground, stamps and postmarks, and editorial typography. UI copy and controls do not use emojis.
 
 ## 2. Typography
 
-Waymark uses two type families. Newsreader carries display and title moments, giving trip names and major headings a journal-like character. Source Sans 3 carries interface copy, controls, metadata, and form labels for legibility at small sizes. The `serifNote` role uses Newsreader italic for short reflective copy. Platform mono is reserved for invite codes.
+Two families carry the system. **Besley** is the editorial serif for display, titles, row copy, note bodies and buttons. **Courier Prime 700** is the typewriter mono for kickers, status tags, times, invite codes and stamp text; kickers and labels are uppercase.
 
-| Role | Family and weight | Size | Line height | Letter spacing / treatment |
-| --- | --- | ---: | ---: | --- |
-| `display` | Newsreader Medium | 34 | 40 | -0.2 |
-| `title` | Newsreader Medium | 27 | 33 | -0.1 |
-| `serifNote` | Newsreader Regular Italic | 17 | 24 | — |
-| `heading` | Source Sans 3 Semibold | 18 | 24 | — |
-| `body` | Source Sans 3 Regular | 16 | 24 | — |
-| `bodyMedium` | Source Sans 3 Medium | 16 | 22 | — |
-| `bodyStrong` | Source Sans 3 Semibold | 16 | 24 | — |
-| `label` | Source Sans 3 Semibold | 14 | 20 | — |
-| `caption` | Source Sans 3 Regular | 13 | 18 | — |
-| `kicker` | Source Sans 3 Semibold | 12 | 16 | 1.4; uppercase |
+| Role | Family / weight | Size / line | Letter spacing | Used for |
+| --- | --- | --- | --- | --- |
+| `display` | Besley 700 | 34/38 | −0.5 | "Your trips", "What's your name?" |
+| `title` | Besley 700 | 32/36 | −0.4 | "Welcome back.", "Create an account" |
+| `tripTitle` | Besley 700 | 30/34 | −0.3 | Trip header and tab titles |
+| `cardTitleLg` | Besley 700 | 26/30 | −0.3 | Next card, profile name |
+| `cardTitle` | Besley 700 | 24/28 | −0.2 | Trip cards |
+| `cardTitleSm` | Besley 700 | 23/27 | −0.2 | New-trip preview |
+| `rowTitle` / `rowTitleLg` | Besley 600 | 18/23 · 19/24 | 0 | Itinerary rows |
+| `noteBody` | Besley 400 | 18/25 | 0 | Note bodies |
+| `body` | Besley 400 | 17/24 | 0 | Body copy, input values |
+| `bodySm` | Besley 400 | 15/20 | 0 | Sub-lines, helper text |
+| `meta` | Besley 400 italic | 16/22 | 0 | "with Theo · 28 Mar – 6 Apr" |
+| `metaSm` | Besley 400 italic | 14/18 | 0 | Timestamps, album status |
+| `caption` | Besley 600 italic | 12/16 | 0 | Postcard caption chips |
+| `buttonLg` / `button` | Besley 700 | 18/22 · 17/22 | 0 | CTA and bottom-bar buttons |
+| `link` | Besley 600 | 15/20 | 0 | Underlined links |
+| `tab` | Besley 600/700 | 13/16 | 0 | Trip tab bar |
+| `wordmark` | Besley 800 | 21/24 | −0.2 | "Waymark" |
+| `kicker` / `kickerLg` | Courier Prime 700 | 12/16 · 13/16 | 0.8 · 0.6 | Labels, section kickers |
+| `tag` | Courier Prime 700 | 11/14 | 0.5 | PLANNED, CONFIRMED, DONE, NEXT, NOW |
+| `time` | Courier Prime 700 | 15/20 | 0 | Itinerary times |
+| `code` / `codeBox` | Courier Prime 700 | 32/40 · 25/30 | 3 · 0 | Invite code |
+| `brandLetter` | Besley 800 | 13/16 | 0 | The "W" in the brand mark |
 
-`AppText` applies these roles and themed text tones to app copy. Feature-specific compositions can derive local sizes from these roles where hierarchy requires it, such as trip-card titles and sheet headings.
+Some glyphs (日, วัน, Greek capitals, 京都) fall back to the system font; the destinations table covers them.
 
 ## 3. Colour
 
-The palette uses warm paper in light mode and warm, near-black surfaces in dark mode. One bronze/ochre accent carries wayfinding and primary actions: `#8A5D22` in light mode and `#D9A65C` in dark mode. The accent has pressed, disabled, on-accent, ink, and wash roles rather than being used as a general decoration colour.
+The light palette is the design's own. `ink` is a deep navy used for primary text, primary buttons, focused borders, checked boxes and selected states; `paper` is the cream used for cards, inputs, the tab bar and pills over art; `stampPaper` is pure white for stamp and postcard frames. Three accents carry meaning: `airmailRed` and `airmailBlue` for the stripe, `kraft`/`wax` for sealed notes, and `success` for "Stamp ready". The palette is exposed through `useTheme` and feature code never uses raw hex.
 
-### Light and dark ramps
-
-| Role | Light | Dark |
+| Role | Light | Dark (provisional) |
 | --- | --- | --- |
-| Surface background | `#FAF7F1` | `#1C1915` |
-| Surface raised | `#FDFBF7` | `#24201B` |
-| Surface sunken | `#F2EDE2` | `#151210` |
-| Hairline | `#E7E0D4` | `#38322A` |
-| Strong hairline | `#D9D1C0` | `#4A4336` |
-| Primary text | `#2B2620` | `#F0EAE0` |
-| Secondary text | `#6B6355` | `#B5AC9D` |
-| Muted text | `#8A8072` | `#8A8072` |
-| Faint text | `#B3A992` | `#645C4F` |
-| Accent base | `#8A5D22` | `#D9A65C` |
-| Accent pressed | `#6F4A1B` | `#C08F45` |
-| Accent disabled | `#CDBB9E` | `#57492F` |
-| Accent wash | `#F3E9D8` | `#332A1D` |
+| `bg` | `#E2E9EE` | `#0F1729` |
+| `paper` | `#FFFCF5` | `#1A2438` |
+| `stampPaper` | `#FFFFFF` | `#F4F0E8` |
+| `ink` | `#15223B` | `#EEF1F6` |
+| `ink2` | `#46536B` | `#B4BFD1` |
+| `ink3` | `#5A6478` | `#8E9AAF` |
+| `inkBody` | `#2E3A52` | `#C9D1DE` |
+| `hairline` / `divider` | `#ECE5D7` / `#C9D3DB` | `#2B3752` |
+| `border` / `slot` | `#AEBBC6` / `#9AA6B8` | `#3A4762` / `#55627A` |
+| `airmailRed` / `airmailBlue` | `#C8323C` / `#24479A` | `#E0575F` / `#7E9CF0` |
+| `kraft` / `wax` | `#CDB28A` / `#A8262F` | `#7A6545` / `#C23A44` |
 
-| Semantic role | Light base / wash | Dark base / wash |
-| --- | --- | --- |
-| Success | `#3E7A4E` / `#E7EFE4` | `#7FBF93` / `#22301F` |
-| Warning | `#92610E` / `#F3E9D3` | `#D9B25C` / `#332B18` |
-| Danger | `#AC4433` / `#F4E4DE` | `#E08972` / `#3A231D` |
-| Info | `#4A6B8A` / `#E5EBEF` | `#93B3CE` / `#1F2933` |
+**The design is light-only.** The app keeps Light / Dark / Auto because the product already shipped it, so the provisional dark mapping from the README is used until a dark design exists. It keeps stamps paper (`stampPaper` stays `#F4F0E8`) and lets scene art keep its own colours; the status bar over art follows the scene, not the theme. It is flagged as provisional.
 
-The palette is designed for WCAG 2.1 AA contrast across text and interactive states. `ThemeProvider` resolves a persisted light, dark, or system preference and exposes one palette through `useTheme`; dark mode is a complete palette change, not an inverted light screen.
+## 4. Space, radius, elevation, borders
 
-## 4. Space, radius, elevation, and hairlines
+Spacing runs on one scale (`s1` 4 … `s12` 30) plus a 24 pt text gutter and a 14 pt card gutter, so cards run wider than the text column (362 on a 390 screen). Radii: cards 4, airmail border 5 outside / 2 for the paper inside, inputs 8, pills 999, sheet 20, chips and tags 2–3, checkbox and code boxes 4, brand mark 6 with 3 inside.
 
-Waymark uses one spacing scale for its layout language: `s1` 4, `s2` 8, `s3` 12, `s4` 16, `s5` 20, `s6` 24, `s7` 32, `s8` 40, and `s9` 48. `screenGutter` is 20.
-
-The radius scale is `xs` 4, `sm` 7, `md` 10, `lg` 14, `sheet` 20, and `full` 999. Cards use hairlines and surface contrast for separation; `hairlineWidth` is `StyleSheet.hairlineWidth` on native and 1 on web.
-
-The system deliberately defines one shadow token, `floatingShadow`. Depth otherwise comes from spacing, hairline borders, and subtle surface contrast rather than stacked shadows. The token is reserved for genuinely floating surfaces and is currently applied to the floating action button in `Fab.tsx`.
+Depth comes from shadow tokens (`card`, `cardRaised`, `row`, `postcard`, `postcardFront`, `postcardJoin`, `stamp`) expressed as RN `boxShadow`. Borders follow the spec: inputs inset 1.5 `border` (focused inset 2 `ink`), outline buttons inset 2 `ink` (quiet 1.5 `border`), empty stamp slots 1.5 dashed `slot`.
 
 ## 5. Motion
 
-Motion durations are `fast` 120 ms, `base` 200 ms, and `slow` 300 ms. The custom sheet uses the base duration for its entrance, while the toggle uses the fast duration for its thumb. `useReducedMotion` follows the operating-system setting through `AccessibilityInfo`; non-essential sheet translation and skeleton motion are suppressed, and the toggle transition drops to 0 ms.
+Scenes loop 240 frames (8 s). **Only one scene plays per screen**, and a scene pauses when the screen loses focus, the app backgrounds, or (for the trips-list on-now card) the card scrolls out of view. Everywhere else the scene is a still, never a `LottieView`. The trip shell mounts one scene and animates the header height 196↔104 over 300 ms without remounting it. Stop stamps play once: they seek to the frame their status maps to (0 planned, 18 confirmed, 36 done) and play the transition forward, seeking instantly when a status moves backwards. Haptics fire as the stamp and the postmark land. `useReducedMotion` (via `AccessibilityInfo`) shows the frame-0 still, jumps stamps to their end frame, makes the header change instant, and still fires haptics.
 
 ## 6. Iconography
 
-The token set defines `sm` 16, `md` 20, and `lg` 24 icon sizes with a canonical 1.6 stroke. Lucide and small custom SVG marks provide the visual language: outlined, restrained, and functional. Current compact affordances and illustrative marks use locally appropriate sizes and strokes where needed, including smaller status icons and the 44 px BrandMark; the token values remain the baseline for standard interface icons.
+Lucide with stroke 2. Navigation: Plan `Calendar`, Packing `Luggage`, Notes `Mail`; Trip is a custom dashed-rectangle stamp icon. Back chevrons use 2.2 and plus signs 2.4.
 
-## 7. Component system as built
+## 7. Airmail primitives and components
 
-The shared component directory provides the following primitives.
+`src/components/airmail/` holds the mail system: `PerforatedStamp` (an SVG `Mask` punches holes from the frame, so the surface behind shows through), `AirmailBorder` (an SVG diagonal stripe `Pattern` around paper content), `PatternBand` (seigaiha, huipil and azulejo, with airmail stripes as the fallback), `Postmark` (ink rings, arc city text and wavy cancel lines), `Postcard`, and `KraftEnvelope` + `WaxSeal`.
 
-- `AppText` applies type roles and text tones to app copy.
-- `Avatar` renders a signed avatar image or initials fallback; `AvatarStack` presents trip members with alternating fills and separating rings.
-- `BrandMark` renders the dashed-compass mark used on authentication screens.
-- `Button` provides primary, secondary, quiet, and destructive actions with pressed, disabled, and loading states.
-- `Card` provides raised or flat, hairline-bordered containers; `CardRow` provides static or pressable settings rows with separators.
-- `Chip` provides selectable pills for reminder offsets and packing assignment, including selected and pressed states.
-- `DateTimeField` provides labelled native date and date-time selection with clear and inline error states; its web implementation is described in Cross-platform decisions.
-- `ErrorBanner` exposes an inline danger alert for form failures.
-- `Fab` provides the floating add action and is the current consumer of `floatingShadow`.
-- `OfflineBanner` reports cached offline viewing without removing the current content.
-- `SectionLabel` renders the uppercase kicker used for section headings and date badges.
-- `SegmentedControl` provides an accessible radio group with a sunken track and raised selected segment for itinerary status.
-- `Sheet` contains create and edit forms in a modal surface with cancel, optional action, disabled-action, keyboard, and wide-layout states.
-- `LoadingState`, `EmptyState`, and `ErrorState` provide reusable loading, empty, and retryable error screens; `RouteMark` supplies the restrained empty-state mark.
-- `TextField` provides labelled single-line and multiline inputs with focused and inline error states.
-- `Toggle` provides the accessible on, off, disabled, pressed, and reduced-motion privacy or completion switch.
+The shared components are: `AppText`; `Avatar`/`AvatarStack`; `BrandMark` (the airmail square with a "W"); `Button` (primary/secondary/quiet/text/destructive at 56/48/44); `Card`/`CardRow`; `Chip`; `DateTimeField` (+ web); `ErrorBanner`; `OfflineBanner`; `SectionLabel`; `SegmentedControl`; `Sheet`; `StateViews` (`EmptyStampSlot`, `LoadingState`, `EmptyState`, `ErrorState`); `TextField`; `Toggle`. Feature components own the mail behaviour: `TripScene`, `SceneStamp`/`AvatarStamp`/`DestinationStamp`, `StopStamp`, `TripCard`, and `TripTabBar`.
 
-The component set owns recurrent interaction states: pressed feedback is generally a restrained opacity change; forms expose inline error copy; actions expose disabled and loading states where applicable; and screen data states use the shared loading, empty, error, and offline primitives.
+## 8. Destination system
 
-`NoteCard` and `TripCard` show the feature pattern. Both compose shared text, card, avatar, and theme primitives; `TripCard` distinguishes active and past trips through surface and text roles, while `NoteCard` makes visibility explicit rather than relying on a colour treatment.
+`src/features/trips/destinations.ts` is pure and unit-tested (25 Vitest cases): destination matching (normalised, whole-word, earliest-match, with exclusions for Antigua-and-Barbuda and New Mexico), inclusive days and nights, denominations including singular forms, the scene crop maths, free-time wording, and Roman-numeral months. `destinationArt.ts` holds the Metro static requires, and the build step (`tools/scenes/`) generates the WebP stills and the neutral `00-airmail` stamp. **Never show another country's art:** an unknown destination with dates uses an "initial stamp" (the trip name's first letter on an ink panel), no dates uses a dashed slot, and stop stamps use the neutral airmail stamp.
 
-## 8. Private versus shared notes
+## 9. Private versus shared notes
 
-Private versus shared notes are triple-coded and never conveyed by colour alone. A private note uses a lock icon, the `ONLY YOU` label, and a raised card surface. A shared note uses a people icon, author text, and a flat card surface. The editor repeats the distinction in icon, title, explanatory text, and an accessible toggle; new notes default to private.
+Private versus shared notes are triple-coded and never conveyed by colour alone. A private note is a sealed `KraftEnvelope` with a `WaxSeal`, a lock icon and the `ONLY YOU` label. A shared note is a paper postcard with a people icon and `SHARED · FROM …`. The editor repeats the distinction in icon, title, explanatory text, and an accessible toggle; new notes default to private.
 
-## 9. Accessibility decisions
+## 10. Accessibility
 
-Interactive controls target at least 44 points through component dimensions or hit slop; buttons use a 48 pt minimum height, and controls expose React Native accessibility roles, labels, and state where applicable. Text and control labels remain explicit rather than icon-only. `AppText` and input primitives do not disable native font scaling, and layouts use flexible rows and wrapping content where appropriate. Error banners use the alert role. Privacy status combines iconography and text with surface treatment so that colour is never the only signal.
+Interactive controls target at least 44 pt through component dimensions or hit slop. Controls expose React Native accessibility roles, labels and state; the stop stamp's label says "Mark {title} confirmed/done", and the text tag still shows the status so the stamp is never the only signal. Font scaling stays on. Error banners use the alert role. Status, privacy and selection are never shown by colour alone.
 
-## 10. Cross-platform decisions
+## 11. Cross-platform decisions
 
-Waymark ships from one Expo and React Native codebase to iOS, Android, and web. `ThemeProvider` uses the system colour scheme when the saved preference is `system`. Native date-time selection is platform-specific: iOS presents a picker in a modal sheet, Android uses the date-then-time dialog flow, and `DateTimeField.web.tsx` renders a styled `date` or `datetime-local` input. `Sheet` becomes a centred 480 px modal card at widths of 720 px or more. `useLazyAnimatedValue` supplies the `Animated.Value` behaviour that `react-native-web` does not export.
+Waymark ships from one Expo and React Native codebase to iOS, Android and web. Scenes play through `lottie-react-native`, whose web entry delegates to `@lottiefiles/dotlottie-react` (ThorVG). `ThemeProvider` resolves a persisted light, dark or system preference. `DateTimeField.web.tsx` renders styled `date`/`datetime-local` inputs, including the new-trip box variant. `Sheet` becomes a centred 480 px modal card at ≥720 px, and wide screens keep the centred 680 column. `useLazyAnimatedValue` supplies the `Animated.Value` behaviour `react-native-web` does not export.
 
-## 11. Implementation
+## 12. Implementation
 
-`src/theme/tokens.ts` defines palettes, type roles, spacing, radius, hairline width, elevation, motion, icon, and hit-target tokens. `src/theme/index.tsx` re-exports the tokens and supplies the themed palette through `ThemeProvider` and `useTheme`.
-
-Feature code references colour, typography, spacing, and radius through the theme module rather than hardcoded hex values, ad-hoc font sizes, or magic spacing; this is the enforced review rule that keeps the app reading as one system. A limited amount of local layout arithmetic, such as relative or derived sizing and avatar-overlap offsets, is computed inline in components; this is expected and does not violate the colour, type, spacing, or radius rule.
+`src/theme/tokens.ts` defines palettes, type roles, spacing, radii, shadows, borders, motion, icon and hit-target tokens, plus the stamp-text sizes; `src/theme/index.tsx` re-exports them and supplies the themed palette. Feature code references colour, typography, spacing and radius through the theme module rather than hardcoded hex values, ad-hoc font sizes, or magic spacing. A limited amount of local layout arithmetic (relative sizing, avatar overlap, the scene crop transform) is computed inline and does not violate that rule.
