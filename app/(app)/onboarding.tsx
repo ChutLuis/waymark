@@ -7,11 +7,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronLeft, Users } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { AvatarStamp } from '@/features/trips/SceneStamp';
-import { DestinationStamp } from '@/features/trips/SceneStamp';
+import { AvatarStamp, DestinationStamp } from '@/features/trips/SceneStamp';
 import { useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
 import { pickImage, type PickedImage } from '@/lib/images';
-import { fontFamilies, iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
+import { fontFamilies, radius, spacing, useTheme } from '@/theme';
 import { profileSchema, type ProfileForm } from '@/lib/validation/schemas';
 
 /** The one onboarding step: the name that signs every postcard. */

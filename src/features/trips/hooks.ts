@@ -125,14 +125,19 @@ export function useCreateTrip() {
       if (error) throw error;
       const trip = tripRowToTrip(data);
       if (input.coverImage) {
-        const path = `${trip.id}/cover-${Date.now()}.${input.coverImage.extension}`;
-        await uploadImage('trip-covers', path, input.coverImage.uri, input.coverImage.contentType);
-        const { error: coverError } = await supabase
-          .from('trips')
-          .update({ cover_image_path: path })
-          .eq('id', trip.id);
-        if (coverError) throw coverError;
-        return { ...trip, coverImagePath: path };
+        // The trip already exists; a cover upload failure must not fail the
+        // whole mutation (or a retry would create a second trip). Best effort.
+        try {
+          const path = `${trip.id}/cover-${Date.now()}.${input.coverImage.extension}`;
+          await uploadImage('trip-covers', path, input.coverImage.uri, input.coverImage.contentType);
+          const { error: coverError } = await supabase
+            .from('trips')
+            .update({ cover_image_path: path })
+            .eq('id', trip.id);
+          if (!coverError) return { ...trip, coverImagePath: path };
+        } catch {
+          // Cover is optional; the trip is still created.
+        }
       }
       return trip;
     },

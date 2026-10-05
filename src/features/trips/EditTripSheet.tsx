@@ -1,6 +1,5 @@
 import { StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
-import { useRouter } from 'expo-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/Button';
 import { DateTimeField } from '@/components/DateTimeField';
@@ -23,7 +22,6 @@ interface EditTripSheetProps {
  * `useUpdateTrip` (RLS limits the update to the owner). Flagged in the report.
  */
 export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
-  const router = useRouter();
   const update = useUpdateTrip(trip.id);
 
   const { control, handleSubmit, watch } = useForm<TripForm>({
@@ -47,7 +45,6 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
       endDate: form.endDate,
     });
     onClose();
-    router.back();
   });
 
   return (

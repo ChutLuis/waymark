@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Slot, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +19,7 @@ import {
   matchDestination,
   type CountryKey,
 } from '@/features/trips/destinations';
-import { fontFamilies, iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
+import { fontFamilies, radius, useTheme } from '@/theme';
 
 /**
  * Trip detail shell: one shared header scene and the bottom tab bar stay
@@ -60,7 +60,7 @@ export default function TripTabsLayout() {
 
   // Animate the header height without remounting the Lottie: it is a pure clip
   // over one mounted hero scene.
-  const headerHeight = useLazyAnimatedValue(heroHeight);
+  const headerHeight = useLazyAnimatedValue(isPlan ? heroHeight : collapsedHeight);
   useEffect(() => {
     Animated.timing(headerHeight, {
       toValue: isPlan ? heroHeight : collapsedHeight,
@@ -81,15 +81,17 @@ export default function TripTabsLayout() {
           <View style={{ paddingTop: insets.top }}>
             <LoadingState />
           </View>
-        ) : trip.isError ? (
+        ) : trip.isError && !trip.data ? (
           <View style={{ paddingTop: insets.top }}>
             <ErrorState title="Couldn't load the trip" onRetry={() => trip.refetch()} />
           </View>
-        ) : (
+        ) : trip.data ? (
           <>
             <Animated.View style={[styles.header, { height: headerHeight }]}>
               {/* One hero scene, mounted once; the animated container clips it to
-                  104 on the non-Plan tabs so the Lottie never remounts. */}
+                  the collapsed height on the non-Plan tabs so the Lottie never
+                  remounts. Positioned absolutely so the back row and avatars sit
+                  over it. */}
               <TripScene
                 country={country}
                 coverImagePath={trip.data.coverImagePath}
@@ -97,6 +99,7 @@ export default function TripTabsLayout() {
                 width={screenWidth}
                 height={heroHeight}
                 live
+                style={StyleSheet.absoluteFill}
               />
               <View style={{ height: insets.top }} />
               <View style={styles.headerRow}>
@@ -139,7 +142,7 @@ export default function TripTabsLayout() {
             </View>
             <TripTabBar tripId={tripId} active={activeTab} />
           </>
-        )}
+        ) : null}
       </View>
     </View>
   );

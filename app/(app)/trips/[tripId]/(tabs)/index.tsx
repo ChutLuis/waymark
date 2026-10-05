@@ -76,7 +76,7 @@ function DayStamp({
   onPress,
 }: {
   weekday: string;
-  day: number;
+  day: number | string;
   selected: boolean;
   label: string;
   onPress: () => void;
@@ -163,15 +163,35 @@ export default function PlanScreen() {
     [trip.data?.startDate, trip.data?.endDate],
   );
 
+  const items = useMemo(() => itinerary.data ?? [], [itinerary.data]);
+  // Undated trips have no day strip: show every item in one list.
+  const hasDates = days.length > 0;
+  // Untimed items get a trailing "ANY" stamp (README: Not designed fallback).
+  const untimed = useMemo(() => items.filter((item) => !item.startAt), [items]);
+  const strip = useMemo(
+    () =>
+      untimed.length > 0
+        ? [...days, { key: 'ANY', weekday: 'ANY', day: '—', label: 'Anytime' }]
+        : days,
+    [days, untimed.length],
+  );
+
   // Default the selected day (today if within the trip, else the first day)
   // without an effect; an explicit tap overrides it.
   const selectedDay = selectedDayChoice ?? defaultSelectedDay(days, todayKey);
 
-  const items = itinerary.data ?? [];
-  const rows = useMemo<DayRow[]>(
-    () => (selectedDay ? buildDayRows(items, selectedDay) : []),
-    [items, selectedDay],
-  );
+  const rows = useMemo<DayRow[]>(() => {
+    if (!hasDates) {
+      return items
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((item): DayRow => ({ type: 'item', key: item.id, item }));
+    }
+    if (selectedDay === 'ANY') {
+      return untimed.map((item): DayRow => ({ type: 'item', key: item.id, item }));
+    }
+    return selectedDay ? buildDayRows(items, selectedDay) : [];
+  }, [hasDates, items, selectedDay, untimed]);
   const next = useMemo(() => findNextStop(items, now), [items, now]);
 
   const others = (members.data ?? [])
@@ -210,7 +230,7 @@ export default function PlanScreen() {
                   <AppText role="kickerLg">
                     NEXT · {countdownLabel(minutesUntil(next.startAt as string, now))}
                   </AppText>
-                  <StopStamp status="confirmed" country={country} />
+                  <StopStamp status={next.status} country={country} />
                 </View>
                 <AppText role="cardTitleLg" style={styles.nextTitle}>
                   {next.title}
@@ -223,13 +243,13 @@ export default function PlanScreen() {
           </View>
         ) : null}
 
-        {days.length > 0 ? (
+        {strip.length > 0 ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.dayStrip}
           >
-            {days.map((d) => (
+            {strip.map((d) => (
               <DayStamp
                 key={d.key}
                 weekday={d.weekday}
@@ -331,7 +351,7 @@ export default function PlanScreen() {
                 );
               })
             )}
-            {nowIndex === rows.length && selectedDay === todayKey ? <NowLine /> : null}
+            {nowIndex === rows.length && selectedDay === todayKey ? <NowLine trailing /> : null}
           </View>
         )}
       </ScrollView>
@@ -347,11 +367,11 @@ export default function PlanScreen() {
   );
 }
 
-function NowLine() {
+function NowLine({ trailing = false }: { trailing?: boolean }) {
   const { colors } = useTheme();
   const now = new Date();
   return (
-    <View style={styles.nowRow}>
+    <View style={trailing ? styles.nowRowTrailing : styles.nowRow}>
       <View style={[styles.nowLine, { backgroundColor: colors.airmailBlue }]} />
       <View style={[styles.nowChip, { backgroundColor: colors.airmailBlue }]}>
         <AppText role="tag" style={{ color: colors.paper }}>
@@ -418,7 +438,8 @@ const styles = StyleSheet.create({
   nextTag: { paddingVertical: 3, paddingHorizontal: 6, borderRadius: 3 },
   freeRow: { height: 32, justifyContent: 'center', paddingTop: 0, paddingBottom: 0 },
   emptyDay: { padding: 20, alignItems: 'center' },
-  nowRow: { position: 'absolute', left: 0, right: 0, top: 0, height: 30, justifyContent: 'center' },
+  nowRow: { position: 'absolute', left: 0, right: 0, top: -15, height: 30, justifyContent: 'center' },
+  nowRowTrailing: { height: 30, justifyContent: 'center' },
   nowLine: { position: 'absolute', left: 0, right: 0, top: 14, height: 2 },
   nowChip: { marginLeft: 10, alignSelf: 'flex-start', paddingVertical: 3, paddingHorizontal: 6, borderRadius: 3, marginTop: 7 },
 });

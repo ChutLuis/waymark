@@ -89,7 +89,7 @@ export default function PackingScreen() {
     setEditorVisible(true);
   };
 
-  const items = packing.data ?? [];
+  const items = useMemo(() => packing.data ?? [], [packing.data]);
   const memberList = members.data ?? [];
 
   const { unassigned, byMember, packed, total } = useMemo(() => {

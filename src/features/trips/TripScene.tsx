@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState, StyleSheet, View, type AppStateStatus, type StyleProp, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
@@ -27,8 +27,10 @@ interface TripSceneProps {
 /**
  * Destination scene art: a live Lottie (when `live`), otherwise a still. Cover
  * photos replace the art. Uses the README crop rule so the 800x500 canvas
- * covers the window, centred, never showing outside. Shows the still until the
- * Lottie has loaded so nothing flashes.
+ * covers the window, centred, never showing outside.
+ *
+ * The Lottie stays mounted and is paused/resumed rather than unmounted, so the
+ * art never flashes back to the placeholder and the scene isn't re-parsed.
  */
 export function TripScene({
   country,
@@ -43,8 +45,9 @@ export function TripScene({
   const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
   const isFocused = useIsFocused();
-  const [lottieReady, setLottieReady] = useState(false);
+  const ref = useRef<LottieView>(null);
   const [appActive, setAppActive] = useState(true);
+  const [loadedSource, setLoadedSource] = useState<unknown>(null);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state: AppStateStatus) =>
@@ -58,60 +61,42 @@ export function TripScene({
   const { scale, left, top } = cropTransform(CROPS[crop], width, height);
 
   const showLive = live && !reducedMotion && !paused && isFocused && appActive;
+  const lottieReady = art !== null && loadedSource === art.scene;
+
+  // Control playback imperatively so the same mounted animation is paused on
+  // blur / background / off-screen and resumed when it should play.
+  useEffect(() => {
+    if (!art) return;
+    if (showLive && lottieReady) ref.current?.resume();
+    else ref.current?.pause();
+  }, [showLive, lottieReady, art]);
+
+  const artStyle = {
+    position: 'absolute' as const,
+    width: SCENE_WIDTH * scale,
+    height: SCENE_HEIGHT * scale,
+    left,
+    top,
+  };
 
   return (
     <View style={[{ width, height, backgroundColor: colors.artPlaceholder }, styles.window, style]}>
       {coverImagePath && coverUrl.data ? (
-        <Image
-          source={{ uri: coverUrl.data }}
-          style={{
-            position: 'absolute',
-            width: SCENE_WIDTH * scale,
-            height: SCENE_HEIGHT * scale,
-            left,
-            top,
-          }}
-          contentFit="cover"
-          transition={150}
-          accessibilityLabel="Trip cover photo"
-        />
+        <Image source={{ uri: coverUrl.data }} style={artStyle} contentFit="cover" transition={150} accessibilityLabel="Trip cover photo" />
       ) : art ? (
         <>
-          {/* Still underneath: shown until (and behind) the live Lottie. */}
-          {(!lottieReady || !showLive) && (
-            <Image
-              source={art.sceneStill}
-              style={{
-                position: 'absolute',
-                width: SCENE_WIDTH * scale,
-                height: SCENE_HEIGHT * scale,
-                left,
-                top,
-              }}
-              contentFit="cover"
-              transition={0}
+          {/* The still sits under the Lottie and covers the load gap. */}
+          <Image source={art.sceneStill} style={artStyle} contentFit="cover" transition={0} />
+          <View style={artStyle} pointerEvents="none">
+            <LottieView
+              ref={ref}
+              source={art.scene}
+              loop
+              autoPlay={false}
+              onAnimationLoaded={() => setLoadedSource(art.scene)}
+              style={[styles.lottie, showLive && lottieReady ? null : styles.hidden]}
             />
-          )}
-          {showLive ? (
-            <View
-              style={{
-                position: 'absolute',
-                width: SCENE_WIDTH * scale,
-                height: SCENE_HEIGHT * scale,
-                left,
-                top,
-              }}
-              pointerEvents="none"
-            >
-              <LottieView
-                source={art.scene}
-                loop
-                autoPlay
-                onAnimationLoaded={() => setLottieReady(true)}
-                style={styles.lottie}
-              />
-            </View>
-          ) : null}
+          </View>
         </>
       ) : null}
     </View>
@@ -125,5 +110,8 @@ const styles = StyleSheet.create({
   lottie: {
     width: '100%',
     height: '100%',
+  },
+  hidden: {
+    opacity: 0,
   },
 });

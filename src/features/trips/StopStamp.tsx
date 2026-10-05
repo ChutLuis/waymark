@@ -50,7 +50,6 @@ export function StopStamp({
   const reducedMotion = useReducedMotion();
   const ref = useRef<LottieView>(null);
   const prevFrame = useRef<number | null>(null);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const source = country ? DESTINATION_ART[country].stopStamp : NEUTRAL_STOP_STAMP;
   const targetFrame = STATUS_FRAME[status];
@@ -58,7 +57,12 @@ export function StopStamp({
   useEffect(() => {
     const from = prevFrame.current;
     prevFrame.current = targetFrame;
-    const seek = (frame: number) => ref.current?.play(frame, frame);
+    // Static seek: play(f, f) jumps to the frame; pause() then holds it (the web
+    // player's play(f, f) does setFrame + play, so the pause is what stops it).
+    const seek = (frame: number) => {
+      ref.current?.play(frame, frame);
+      ref.current?.pause();
+    };
 
     if (reducedMotion) {
       seek(targetFrame);
@@ -98,13 +102,29 @@ export function StopStamp({
         ),
       );
     }
-    timers.current = timersForRun;
     return () => timersForRun.forEach(clearTimeout);
-  }, [targetFrame, reducedMotion]);
+  }, [targetFrame, reducedMotion, source]);
+
+  // A freshly loaded animation starts at frame 0 (mount, or a destination
+  // change). Seek it to the right frame without playing — this is also the web
+  // player's only static-seek path, since it isn't ready during the first
+  // effect run.
+  const onLoaded = () => {
+    const frame = prevFrame.current ?? targetFrame;
+    ref.current?.play(frame, frame);
+    ref.current?.pause();
+  };
 
   return (
     <View style={[{ width, height }, style]} pointerEvents="none" accessibilityElementsHidden>
-      <LottieView ref={ref} source={source} loop={false} autoPlay={false} style={styles.lottie} />
+      <LottieView
+        ref={ref}
+        source={source}
+        loop={false}
+        autoPlay={false}
+        onAnimationLoaded={onLoaded}
+        style={styles.lottie}
+      />
     </View>
   );
 }

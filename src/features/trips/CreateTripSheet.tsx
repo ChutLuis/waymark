@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
-import { useRouter } from 'expo-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
@@ -16,6 +15,7 @@ import {
   DESTINATION_INFO,
   denomination,
   matchDestination,
+  tripDays,
   tripNights,
 } from '@/features/trips/destinations';
 import { spacing, useTheme } from '@/theme';
@@ -45,7 +45,6 @@ function rangeKicker(start: string | null, end: string | null): string {
 
 export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheetProps) {
   const { colors } = useTheme();
-  const router = useRouter();
   const createTrip = useCreateTrip();
   const [photo, setPhoto] = useState<PickedImage | null>(null);
 
@@ -61,8 +60,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
 
   const country = matchDestination(destination);
   const info = country ? DESTINATION_INFO[country] : null;
-  const nights = tripNights(startDate, endDate);
-  const days = nights > 0 ? nights + 1 : 0;
+  const days = tripDays(startDate, endDate);
 
   const onPickPhoto = async () => {
     const picked = await pickImage([16, 9]);
@@ -77,8 +75,8 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
       endDate: form.endDate,
       coverImage: photo,
     });
+    // The route wrapper (`trips/new.tsx`) navigates on onCreated.
     onCreated(trip);
-    router.replace(`/trips/${trip.id}` as never);
   });
 
   return (

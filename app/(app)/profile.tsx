@@ -14,7 +14,6 @@ import { Toggle } from '@/components/Toggle';
 import { Postmark } from '@/components/airmail/Postmark';
 import { EmptyStampSlot, ErrorState, LoadingState } from '@/components/StateViews';
 import { AvatarStamp, DestinationStamp, SceneStamp } from '@/features/trips/SceneStamp';
-import { DESTINATION_ART } from '@/features/trips/destinationArt';
 import { DESTINATION_INFO, matchDestination, tripDays } from '@/features/trips/destinations';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';

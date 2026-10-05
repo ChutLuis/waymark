@@ -12,7 +12,7 @@ import { DestinationStamp } from '@/features/trips/SceneStamp';
 import { memberNamesWording, matchDestination, tripDays } from '@/features/trips/destinations';
 import { useTrip, useTripMembers } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
-import { hairlineWidth, spacing, useTheme } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import { formatShortDate } from '@/lib/format/date';
 import type { TripNote } from '@/lib/types';
 
@@ -68,7 +68,7 @@ export default function NotesScreen() {
     setEditorVisible(true);
   };
 
-  const all = notes.data ?? [];
+  const all = useMemo(() => notes.data ?? [], [notes.data]);
   const shared = all.filter((n) => !n.isPrivate);
   const mine = all.filter((n) => n.isPrivate);
 

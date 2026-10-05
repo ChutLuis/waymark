@@ -195,7 +195,7 @@ export function DestinationStamp({
     <SceneStamp
       band={band}
       image={coverImagePath ?? art.sceneStampStill}
-      denomination={denomText(country, days)}
+      denomination={days > 0 ? denomText(country, days) : null}
       name={info.stampName}
       frame={frame}
     />

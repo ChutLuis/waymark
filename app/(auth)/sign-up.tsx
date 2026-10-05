@@ -12,7 +12,7 @@ import { TextField } from '@/components/TextField';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { KraftEnvelope, WaxSeal } from '@/components/airmail/KraftEnvelope';
 import { useSignUp } from '@/features/auth/hooks';
-import { iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
+import { radius, spacing, useTheme } from '@/theme';
 import { signUpSchema, type SignUpForm } from '@/lib/validation/schemas';
 
 function friendlyMessage(error: Error): string {

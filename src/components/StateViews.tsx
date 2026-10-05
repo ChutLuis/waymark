@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { AppText } from './AppText';
 import { Button } from './Button';
-import { radius, spacing, useTheme } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 
 /** 56x72 dashed empty stamp slot, the mark used by trip empty states. */
 export function EmptyStampSlot({ width = 56, height = 72 }: { width?: number; height?: number }) {

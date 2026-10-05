@@ -8,7 +8,12 @@ import { Button } from '@/components/Button';
 import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
 import { useAcceptInvite, usePreviewTripInvite } from '@/features/invites/hooks';
-import { matchDestination, formatTripRange, daysUntilLabelUppercase } from '@/features/trips/destinations';
+import {
+  DESTINATION_INFO,
+  matchDestination,
+  formatTripRange,
+  daysUntilLabelUppercase,
+} from '@/features/trips/destinations';
 import { iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
 
@@ -36,7 +41,8 @@ export default function JoinScreen() {
   const acceptInvite = useAcceptInvite();
   const inputRef = useRef<TextInput>(null);
 
-  const [code, setCode] = useState((linkCode ?? '').toUpperCase().slice(0, LENGTH));
+  const initialCode = typeof linkCode === 'string' ? linkCode : '';
+  const [code, setCode] = useState(initialCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, LENGTH));
   const [banner, setBanner] = useState<string | null>(null);
   const isWide = width >= 720;
 
@@ -111,7 +117,9 @@ export default function JoinScreen() {
           accessibilityLabel="Invite code"
           style={styles.hiddenInput}
           autoFocus={!linkCode}
-          onSubmitEditing={onJoin}
+          onSubmitEditing={() => {
+            if (complete && !acceptInvite.isPending) onJoin();
+          }}
         />
 
         {complete && preview.isSuccess ? (
@@ -122,9 +130,9 @@ export default function JoinScreen() {
             <AppText role="link">Code found</AppText>
           </View>
         ) : null}
-        {banner ? (
+        {banner || preview.isError ? (
           <AppText role="bodySm" style={[styles.error, { color: colors.wax }]}>
-            {banner}
+            {banner ?? friendlyMessage(preview.error as Error)}
           </AppText>
         ) : null}
 
@@ -138,12 +146,13 @@ export default function JoinScreen() {
                 rotation={-1.5}
                 padding={7}
                 shadow="postcardJoin"
-                caption={country ? undefined : undefined}
+                caption={country ? DESTINATION_INFO[country].caption : undefined}
+                captionCorner="bottomLeft"
               >
                 <TripScene
                   country={country}
                   crop="header"
-                  width={width - spacing.gutter * 2 - 14}
+                  width={Math.min(width, 440) - spacing.gutter * 2 - 14}
                   height={150}
                   live
                 />
