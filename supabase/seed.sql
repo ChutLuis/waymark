@@ -1,0 +1,5 @@
+-- Seed data for local development.
+--
+-- Intentionally empty: the app is exercised against migrations + auth as the
+-- user creates trips, and the pgTAP suite builds its own fixtures. Keep this
+-- file so `supabase db reset` has the seed path referenced in config.toml.
