@@ -4,7 +4,7 @@ import Svg, { Circle, Defs, Mask, Rect } from 'react-native-svg';
 import { radius, shadows, stampText, useTheme } from '@/theme';
 
 export type StampSize = 'lg' | 'md' | 'sm' | 'xs';
-export type StampTone = 'paper' | 'stampPaper' | 'ink';
+export type StampTone = 'paper' | 'stampPaper' | 'ink' | 'airmailBlue';
 
 /** Geometry per README's stamp table (art-window sizes are used by SceneStamp). */
 export const STAMP_VARIANTS: Record<
@@ -45,7 +45,14 @@ export function PerforatedStamp({
 }: PerforatedStampProps) {
   const { colors } = useTheme();
   const v = STAMP_VARIANTS[size];
-  const fill = tone === 'ink' ? colors.ink : tone === 'paper' ? colors.paper : colors.stampPaper;
+  const fill =
+    tone === 'ink'
+      ? colors.ink
+      : tone === 'paper'
+        ? colors.paper
+        : tone === 'airmailBlue'
+          ? colors.airmailBlue
+          : colors.stampPaper;
   const id = `stamp-mask-${tone}-${size}-${Math.round(width)}x${Math.round(height)}`;
 
   const circles: { cx: number; cy: number }[] = [];

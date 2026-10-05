@@ -22,10 +22,12 @@ interface TripCardProps {
   trip: TripListItem;
   variant: 'onNow' | 'upcoming' | 'past';
   onPress: () => void;
+  /** Pause the on-now scene while the card is off-screen. */
+  paused?: boolean;
 }
 
 /** Trip list card: on-now postcard, upcoming envelope, or postmarked past row. */
-export function TripCard({ trip, variant, onPress }: TripCardProps) {
+export function TripCard({ trip, variant, onPress, paused = false }: TripCardProps) {
   const { colors } = useTheme();
   const country = matchDestination(trip.destination);
   const others = trip.memberProfiles
@@ -95,6 +97,7 @@ export function TripCard({ trip, variant, onPress }: TripCardProps) {
               width={352}
               height={112}
               live
+              paused={paused}
             />
             <View style={[styles.onNowChip, { backgroundColor: colors.paper }]}>
               <AppText role="kicker">ON NOW · DAY {dayOf} OF {days}</AppText>

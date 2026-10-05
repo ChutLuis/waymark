@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   TextInput,
@@ -82,6 +83,9 @@ export function TextField({
             typeScale.body,
             styles.input,
             { color: colors.ink },
+            // Remove the browser's default focus ring on web; focus is shown by
+            // the field's own inset border.
+            Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null,
             multiline && styles.inputMultiline,
             inputStyle,
           ]}

@@ -43,20 +43,20 @@ function StrengthMeter({ score }: { score: number }) {
     <View style={styles.meterRow}>
       {[0, 1, 2, 3].map((index) => {
         const filled = index < score;
+        if (!filled) {
+          return (
+            <View
+              key={index}
+              style={[styles.emptyStamp, { borderColor: colors.slot }]}
+            />
+          );
+        }
         return (
-          <PerforatedStamp
-            key={index}
-            width={20}
-            height={24}
-            size="xs"
-            perforated={filled}
-            tone={filled ? 'ink' : 'stampPaper'}
-            style={!filled ? { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.slot, borderRadius: 2 } : undefined}
-          />
+          <PerforatedStamp key={index} width={20} height={24} size="xs" tone="ink" />
         );
       })}
       <AppText role="kicker" tone="secondary" style={styles.meterLabel}>
-        {STRENGTH_LABELS[score] || 'PASSWORD'}
+        {STRENGTH_LABELS[score]}
       </AppText>
     </View>
   );
@@ -131,7 +131,7 @@ export default function SignUpScreen() {
         <View style={styles.promiseRow}>
           <View style={[styles.promise, { backgroundColor: colors.paper }]}>
             <View style={styles.promiseStamp}>
-              <PerforatedStamp width={24} height={28} size="xs" tone="ink">
+              <PerforatedStamp width={24} height={28} size="xs" tone="airmailBlue">
                 <View style={[styles.promiseInner, { borderColor: 'rgba(255,252,245,0.7)' }]} />
               </PerforatedStamp>
             </View>
@@ -144,8 +144,8 @@ export default function SignUpScreen() {
                 <WaxSeal size={24} />
               </View>
               <View style={styles.promiseEnvelopeText}>
-                <AppText role="kicker" style={{ color: colors.kraftText }}>SEALED NOTES</AppText>
-                <AppText role="link" style={[styles.promiseText, { color: colors.kraftText }]}>
+                <AppText role="kicker" style={{ color: colors.ink }}>SEALED NOTES</AppText>
+                <AppText role="link" style={[styles.promiseText, { color: colors.ink }]}>
                   Only you can open them
                 </AppText>
               </View>
@@ -259,6 +259,7 @@ const styles = StyleSheet.create({
   bannerWrap: { marginTop: spacing.s7 },
   fieldGap: { marginTop: spacing.s9 },
   meterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s3, marginTop: spacing.s4 },
+  emptyStamp: { width: 20, height: 24, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 2 },
   meterLabel: { marginLeft: 4 },
   privacy: { marginTop: spacing.s7 },
   bottom: { paddingHorizontal: spacing.gutter, paddingTop: spacing.s7, gap: spacing.s2 },

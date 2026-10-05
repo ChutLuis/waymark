@@ -62,6 +62,14 @@ export function StopStamp({
 
     if (reducedMotion) {
       seek(targetFrame);
+      // Haptics still fire under Reduce Motion.
+      if (from !== null && targetFrame > from) {
+        if (targetFrame >= HAPTIC_FRAMES.postmark) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+        } else if (targetFrame >= HAPTIC_FRAMES.stamp) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        }
+      }
       return;
     }
     if (from === null || targetFrame <= from) {
@@ -77,7 +85,7 @@ export function StopStamp({
     if (startFrame < HAPTIC_FRAMES.stamp && HAPTIC_FRAMES.stamp <= targetFrame) {
       timersForRun.push(
         setTimeout(
-          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
           frameAt(HAPTIC_FRAMES.stamp),
         ),
       );
@@ -85,7 +93,7 @@ export function StopStamp({
     if (startFrame < HAPTIC_FRAMES.postmark && HAPTIC_FRAMES.postmark <= targetFrame) {
       timersForRun.push(
         setTimeout(
-          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}),
           frameAt(HAPTIC_FRAMES.postmark),
         ),
       );

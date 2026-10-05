@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus } from 'lucide-react-native';
@@ -37,6 +37,26 @@ export default function TripsListScreen() {
 
   const isWide = width >= 720;
   const today = toDateOnly(new Date());
+
+  // Pause the on-now scene while its card is off-screen (README: Motion).
+  const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
+  const viewabilityConfig = useMemo(() => ({ itemVisiblePercentThreshold: 10 }), []);
+  const onViewableItemsChanged = useMemo(
+    () => ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      setVisibleIds(
+        new Set(
+          viewableItems
+            .map((v) =>
+              (v.item as Row | undefined)?.type === 'trip'
+                ? (v.item as { trip: TripListItem }).trip.id
+                : null,
+            )
+            .filter((id): id is string => id !== null),
+        ),
+      );
+    },
+    [],
+  );
 
   const rows = useMemo<Row[]>(() => {
     const all = trips.data ?? [];
@@ -120,6 +140,8 @@ export default function TripsListScreen() {
             keyExtractor={(row, index) => (row.type === 'trip' ? row.trip.id : `kicker-${index}`)}
             contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 120 }]}
             showsVerticalScrollIndicator={false}
+            viewabilityConfig={viewabilityConfig}
+            onViewableItemsChanged={onViewableItemsChanged}
             renderItem={({ item: row }) =>
               row.type === 'kicker' ? (
                 <AppText role="kicker" tone="secondary" style={styles.sectionKicker}>
@@ -130,6 +152,7 @@ export default function TripsListScreen() {
                   <TripCard
                     trip={row.trip}
                     variant={row.variant}
+                    paused={row.variant === 'onNow' && !visibleIds.has(row.trip.id)}
                     onPress={() => router.push(`/trips/${row.trip.id}` as never)}
                   />
                 </View>
