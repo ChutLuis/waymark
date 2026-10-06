@@ -69,7 +69,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   art: {
-    flex: 1,
+    // The art is sized by its child (a sized TripScene or Image). A `flex: 1`
+    // here would collapse to zero height, because the frame has no fixed
+    // height for the flex basis to resolve against.
     borderRadius: radius.airmailInner,
     overflow: 'hidden',
   },

@@ -41,8 +41,7 @@ function friendlyMessage(error: Error): string {
  */
 function PostcardStack() {
   return (
-    <View style={styles.stackOuter}>
-      <View style={styles.stack}>
+    <View style={styles.stack}>
         <View style={[styles.backCardWrap, styles.backLeft]}>
           <Postcard
             rotation={-8}
@@ -69,7 +68,6 @@ function PostcardStack() {
             <TripScene country="japan" crop="header" width={222} height={144} live />
           </Postcard>
         </View>
-      </View>
     </View>
   );
 }
@@ -198,8 +196,7 @@ const styles = StyleSheet.create({
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 6, paddingHorizontal: spacing.gutter },
   wordmark: { fontSize: 22, lineHeight: 26 },
-  stackOuter: { width: '100%', maxWidth: 390, alignSelf: 'center' },
-  stack: { height: 290, position: 'relative' },
+  stack: { width: '100%', maxWidth: 390, alignSelf: 'center', height: 290, position: 'relative' },
   backCardWrap: { position: 'absolute' },
   backLeft: { left: 10, top: 30, width: 212, height: 142 },
   backRight: { left: 168, top: 20, width: 212, height: 142 },
