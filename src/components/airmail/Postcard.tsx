@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { AppText } from '../AppText';
-import { radius, shadows, spacing, useTheme } from '@/theme';
+import { radius, shadows, useTheme } from '@/theme';
 
 interface PostcardProps {
   children: ReactNode;
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   caption: {
     position: 'absolute',
     paddingVertical: 2,
-    paddingHorizontal: spacing.s2,
+    paddingHorizontal: 7,
     borderRadius: radius.chip,
   },
 });

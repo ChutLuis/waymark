@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   dayKey,
+  formatDate,
+  formatDateDayFirst,
   formatDateRange,
   formatDateTime,
+  formatDateTimeDayFirst,
   formatDayHeader,
+  formatNoteTime,
   formatShortDate,
   formatTime,
   initials,
@@ -25,8 +29,45 @@ describe('formatTime', () => {
 });
 
 describe('formatDateTime', () => {
-  it('combines short date and time', () => {
-    expect(formatDateTime('2026-10-12T10:40:00')).toBe('Oct 12, 10:40');
+  it('combines day-first date and time', () => {
+    expect(formatDateTime('2026-10-12T10:40:00')).toBe('12 Oct, 10:40');
+  });
+});
+
+describe('formatDateDayFirst', () => {
+  it('reads day first with a weekday', () => {
+    expect(formatDateDayFirst('2026-11-13')).toBe('Fri 13 Nov');
+  });
+  it('accepts date-only strings without a timezone shift', () => {
+    expect(formatDateDayFirst('2026-03-28')).toBe('Sat 28 Mar');
+  });
+});
+
+describe('formatDateTimeDayFirst', () => {
+  it('reads day first', () => {
+    expect(formatDateTimeDayFirst('2026-10-12T10:40:00')).toBe('12 Oct, 10:40');
+  });
+});
+
+describe('formatDate', () => {
+  it('reads day first', () => {
+    expect(formatDate('2026-11-13')).toBe('Fri 13 Nov');
+  });
+});
+
+describe('formatNoteTime', () => {
+  const now = new Date(2026, 6, 21, 12, 0, 0);
+  it('says Today for today', () => {
+    expect(formatNoteTime('2026-07-21T08:00:00', now)).toBe('Today');
+  });
+  it('says Yesterday', () => {
+    expect(formatNoteTime('2026-07-20T08:00:00', now)).toBe('Yesterday');
+  });
+  it('counts recent days', () => {
+    expect(formatNoteTime('2026-07-19T08:00:00', now)).toBe('2 days ago');
+  });
+  it('falls back to day-month', () => {
+    expect(formatNoteTime('2026-03-12T08:00:00', now)).toBe('12 Mar');
   });
 });
 

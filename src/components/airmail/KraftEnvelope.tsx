@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { AppText } from '../AppText';
-import { radius, shadows, useTheme } from '@/theme';
+import { fontFamilies, radius, shadows, useTheme } from '@/theme';
 
 interface WaxSealProps {
   /** Author's initial; omitted for the small sign-up seal. */
@@ -11,10 +10,15 @@ interface WaxSealProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** The wax seal that closes a private-note envelope. */
+/**
+ * The wax seal that closes a private-note envelope: a wax disc with a single
+ * `waxRing` band at the outer edge and a cream ring just inside it.
+ */
 export function WaxSeal({ initial, size = 34, style }: WaxSealProps) {
   const { colors } = useTheme();
-  const ringStroke = size === 24 ? 2.5 : 2;
+  // The small sign-up seal has no initial and a thinner band.
+  const band = size <= 28 ? size * 0.1 : 3;
+  const creamInset = band + 1;
   return (
     <View style={[styles.sealHost, { width: size, height: size }, style]}>
       <Svg width={size} height={size}>
@@ -22,41 +26,36 @@ export function WaxSeal({ initial, size = 34, style }: WaxSealProps) {
         <Circle
           cx={size / 2}
           cy={size / 2}
-          r={size / 2 - ringStroke}
+          r={size / 2 - band}
           fill="none"
           stroke={colors.waxRing}
-          strokeWidth={ringStroke}
+          strokeWidth={band}
         />
         <Circle
           cx={size / 2}
           cy={size / 2}
-          r={size / 2 - ringStroke * 2}
-          fill="none"
-          stroke={colors.waxRing}
-          strokeWidth={ringStroke}
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={size / 2 - ringStroke * 3}
-          fill="none"
-          stroke={colors.waxRing}
-          strokeWidth={ringStroke}
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={size / 2 - ringStroke * 4}
+          r={size / 2 - creamInset}
           fill="none"
           stroke="rgba(255,252,245,0.35)"
-          strokeWidth={ringStroke}
+          strokeWidth={1}
         />
       </Svg>
       {initial ? (
-        <View style={StyleSheet.absoluteFill}>
-          <AppText role="link" style={[styles.initial, { color: colors.paper }]}>
+        <View style={[StyleSheet.absoluteFill, styles.initialWrap]} pointerEvents="none">
+          <Text
+            style={[
+              styles.initial,
+              {
+                color: colors.paper,
+                fontFamily: fontFamilies.bold,
+                fontSize: size <= 28 ? 12 : 15,
+                lineHeight: size <= 28 ? 15 : 18,
+                includeFontPadding: false,
+              },
+            ]}
+          >
             {initial}
-          </AppText>
+          </Text>
         </View>
       ) : null}
     </View>
@@ -103,8 +102,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  initialWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   initial: {
     textAlign: 'center',
-    lineHeight: undefined,
   },
 });

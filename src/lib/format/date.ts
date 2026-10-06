@@ -55,16 +55,14 @@ export function formatTime(iso: string): string {
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-/** "Oct 12, 10:40" */
+/** "13 Nov, 10:40" (day-first, per the design). */
 export function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  return `${monthShort(d)} ${d.getDate()}, ${formatTime(iso)}`;
+  return formatDateTimeDayFirst(iso);
 }
 
-/** "Oct 12, 2026" (accepts date-only strings). */
+/** "Sat 13 Nov" (day-first; accepts date-only strings). */
 export function formatDate(iso: string): string {
-  const d = parseLocal(iso);
-  return `${monthShort(d)} ${d.getDate()}, ${d.getFullYear()}`;
+  return formatDateDayFirst(iso);
 }
 
 /** Local "YYYY-MM-DD" for a Date. */
@@ -104,12 +102,47 @@ export function formatShortDate(iso: string, now: Date = new Date()): string {
   return `${monthShort(d)} ${d.getDate()}`;
 }
 
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** "Sat 13 Nov" — day-first, as everywhere in the app. Accepts date-only. */
+export function formatDateDayFirst(iso: string): string {
+  const d = parseLocal(iso);
+  return `${WEEKDAY_SHORT[d.getDay()]} ${d.getDate()} ${monthShort(d)}`;
+}
+
+/** "13 Nov, 10:40" — day-first date and time. */
+export function formatDateTimeDayFirst(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()} ${monthShort(d)}, ${formatTime(iso)}`;
+}
+
+/**
+ * Note timestamp: "Today" / "Yesterday" / "2 days ago" within the last week,
+ * otherwise "12 Mar" (day first, as the design uses).
+ */
+export function formatNoteTime(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  const startOfDay = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000);
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays <= 6) return `${diffDays} days ago`;
+  return `${d.getDate()} ${monthShort(d)}`;
+}
+
 /** Local calendar-day key, e.g. "2026-10-12". */
 export function dayKey(iso: string): string {
   const d = new Date(iso);
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${m}-${day}`;
+}
+
+/** "Mia Junot" -> "M"; the design avatars show a single initial. */
+export function firstInitial(name: string): string {
+  const trimmed = name.trim();
+  return (trimmed[0] ?? '?').toUpperCase();
 }
 
 /** "Mia Junot" -> "MJ"; single names use the first two letters. */

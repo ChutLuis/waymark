@@ -4,10 +4,10 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronLeft, Users } from 'lucide-react-native';
+import { Users } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { AvatarStamp, DestinationStamp } from '@/features/trips/SceneStamp';
+import { AvatarStamp, StampStill } from '@/features/trips/SceneStamp';
 import { useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
 import { pickImage, type PickedImage } from '@/lib/images';
 import { fontFamilies, radius, spacing, useTheme } from '@/theme';
@@ -57,16 +57,7 @@ export default function OnboardingScreen() {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-        >
-          <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
-        </Pressable>
-      </View>
+      <View style={styles.header} />
 
       <View style={styles.body}>
         <AppText role="display" style={styles.title}>What&apos;s your name?</AppText>
@@ -88,7 +79,7 @@ export default function OnboardingScreen() {
               onPress={onPickPhoto}
               style={({ pressed }) => [styles.addPhoto, pressed && styles.pressed]}
             >
-              <AppText role="link">Add photo</AppText>
+              <AppText role="link" style={styles.underlineLink}>Add photo</AppText>
             </Pressable>
           </View>
 
@@ -123,20 +114,20 @@ export default function OnboardingScreen() {
 
           <AppText role="kicker" tone="secondary" style={styles.toLabel}>TO</AppText>
           <View style={[styles.toLine, { borderBottomColor: colors.ruleWarm }]}>
-            <AppText role="meta" tone="muted">Whoever you travel with</AppText>
+            <AppText role="meta" tone="muted" style={styles.toText}>Whoever you travel with</AppText>
           </View>
         </View>
 
         <AppText role="kicker" tone="secondary" style={styles.howKicker}>HOW IT SHOWS UP</AppText>
         <View style={[styles.preview, { backgroundColor: colors.paper }]}>
-          <View style={styles.previewStamp}>
-            <DestinationStamp country="japan" band="xs" days={10} />
-          </View>
-          <View style={styles.previewHeader}>
-            <Users size={15} color={colors.ink} strokeWidth={2.2} />
-            <AppText role="kicker" style={{ letterSpacing: 0.6 }}>
-              SHARED · FROM {name.trim() ? name.trim().toUpperCase() : 'YOU'}
-            </AppText>
+          <View style={styles.previewRow}>
+            <View style={styles.previewHeader}>
+              <Users size={15} color={colors.ink} strokeWidth={2.2} />
+              <AppText role="kicker" style={{ letterSpacing: 0.6 }}>
+                SHARED · FROM {name.trim() ? name.trim().toUpperCase() : 'YOU'}
+              </AppText>
+            </View>
+            <StampStill country="japan" />
           </View>
           <AppText role="body" style={styles.previewBody}>
             Bring socks for the tea ceremony.
@@ -159,9 +150,9 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   content: { paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
-  header: { height: 48, flexDirection: 'row', alignItems: 'center', paddingLeft: 8 },
-  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  header: { height: 48 },
   pressed: { opacity: 0.7 },
+  underlineLink: { textDecorationLine: 'underline' },
   body: { paddingTop: spacing.s7, paddingHorizontal: spacing.gutter },
   title: { letterSpacing: -0.5 },
   subtitle: { marginTop: spacing.s5, fontSize: 18, lineHeight: 26 },
@@ -179,6 +170,7 @@ const styles = StyleSheet.create({
   fromText: { fontFamily: fontFamilies.regular, fontSize: 26, lineHeight: 32, padding: 0 },
   toLabel: { marginTop: 26 },
   toLine: { height: 38, borderBottomWidth: 1, justifyContent: 'center' },
+  toText: { fontSize: 17, lineHeight: 22 },
   howKicker: { marginTop: 30 },
   preview: {
     marginTop: spacing.s4,
@@ -188,8 +180,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
   },
-  previewStamp: { position: 'absolute', right: 11, top: 11 },
-  previewHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  previewBody: { marginTop: 6, paddingRight: 30 },
+  previewRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  previewHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  previewBody: { marginTop: 4 },
   bottom: { paddingHorizontal: spacing.gutter, paddingTop: spacing.s11 },
 });
