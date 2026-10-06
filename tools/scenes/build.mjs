@@ -66,7 +66,7 @@ async function emitStills(id, json, kind) {
         path.join(dir, `${id}-stamp.webp`),
         await render.renderCropWebp(json, 0, 2, SCENE_CROP, 400, 500),
       );
-    } else if (id !== '00-airmail') {
+    } else {
       const dir = path.join(root, 'assets/lottie/stills/stamps');
       mkdirSync(dir, { recursive: true });
       writeFileSync(path.join(dir, `${id}-confirmed.webp`), await render.renderWebp(json, 18, 288, 336));

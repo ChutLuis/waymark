@@ -168,8 +168,12 @@ function stamp({ id, color, glyph }) {
     h: H,
     op: OP,
     layers: [
-      // layers outlive the comp by a few frames so the end frame (36) still shows the final state
-      shapeLayer('slot_outline', [gr('dash', [sh(slot), st(SLOT, 1.4, { dash: [4, 3] })])], { op: OP + 24 }),
+      // layers outlive the comp by a few frames so the end frame (36) still shows the final state.
+      // The dashed slot fades as the stamp lands, gone by frame 18 (marker `confirm`).
+      shapeLayer('slot_outline', [gr('dash', [sh(slot), st(SLOT, 1.4, { dash: [4, 3] })])], {
+        op: OP + 24,
+        o: keys([{ t: 0, v: 100, e: ease.drop }, { t: 12, v: 40, e: ease.settle }, { t: 18, v: 0, e: 'hold' }, { t: OP + 24, v: 0 }]),
+      }),
       shapeLayer('stamp', [body], { op: OP + 24 }),
       shapeLayer('postmark', [postmark], { op: OP + 24 }),
     ],

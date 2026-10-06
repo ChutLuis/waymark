@@ -99,3 +99,6 @@ export const DESTINATION_ART: Record<CountryKey, DestinationArt> = {
 
 /** Neutral stamp for unknown destinations (generated in the build step). */
 export const NEUTRAL_STOP_STAMP = require('../../../assets/lottie/stamps/00-airmail.json') as unknown as AnimationObject;
+
+/** Confirmed still of the neutral stamp, for decorative stamps. */
+export const NEUTRAL_STAMP_STILL = require('../../../assets/lottie/stills/stamps/00-airmail-confirmed.webp');

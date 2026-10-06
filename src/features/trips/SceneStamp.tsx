@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { PerforatedStamp, type StampSize } from '@/components/airmail/PerforatedStamp';
+import { useSignedUrl } from '@/lib/supabase/storage';
 import { fontFamilies, useTheme } from '@/theme';
-import { DESTINATION_ART } from './destinationArt';
+import { DESTINATION_ART, NEUTRAL_STAMP_STILL } from './destinationArt';
 import { denomination as denomText, DESTINATION_INFO, type CountryKey } from './destinations';
 
 export type StampBand = 'lg' | 'md' | 'sm' | 'xs' | 'mini';
@@ -12,22 +14,23 @@ interface BandLayout {
   artW: number;
   artH: number;
   nameStrip: number;
+  /** Perforation profile. */
+  size: StampSize;
   denomPad: { t: number; r: number; b: number; l: number };
   denomSize: number;
   denomLine: number;
-  denomPadH: number;
   nameSize: number;
   nameLine: number;
   nameLs: number;
 }
 
-/** Exact stamp geometry per README's stamp table. */
+/** Exact stamp geometry per README's stamp table (art windows) + the override. */
 export const STAMP_BANDS: Record<StampBand, BandLayout> = {
-  lg: { width: 104, height: 128, artW: 90, artH: 99, nameStrip: 17, denomPad: { t: 2, r: 4, b: 0, l: 0 }, denomSize: 9.5, denomLine: 11, denomPadH: 4, nameSize: 9.5, nameLine: 11, nameLs: 0.8 },
-  md: { width: 88, height: 104, artW: 74, artH: 77, nameStrip: 15, denomPad: { t: 1, r: 3, b: 0, l: 0 }, denomSize: 8.5, denomLine: 10, denomPadH: 3, nameSize: 8.5, nameLine: 10, nameLs: 0.8 },
-  sm: { width: 80, height: 96, artW: 66, artH: 71, nameStrip: 13, denomPad: { t: 1, r: 3, b: 0, l: 0 }, denomSize: 8, denomLine: 9, denomPadH: 3, nameSize: 8, nameLine: 9, nameLs: 0.5 },
-  xs: { width: 56, height: 72, artW: 42, artH: 49, nameStrip: 11, denomPad: { t: 1, r: 2, b: 1, l: 3 }, denomSize: 6.5, denomLine: 8, denomPadH: 2, nameSize: 6.5, nameLine: 8, nameLs: 0.5 },
-  mini: { width: 40, height: 48, artW: 38, artH: 46, nameStrip: 0, denomPad: { t: 0, r: 0, b: 0, l: 0 }, denomSize: 0, denomLine: 0, denomPadH: 0, nameSize: 0, nameLine: 0, nameLs: 0 },
+  lg: { width: 104, height: 128, artW: 90, artH: 99, nameStrip: 17, size: 'lg', denomPad: { t: 2, r: 4, b: 0, l: 0 }, denomSize: 9.5, denomLine: 11, nameSize: 9.5, nameLine: 11, nameLs: 0.8 },
+  md: { width: 88, height: 104, artW: 74, artH: 77, nameStrip: 15, size: 'md', denomPad: { t: 1, r: 3, b: 0, l: 0 }, denomSize: 8.5, denomLine: 10, nameSize: 8.5, nameLine: 10, nameLs: 0.8 },
+  sm: { width: 80, height: 96, artW: 66, artH: 71, nameStrip: 13, size: 'sm', denomPad: { t: 1, r: 3, b: 0, l: 0 }, denomSize: 8, denomLine: 9, nameSize: 8, nameLine: 9, nameLs: 0.5 },
+  xs: { width: 56, height: 72, artW: 42, artH: 49, nameStrip: 11, size: 'xs', denomPad: { t: 1, r: 2, b: 1, l: 3 }, denomSize: 6.5, denomLine: 8, nameSize: 6.5, nameLine: 8, nameLs: 0.5 },
+  mini: { width: 40, height: 48, artW: 28, artH: 36, nameStrip: 0, size: 'mini', denomPad: { t: 0, r: 0, b: 0, l: 0 }, denomSize: 0, denomLine: 0, nameSize: 0, nameLine: 0, nameLs: 0 },
 };
 
 export const AVATAR_STAMP_SIZES = {
@@ -38,17 +41,9 @@ export const AVATAR_STAMP_SIZES = {
 
 type AvatarStampSize = keyof typeof AVATAR_STAMP_SIZES;
 
-/** A perforated-name-strip frame shared by every stamp variant. */
-function Frame({
-  band,
-  frame,
-  children,
-}: {
-  band: BandLayout;
-  frame: string;
-  children: React.ReactNode;
-}) {
-  return <View style={[styles.frame, { width: band.width, height: band.height, backgroundColor: frame }]}>{children}</View>;
+/** Paste/pane-relative art margins: 2 inside the padding (1 on the 40x48). */
+function artMargin(layout: BandLayout): number {
+  return layout.size === 'mini' ? 1 : 2;
 }
 
 interface ArtStampProps {
@@ -67,8 +62,8 @@ interface ArtStampProps {
 
 /**
  * A stamp cut from a scene (a still image, never a Lottie), with a denomination
- * chip and a name strip. Falls back to an ink "initial stamp" when the
- * destination is unknown.
+ * chip and a name strip, built on the perforated frame. Falls back to an ink
+ * "initial stamp" when the destination is unknown.
  */
 export function SceneStamp({
   band,
@@ -80,15 +75,26 @@ export function SceneStamp({
 }: ArtStampProps) {
   const { colors } = useTheme();
   const layout = STAMP_BANDS[band];
-  const frameColor = frame === 'paper' ? colors.paper : frame === 'ink' ? colors.ink : colors.stampPaper;
+  const margin = artMargin(layout);
 
   const panel = (
-    <View style={[styles.artWindow, { width: layout.artW, height: layout.artH, backgroundColor: colors.artPlaceholder, marginTop: 2, marginHorizontal: 2 }]}>
+    <View
+      style={[
+        styles.artWindow,
+        {
+          width: layout.artW,
+          height: layout.artH,
+          backgroundColor: colors.artPlaceholder,
+          marginTop: margin,
+          marginHorizontal: margin,
+        },
+      ]}
+    >
       {image ? (
         <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" />
       ) : (
-        <View style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: colors.ink }]}>
-          <Text style={{ fontFamily: fontFamilies.extrabold, fontSize: layout.artH * 0.5, lineHeight: layout.artH * 0.6, color: colors.paper }}>
+        <View style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: colors.stampInk }]}>
+          <Text style={{ fontFamily: fontFamilies.extrabold, fontSize: layout.artH * 0.5, lineHeight: layout.artH * 0.6, color: colors.stampPaper }}>
             {initial ?? '?'}
           </Text>
         </View>
@@ -106,7 +112,7 @@ export function SceneStamp({
             },
           ]}
         >
-          <Text style={{ fontFamily: fontFamilies.mono, fontSize: layout.denomSize, lineHeight: layout.denomLine, color: colors.ink }}>
+          <Text style={{ fontFamily: fontFamilies.mono, fontSize: layout.denomSize, lineHeight: layout.denomLine, color: colors.stampInk }}>
             {denomination}
           </Text>
         </View>
@@ -115,19 +121,19 @@ export function SceneStamp({
   );
 
   return (
-    <Frame band={layout} frame={frameColor}>
+    <PerforatedStamp width={layout.width} height={layout.height} size={layout.size} tone={frame}>
       {panel}
       {layout.nameStrip > 0 ? (
         <View style={{ height: layout.nameStrip, alignItems: 'center', justifyContent: 'center' }}>
           <Text
             numberOfLines={1}
-            style={{ fontFamily: fontFamilies.mono, fontSize: layout.nameSize, lineHeight: layout.nameLine, letterSpacing: layout.nameLs, color: colors.ink }}
+            style={{ fontFamily: fontFamilies.mono, fontSize: layout.nameSize, lineHeight: layout.nameLine, letterSpacing: layout.nameLs, color: colors.stampInk }}
           >
             {name ?? ''}
           </Text>
         </View>
       ) : null}
-    </Frame>
+    </PerforatedStamp>
   );
 }
 
@@ -138,38 +144,80 @@ export function AvatarStamp({
   name,
   frame = 'stampPaper',
   imageUri = null,
+  avatarPath = null,
 }: {
   size: AvatarStampSize;
   initial: string;
   name?: string | null;
   frame?: 'stampPaper' | 'paper';
-  /** Local or signed photo URI; shown inside the panel when present. */
+  /** Local or already-signed photo URI; wins over `avatarPath`. */
   imageUri?: string | null;
+  /** avatars-bucket object path; resolved to a signed URL. */
+  avatarPath?: string | null;
 }) {
   const { colors } = useTheme();
+  const signed = useSignedUrl('avatars', imageUri ? null : avatarPath);
+  const resolvedImage = imageUri ?? signed.data ?? null;
   const dims = AVATAR_STAMP_SIZES[size];
-  const frameColor = frame === 'paper' ? colors.paper : colors.stampPaper;
-  const pad = size === 'sm' ? 1 : 5;
-  const nameStrip = size === 'sm' ? 0 : 13;
+  const layout = STAMP_BANDS[size === 'lg' ? 'sm' : size === 'md' ? 'xs' : 'mini'];
+  const perforation: StampSize = size === 'lg' ? 'sm' : size === 'md' ? 'xs' : 'mini';
+  const margin = artMargin(layout);
   return (
-    <View style={[styles.frame, { width: dims.width, height: dims.height, padding: pad, backgroundColor: frameColor }]}>
-      <View style={[styles.artWindow, styles.center, { flex: 1, backgroundColor: colors.ink }]}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+    <PerforatedStamp width={dims.width} height={dims.height} size={perforation} tone={frame}>
+      <View
+        style={[
+          styles.artWindow,
+          styles.center,
+          {
+            width: layout.artW,
+            height: layout.artH,
+            marginTop: margin,
+            marginHorizontal: margin,
+            backgroundColor: colors.stampInk,
+          },
+        ]}
+      >
+        {resolvedImage ? (
+          <Image source={{ uri: resolvedImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
         ) : (
-          <Text style={{ fontFamily: fontFamilies.extrabold, fontSize: dims.initial, lineHeight: dims.initial * 1.2, color: colors.paper }}>
+          <Text style={{ fontFamily: fontFamilies.extrabold, fontSize: dims.initial, lineHeight: dims.initial * 1.2, color: colors.stampPaper }}>
             {initial}
           </Text>
         )}
       </View>
-      {nameStrip > 0 ? (
-        <View style={{ height: nameStrip, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontFamily: fontFamilies.mono, fontSize: dims.nameSize, lineHeight: dims.nameLine, letterSpacing: dims.nameLs, color: colors.ink }}>
+      {dims.nameSize > 0 ? (
+        <View style={{ height: layout.nameStrip, alignItems: 'center', justifyContent: 'center' }}>
+          <Text numberOfLines={1} style={{ fontFamily: fontFamilies.mono, fontSize: dims.nameSize, lineHeight: dims.nameLine, letterSpacing: dims.nameLs, color: colors.stampInk }}>
             {name ?? ''}
           </Text>
         </View>
       ) : null}
-    </View>
+    </PerforatedStamp>
+  );
+}
+
+/**
+ * Small decorative stamp: a static still of the confirmed stop stamp
+ * (30x35). The confirmed stills are bundled per destination; unknown
+ * destinations fall back to the neutral `00-airmail` still.
+ */
+export function StampStill({
+  country,
+  width = 30,
+  height = 35,
+}: {
+  country: CountryKey | null;
+  width?: number;
+  height?: number;
+}) {
+  const source = country ? DESTINATION_ART[country].stampStill : NEUTRAL_STAMP_STILL;
+  return (
+    <Image
+      source={source}
+      style={{ width, height }}
+      contentFit="contain"
+      accessibilityLabel="Stamp"
+    />
   );
 }
 
@@ -203,9 +251,6 @@ export function DestinationStamp({
 }
 
 const styles = StyleSheet.create({
-  frame: {
-    flexDirection: 'column',
-  },
   artWindow: {
     overflow: 'hidden',
     alignItems: 'center',
