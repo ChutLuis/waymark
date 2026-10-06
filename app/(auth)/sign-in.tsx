@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
@@ -26,35 +34,41 @@ function friendlyMessage(error: Error): string {
   return 'Something went wrong signing you in. Try again.';
 }
 
-/** The stacked back postcards behind the front sign-in postcard. */
+/**
+ * The stacked back postcards behind the front sign-in postcard. The stack is
+ * authored for a 390 pt screen and centred in a 390 pt box, so it stays
+ * centred on larger phones and doesn't run off the edge on 360 pt Androids.
+ */
 function PostcardStack() {
   return (
-    <View style={styles.stack}>
-      <View style={[styles.backCardWrap, styles.backLeft]}>
-        <Postcard
-          rotation={-8}
-          padding={6}
-          caption="Chiang Mai"
-          captionCorner="topLeft"
-        >
-          <TripScene country="thailand" crop="header" width={200} height={130} />
-        </Postcard>
-      </View>
-      <View style={[styles.backCardWrap, styles.backRight]}>
-        <Postcard rotation={7} padding={6} caption="Paris" captionCorner="topRight">
-          <TripScene country="france" crop="header" width={200} height={130} />
-        </Postcard>
-      </View>
-      <View style={styles.frontCardWrap}>
-        <Postcard
-          rotation={-2}
-          padding={7}
-          shadow="postcardFront"
-          caption="Kyoto"
-          captionCorner="bottomLeft"
-        >
-          <TripScene country="japan" crop="header" width={222} height={144} live />
-        </Postcard>
+    <View style={styles.stackOuter}>
+      <View style={styles.stack}>
+        <View style={[styles.backCardWrap, styles.backLeft]}>
+          <Postcard
+            rotation={-8}
+            padding={6}
+            caption="Chiang Mai"
+            captionCorner="topLeft"
+          >
+            <TripScene country="thailand" crop="header" width={200} height={130} />
+          </Postcard>
+        </View>
+        <View style={[styles.backCardWrap, styles.backRight]}>
+          <Postcard rotation={7} padding={6} caption="Paris" captionCorner="topRight">
+            <TripScene country="france" crop="header" width={200} height={130} />
+          </Postcard>
+        </View>
+        <View style={styles.frontCardWrap}>
+          <Postcard
+            rotation={-2}
+            padding={7}
+            shadow="postcardFront"
+            caption="Kyoto"
+            captionCorner="bottomLeft"
+          >
+            <TripScene country="japan" crop="header" width={222} height={144} live />
+          </Postcard>
+        </View>
       </View>
     </View>
   );
@@ -84,12 +98,18 @@ export default function SignInScreen() {
   });
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <ScrollView
+        style={{ backgroundColor: colors.bg }}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.brandRow}>
         <BrandMark />
         <AppText role="wordmark" style={styles.wordmark}>
@@ -106,7 +126,7 @@ export default function SignInScreen() {
             <ErrorBanner message={banner} />
           </View>
         ) : null}
-        <View style={styles.fieldGap}>
+        <View style={styles.fieldGapFirst}>
           <Controller
             control={control}
             name="email"
@@ -120,7 +140,6 @@ export default function SignInScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 keyboardType="email-address"
-                autoFocus
               />
             )}
           />
@@ -169,7 +188,8 @@ export default function SignInScreen() {
           onPress={() => router.push('/join')}
         />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -178,6 +198,7 @@ const styles = StyleSheet.create({
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 6, paddingHorizontal: spacing.gutter },
   wordmark: { fontSize: 22, lineHeight: 26 },
+  stackOuter: { width: '100%', maxWidth: 390, alignSelf: 'center' },
   stack: { height: 290, position: 'relative' },
   backCardWrap: { position: 'absolute' },
   backLeft: { left: 10, top: 30, width: 212, height: 142 },
@@ -185,7 +206,8 @@ const styles = StyleSheet.create({
   frontCardWrap: { position: 'absolute', left: 72, top: 122, width: 236, height: 158 },
   form: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   bannerWrap: { marginTop: spacing.s7 },
-  fieldGap: { marginTop: spacing.s7 },
+  fieldGapFirst: { marginTop: 18 },
+  fieldGap: { marginTop: 12 },
   submit: { marginTop: spacing.s7 },
   linkRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   linkTarget: { height: 44, justifyContent: 'center' },

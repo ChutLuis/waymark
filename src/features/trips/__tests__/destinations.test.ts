@@ -6,6 +6,7 @@ import {
   denomination,
   freeTimeLabel,
   matchDestination,
+  otherMembersWording,
   romanMonth,
   tripDays,
   tripNights,
@@ -159,5 +160,31 @@ describe('romanMonth', () => {
     expect(romanMonth(5)).toBe('V');
     expect(romanMonth(11)).toBe('XI');
     expect(romanMonth(12)).toBe('XII');
+  });
+});
+
+describe('otherMembersWording', () => {
+  const members = [
+    { id: 'u1', displayName: 'Mia Junot' },
+    { id: 'u2', displayName: 'Theo Park' },
+  ];
+
+  it('excludes the viewer, not the creator', () => {
+    // Theo (u2) views a trip Mia created: sees "with Mia", not "with Theo".
+    expect(otherMembersWording(members, 'u2')).toBe('with Mia');
+    expect(otherMembersWording(members, 'u1')).toBe('with Theo');
+  });
+
+  it('is empty when the viewer is the only member', () => {
+    expect(otherMembersWording([{ id: 'u1', displayName: 'Mia' }], 'u1')).toBe('');
+  });
+
+  it('joins three or more names', () => {
+    const three = [
+      { id: 'u1', displayName: 'Mia Junot' },
+      { id: 'u2', displayName: 'Theo Park' },
+      { id: 'u3', displayName: 'Ana Reyes' },
+    ];
+    expect(otherMembersWording(three, 'u1')).toBe('with Theo and Ana');
   });
 });

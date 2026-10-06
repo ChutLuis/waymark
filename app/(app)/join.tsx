@@ -7,6 +7,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
+import { SceneStamp } from '@/features/trips/SceneStamp';
 import { useAcceptInvite, usePreviewTripInvite } from '@/features/invites/hooks';
 import {
   DESTINATION_INFO,
@@ -149,13 +150,29 @@ export default function JoinScreen() {
                 caption={country ? DESTINATION_INFO[country].caption : undefined}
                 captionCorner="bottomLeft"
               >
-                <TripScene
-                  country={country}
-                  crop="header"
-                  width={Math.min(width, 440) - spacing.gutter * 2 - 14}
-                  height={150}
-                  live
-                />
+                {country ? (
+                  <TripScene
+                    country={country}
+                    crop="header"
+                    width={Math.min(width, 440) - spacing.gutter * 2 - 14}
+                    height={150}
+                    live
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.unknownArt,
+                      { width: Math.min(width, 440) - spacing.gutter * 2 - 14 },
+                    ]}
+                  >
+                    <SceneStamp
+                      band="xs"
+                      image={null}
+                      initial={(preview.data.name[0] ?? '?').toUpperCase()}
+                      name={preview.data.destination?.toUpperCase() ?? ''}
+                    />
+                  </View>
+                )}
               </Postcard>
             </View>
             <View style={styles.tripDetails}>
@@ -238,9 +255,14 @@ const styles = StyleSheet.create({
   previewBlock: { marginTop: spacing.s10 },
   sentKicker: { marginTop: 0 },
   postcardWrap: { marginTop: spacing.s5 },
+  unknownArt: {
+    height: 150,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   tripDetails: { marginTop: spacing.s7 },
   tripTitleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.s5 },
-  tripName: { flexShrink: 1 },
+  tripName: { flexShrink: 1, fontSize: 22, lineHeight: 26 },
   tripMeta: { marginTop: 2 },
   rules: { marginTop: spacing.s8, gap: spacing.s5 },
   rule: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.s5 },

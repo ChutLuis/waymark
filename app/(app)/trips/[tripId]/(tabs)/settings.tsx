@@ -4,8 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
-import { ErrorState, LoadingState } from '@/components/StateViews';
-import { DestinationStamp } from '@/features/trips/SceneStamp';
+import { EmptyStampSlot, ErrorState, LoadingState } from '@/components/StateViews';
+import { DestinationStamp, SceneStamp } from '@/features/trips/SceneStamp';
 import { DeleteTripSheet } from '@/features/trips/DeleteTripSheet';
 import { EditTripSheet } from '@/features/trips/EditTripSheet';
 import { InviteCard } from '@/features/invites/InviteCard';
@@ -93,7 +93,16 @@ export default function TripTabScreen() {
           </View>
           {country ? (
             <DestinationStamp country={country} band="xs" days={daysCount(trip.data.startDate, trip.data.endDate)} />
-          ) : null}
+          ) : trip.data.startDate && trip.data.endDate ? (
+            <SceneStamp
+              band="xs"
+              image={null}
+              initial={(trip.data.name[0] ?? '?').toUpperCase()}
+              name={(trip.data.destination ?? '').toUpperCase()}
+            />
+          ) : (
+            <EmptyStampSlot width={56} height={72} />
+          )}
         </View>
 
         <AppText role="kicker" tone="secondary" style={styles.sectionKicker}>
@@ -147,7 +156,7 @@ export default function TripTabScreen() {
               style={({ pressed }) => [styles.deleteRow, pressed && styles.pressed]}
             >
               <Trash2 size={18} color={colors.wax} strokeWidth={iconStrokeWidth} />
-              <AppText role="button" tone="danger">
+              <AppText role="button" tone="danger" style={styles.deleteText}>
                 Delete trip
               </AppText>
             </Pressable>
@@ -159,7 +168,7 @@ export default function TripTabScreen() {
               style={({ pressed }) => [styles.deleteRow, pressed && styles.pressed]}
             >
               <Trash2 size={18} color={colors.wax} strokeWidth={iconStrokeWidth} />
-              <AppText role="button" tone="danger">
+              <AppText role="button" tone="danger" style={styles.deleteText}>
                 Leave trip
               </AppText>
             </Pressable>
@@ -232,4 +241,5 @@ const styles = StyleSheet.create({
   inviteWrap: { marginHorizontal: spacing.cardGutter },
   danger: { paddingTop: spacing.s5, paddingHorizontal: spacing.cardGutter },
   deleteRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10 },
+  deleteText: { fontSize: 16, lineHeight: 20 },
 });

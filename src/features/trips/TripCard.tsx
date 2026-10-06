@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { AirmailBorder } from '@/components/airmail/AirmailBorder';
@@ -11,11 +12,12 @@ import {
   daysUntilLabelUppercase,
   formatTripRange,
   matchDestination,
-  memberNamesWording,
+  otherMembersWording,
   tripDays,
 } from './destinations';
 import { spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
+import { useAuth } from '@/features/auth/AuthContext';
 import type { TripListItem } from './hooks';
 
 interface TripCardProps {
@@ -29,11 +31,14 @@ interface TripCardProps {
 /** Trip list card: on-now postcard, upcoming envelope, or postmarked past row. */
 export function TripCard({ trip, variant, onPress, paused = false }: TripCardProps) {
   const { colors } = useTheme();
+  const { userId } = useAuth();
+  // The on-now scene is measured so its art scales with the real card width
+  // (web column / larger phones) instead of the 390 pt design width.
+  const [onNowWidth, setOnNowWidth] = useState(352);
   const country = matchDestination(trip.destination);
-  const others = trip.memberProfiles
-    .filter((p) => p.id !== trip.createdBy)
-    .map((p) => p.displayName);
-  const wording = memberNamesWording(others);
+  // "with …" names the *other* members, so a non-creator sees the creator's
+  // name rather than their own.
+  const wording = otherMembersWording(trip.memberProfiles, userId);
   const range = formatTripRange(trip.startDate, trip.endDate);
 
   if (variant === 'past') {
@@ -69,7 +74,7 @@ export function TripCard({ trip, variant, onPress, paused = false }: TripCardPro
             <AppText role="rowTitleLg" numberOfLines={1}>
               {trip.name}
             </AppText>
-            <AppText role="bodySm" tone="secondary" style={styles.pastMeta}>
+            <AppText role="metaSm" tone="secondary" style={styles.pastMeta}>
               {[wording, `${monthYear(trip)}`].filter(Boolean).join(' · ')}
             </AppText>
           </View>
@@ -89,22 +94,25 @@ export function TripCard({ trip, variant, onPress, paused = false }: TripCardPro
         style={({ pressed }) => pressed && styles.pressed}
       >
         <AirmailBorder padding={5} innerRadius={2}>
-          <View style={styles.onNowArt}>
+          <View
+            style={styles.onNowArt}
+            onLayout={(e) => setOnNowWidth(e.nativeEvent.layout.width)}
+          >
             <TripScene
               country={country}
               coverImagePath={trip.coverImagePath}
               crop="card"
-              width={352}
+              width={onNowWidth}
               height={112}
               live
               paused={paused}
             />
             <View style={[styles.onNowChip, { backgroundColor: colors.paper }]}>
-              <AppText role="kicker">ON NOW · DAY {dayOf} OF {days}</AppText>
+              <AppText role="kicker" style={styles.onNowChipText}>ON NOW · DAY {dayOf} OF {days}</AppText>
             </View>
           </View>
           <View style={styles.onNowBody}>
-            <AppText role="cardTitle" numberOfLines={1}>
+            <AppText role="cardTitle" numberOfLines={1} style={styles.cardName}>
               {trip.name}
             </AppText>
             <AppText role="meta" tone="secondary" style={styles.metaLine}>
@@ -180,6 +188,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   onNowArt: { height: 112, borderRadius: 2, overflow: 'hidden' },
   onNowChip: { position: 'absolute', left: 10, bottom: 10, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 2 },
+  onNowChipText: { letterSpacing: 0.6 },
   onNowBody: { paddingTop: 11, paddingBottom: 13, paddingLeft: 15, paddingRight: 14 },
   metaLine: { marginTop: 2 },
   upcoming: {
@@ -194,7 +203,8 @@ const styles = StyleSheet.create({
     boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
   },
   upcomingText: { flex: 1, minWidth: 0 },
-  upcomingTitle: { marginTop: 6 },
+  cardName: { fontSize: 21, lineHeight: 26 },
+  upcomingTitle: { marginTop: 6, fontSize: 21, lineHeight: 26 },
   upcomingStamp: { flexShrink: 0 },
   pastRow: {
     borderRadius: 4,

@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { DateTimeField } from '@/components/DateTimeField';
 import { Sheet } from '@/components/Sheet';
 import { TextField } from '@/components/TextField';
+import { EmptyStampSlot } from '@/components/StateViews';
 import { PatternBand } from '@/components/airmail/PatternBand';
 import { SceneStamp } from '@/features/trips/SceneStamp';
 import { DESTINATION_ART } from '@/features/trips/destinationArt';
@@ -18,7 +19,7 @@ import {
   tripDays,
   tripNights,
 } from '@/features/trips/destinations';
-import { spacing, useTheme } from '@/theme';
+import { fontFamilies, spacing, useTheme } from '@/theme';
 import { pickImage, type PickedImage } from '@/lib/images';
 import { tripSchema, type TripForm } from '@/lib/validation/schemas';
 import { useCreateTrip } from './hooks';
@@ -119,18 +120,29 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
             ) : destination ? (
               <SceneStamp band="md" image={null} initial={(destination[0] ?? '?').toUpperCase()} name={destination.toUpperCase()} />
             ) : (
-              <SceneStamp band="md" image={null} initial={undefined} name={undefined} />
+              <EmptyStampSlot width={88} height={104} />
             )}
           </View>
         </View>
-        <PatternBand pattern={country ? DESTINATION_INFO[country].pattern : 'airmail'} height={8} />
+        <PatternBand
+          pattern={country ? DESTINATION_INFO[country].pattern : 'airmail'}
+          height={8}
+          tile={8}
+          style={styles.previewBand}
+        />
       </View>
 
       <View style={styles.helperRow}>
         <AppText role="bodySm" tone="secondary" style={styles.helperText}>
           The stamp and the border pattern come from the destination.
         </AppText>
-        <Button label="Use a photo" variant="quiet" size="sm" onPress={onPickPhoto} />
+        <Button
+          label="Use a photo"
+          variant="quiet"
+          size="sm"
+          onPress={onPickPhoto}
+          style={{ borderColor: colors.ink }}
+        />
       </View>
 
       <Controller
@@ -153,24 +165,24 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
         control={control}
         name="destination"
         render={({ field }) => (
-          <View>
-            <TextField
-              label="Destination"
-              optionalTag="optional"
-              placeholder="City, country"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-            />
-            {country ? (
-              <View style={styles.stampReady}>
-                <Check size={16} color={colors.success} strokeWidth={2.6} />
-                <AppText role="metaSm" style={{ color: colors.success }}>
-                  Stamp ready
-                </AppText>
-              </View>
-            ) : null}
-          </View>
+          <TextField
+            label="Destination"
+            optionalTag="optional"
+            placeholder="City, country"
+            value={field.value}
+            onChangeText={field.onChange}
+            onBlur={field.onBlur}
+            labelAccessory={
+              country ? (
+                <View style={styles.stampReady}>
+                  <Check size={16} color={colors.success} strokeWidth={2.6} />
+                  <AppText style={[styles.stampReadyText, { color: colors.success }]}>
+                    Stamp ready
+                  </AppText>
+                </View>
+              ) : null
+            }
+          />
         )}
       />
 
@@ -227,6 +239,9 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
 
 const styles = StyleSheet.create({
   preview: {
+    // The preview card runs at the card gutter (14), 10 pt wider than the
+    // sheet's 24 pt text column on each side.
+    marginHorizontal: -10,
     borderRadius: 4,
     paddingTop: 16,
     paddingBottom: 0,
@@ -236,6 +251,7 @@ const styles = StyleSheet.create({
   },
   previewRow: { flexDirection: 'row', gap: spacing.s6 },
   previewText: { flex: 1, minWidth: 0, paddingBottom: 22 },
+  previewBand: { marginHorizontal: -16 },
   previewName: { marginTop: 8 },
   previewMeta: { marginTop: 2 },
   previewRange: { marginTop: 10 },
@@ -243,7 +259,8 @@ const styles = StyleSheet.create({
   previewStamp: { flexShrink: 0 },
   helperRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s5, paddingHorizontal: spacing.s6 },
   helperText: { flex: 1 },
-  stampReady: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.s3 },
+  stampReady: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  stampReadyText: { fontFamily: fontFamilies.semibold, fontSize: 14, lineHeight: 18 },
   datesLabel: { marginBottom: spacing.s3 },
   dateRow: { flexDirection: 'row', gap: spacing.s4 },
   dateCol: { flex: 1 },

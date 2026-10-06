@@ -12,6 +12,7 @@ import { TextField } from '@/components/TextField';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { KraftEnvelope, WaxSeal } from '@/components/airmail/KraftEnvelope';
 import { useSignUp } from '@/features/auth/hooks';
+import { STRENGTH_LABELS, strengthOf } from '@/features/auth/passwordStrength';
 import { radius, spacing, useTheme } from '@/theme';
 import { signUpSchema, type SignUpForm } from '@/lib/validation/schemas';
 
@@ -24,18 +25,6 @@ function friendlyMessage(error: Error): string {
   }
   return "Couldn't create the account. Try again.";
 }
-
-/** Password strength 1–4, per the README fallback rules. */
-function strengthOf(password: string): number {
-  if (password.length === 0) return 0;
-  let score = password.length >= 8 ? 1 : 0;
-  if (/\d/.test(password)) score += 1;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
-  if (/[^A-Za-z0-9]/.test(password) || password.length >= 12) score += 1;
-  return score;
-}
-
-const STRENGTH_LABELS = ['', 'WEAK', 'FAIR', 'GOOD', 'STRONG PASSWORD'];
 
 function StrengthMeter({ score }: { score: number }) {
   const { colors } = useTheme();
@@ -173,12 +162,11 @@ export default function SignUpScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 keyboardType="email-address"
-                autoFocus
               />
             )}
           />
         </View>
-        <View style={styles.fieldGap}>
+        <View style={styles.passwordGap}>
           <Controller
             control={control}
             name="password"
@@ -248,16 +236,18 @@ const styles = StyleSheet.create({
   promiseStamp: { position: 'absolute', right: 12, top: 12 },
   promiseInner: { flex: 1, margin: 2, borderWidth: 1 },
   promiseEnvelope: {
+    // No overflow clipping here: the inner KraftEnvelope supplies its own
+    // rounded clipping, so its shadow is not cut off.
     flex: 1,
     height: 112,
     borderRadius: radius.card,
-    overflow: 'hidden',
   },
   promiseSeal: { position: 'absolute', top: 10, left: '50%', marginLeft: -12 },
   promiseEnvelopeText: { position: 'absolute', left: spacing.s5, right: spacing.s5, bottom: spacing.s5 },
   promiseText: { marginTop: 4 },
   bannerWrap: { marginTop: spacing.s7 },
   fieldGap: { marginTop: spacing.s9 },
+  passwordGap: { marginTop: 12 },
   meterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s3, marginTop: spacing.s4 },
   emptyStamp: { width: 20, height: 24, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 2 },
   meterLabel: { marginLeft: 4 },

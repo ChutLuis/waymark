@@ -56,6 +56,9 @@ The light palette is the design's own. `ink` is a deep navy used for primary tex
 | `border` / `slot` | `#AEBBC6` / `#9AA6B8` | `#3A4762` / `#55627A` |
 | `airmailRed` / `airmailBlue` | `#C8323C` / `#24479A` | `#E0575F` / `#7E9CF0` |
 | `kraft` / `wax` | `#CDB28A` / `#A8262F` | `#7A6545` / `#C23A44` |
+| `stampInk` | `#15223B` | `#15223B` |
+
+**`stampInk` is fixed dark in both themes.** Stamp paper stays cream (`stampPaper`) in light and dark, so everything printed on it — stamp names, denominations, postmarks, day-stamp text and avatar panels — uses `stampInk` (`#15223B`, 7.8:1) rather than the theme `ink`, which would turn near-white on cream in dark mode. The earlier `kraftText` token was removed: sealed-note text now uses `stampInk` and the date uses `kraftInk`, giving readable contrast on kraft in both themes.
 
 **The design is light-only.** The app keeps Light / Dark / Auto because the product already shipped it, so the provisional dark mapping from the README is used until a dark design exists. It keeps stamps paper (`stampPaper` stays `#F4F0E8`) and lets scene art keep its own colours; the status bar over art follows the scene, not the theme. It is flagged as provisional.
 
@@ -64,6 +67,8 @@ The light palette is the design's own. `ink` is a deep navy used for primary tex
 Spacing runs on one scale (`s1` 4 … `s12` 30) plus a 24 pt text gutter and a 14 pt card gutter, so cards run wider than the text column (362 on a 390 screen). Radii: cards 4, airmail border 5 outside / 2 for the paper inside, inputs 8, pills 999, sheet 20, chips and tags 2–3, checkbox and code boxes 4, brand mark 6 with 3 inside.
 
 Depth comes from shadow tokens (`card`, `cardRaised`, `row`, `postcard`, `postcardFront`, `postcardJoin`, `stamp`) expressed as RN `boxShadow`. Borders follow the spec: inputs inset 1.5 `border` (focused inset 2 `ink`), outline buttons inset 2 `ink` (quiet 1.5 `border`), empty stamp slots 1.5 dashed `slot`.
+
+Row separators are a flat 1 pt (`hairlineWidth`), not `StyleSheet.hairlineWidth` (~0.33 pt on 3× screens). At ~1.15:1 contrast against paper the hairline effectively vanished on device; the design spec is 1 pt. Airmail stripe gaps are fixed cream (`#FFFCF5`), so the stripes don't read as solid red/blue in dark mode.
 
 ## 5. Motion
 
@@ -75,7 +80,9 @@ Lucide with stroke 2. Navigation: Plan `Calendar`, Packing `Luggage`, Notes `Mai
 
 ## 7. Airmail primitives and components
 
-`src/components/airmail/` holds the mail system: `PerforatedStamp` (an SVG `Mask` punches holes from the frame, so the surface behind shows through), `AirmailBorder` (an SVG diagonal stripe `Pattern` around paper content), `PatternBand` (seigaiha, huipil and azulejo, with airmail stripes as the fallback), `Postmark` (ink rings, arc city text and wavy cancel lines), `Postcard`, and `KraftEnvelope` + `WaxSeal`.
+**Perforations.** Hole centres sit on the stamp's *outer edges* (x = 0, x = W, y = 0, y = H), spaced close to 8 pt apart (4 pt on stamps under 30 pt), radius 3 (1.5 small). Holes are spread evenly per side so both corners always get a hole even when a side isn't a multiple of the pitch; `perforationOffsets` is a pure, tested helper. Each hole cuts a half-circle from the edge and each corner a quarter-circle notch. The frame's content padding is 5 inside that edge (2.5 for stamps under 30 pt), and the art window sits 2 pt further in (1 pt on the 40×48 past-trip stamp). The stamp shadow is drawn as an offset copy of the same masked shape inside the SVG, so it follows the scalloped outline rather than a rectangle.
+
+`src/components/airmail/` holds the mail system: `PerforatedStamp` (an SVG `Mask` punches holes on the frame edges, so the surface behind shows through), `AirmailBorder` (an SVG diagonal stripe `Pattern` around paper content), `PatternBand` (seigaiha, huipil and azulejo, with airmail stripes as the fallback), `Postmark` (ink rings, arc city text and wavy cancel lines), `Postcard`, and `KraftEnvelope` + `WaxSeal`.
 
 The shared components are: `AppText`; `Avatar`/`AvatarStack`; `BrandMark` (the airmail square with a "W"); `Button` (primary/secondary/quiet/text/destructive at 56/48/44); `Card`/`CardRow`; `Chip`; `DateTimeField` (+ web); `ErrorBanner`; `OfflineBanner`; `SectionLabel`; `SegmentedControl`; `Sheet`; `StateViews` (`EmptyStampSlot`, `LoadingState`, `EmptyState`, `ErrorState`); `TextField`; `Toggle`. Feature components own the mail behaviour: `TripScene`, `SceneStamp`/`AvatarStamp`/`DestinationStamp`, `StopStamp`, `TripCard`, and `TripTabBar`.
 

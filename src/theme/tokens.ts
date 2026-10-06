@@ -7,7 +7,6 @@
  * mapping (flagged in docs/DESIGN_DECISIONS.md), kept until a dark design
  * exists.
  */
-import { Platform, StyleSheet } from 'react-native';
 import type { TextStyle } from 'react-native';
 
 export interface Palette {
@@ -42,8 +41,6 @@ export interface Palette {
   kraft: string;
   kraftFlap: string;
   kraftInk: string;
-  /** Text on kraft (light cream, stays light in dark). */
-  kraftText: string;
   wax: string;
   waxRing: string;
   success: string;
@@ -54,6 +51,12 @@ export interface Palette {
   glass: string;
   /** Behind sheets. */
   scrim: string;
+  /**
+   * Everything printed on stamp paper (names, denominations, postmarks,
+   * day-stamp text, avatar panels). Fixed dark in both themes because stamp
+   * paper stays cream.
+   */
+  stampInk: string;
 }
 
 export const palettes: { light: Palette; dark: Palette } = {
@@ -76,7 +79,6 @@ export const palettes: { light: Palette; dark: Palette } = {
     kraft: '#CDB28A',
     kraftFlap: '#BFA06E',
     kraftInk: '#3F3526',
-    kraftText: '#FFFCF5',
     wax: '#A8262F',
     waxRing: '#B92E37',
     success: '#1F7A5C',
@@ -84,6 +86,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     artPlaceholder: '#DCD6CB',
     glass: 'rgba(255,252,245,0.92)',
     scrim: 'rgba(21,34,59,0.65)',
+    stampInk: '#15223B',
   },
   dark: {
     bg: '#0F1729',
@@ -104,7 +107,6 @@ export const palettes: { light: Palette; dark: Palette } = {
     kraft: '#7A6545',
     kraftFlap: '#6A5638',
     kraftInk: '#F3E7D2',
-    kraftText: '#F3E7D2',
     wax: '#C23A44',
     waxRing: '#D04A54',
     success: '#6CC39A',
@@ -112,6 +114,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     artPlaceholder: '#131B2B',
     glass: 'rgba(26,36,56,0.92)',
     scrim: 'rgba(0,0,0,0.65)',
+    stampInk: '#15223B',
   },
 };
 
@@ -239,7 +242,11 @@ export const radius = {
   brandInner: 3,
 } as const;
 
-export const hairlineWidth = Platform.OS === 'web' ? 1 : StyleSheet.hairlineWidth;
+/**
+ * Row separator width. The design spec is 1 pt; `StyleSheet.hairlineWidth`
+ * (~0.33 pt on 3x screens) all but vanishes at 1.15:1 contrast, so we use 1.
+ */
+export const hairlineWidth = 1;
 
 /**
  * Shadows, transcribed from the README. RN 0.86 supports `boxShadow`, which

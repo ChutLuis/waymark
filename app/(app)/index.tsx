@@ -97,6 +97,7 @@ export default function TripsListScreen() {
               size="sm"
               initial={(firstName[0] ?? '?').toUpperCase()}
               frame="paper"
+              avatarPath={profile.data?.avatarPath ?? null}
             />
           </Pressable>
         </View>
@@ -148,7 +149,7 @@ export default function TripsListScreen() {
                   {row.label}
                 </AppText>
               ) : (
-                <View style={styles.cardWrap}>
+                <View style={[styles.cardWrap, row.variant === 'past' && styles.cardWrapPast]}>
                   <TripCard
                     trip={row.trip}
                     variant={row.variant}
@@ -187,6 +188,9 @@ export default function TripsListScreen() {
               variant="secondary"
               size="lg"
               onPress={() => router.push('/join')}
+              style={styles.joinButton}
+              labelStyle={styles.joinLabel}
+              labelLines={1}
             />
           </View>
         </View>
@@ -204,12 +208,13 @@ const styles = StyleSheet.create({
   avatarTarget: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.7 },
   titleBlock: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
-  greeting: { marginTop: 2 },
+  greeting: { marginTop: 2, fontSize: 17, lineHeight: 22 },
   list: { paddingHorizontal: spacing.cardGutter, paddingTop: spacing.s7 },
   skeletonGap: { height: spacing.s5 },
-  listContent: { paddingTop: spacing.s3, paddingHorizontal: spacing.cardGutter },
+  listContent: { paddingTop: 0, paddingHorizontal: spacing.cardGutter },
   sectionKicker: { paddingTop: spacing.s8, paddingBottom: spacing.s4, paddingHorizontal: spacing.s4 },
   cardWrap: { marginBottom: spacing.s5 },
+  cardWrapPast: { marginBottom: spacing.s3 },
   emptySecondary: { marginTop: spacing.s3 },
   actionBar: {
     position: 'absolute',
@@ -221,7 +226,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.s7,
     paddingHorizontal: spacing.s7,
     borderTopWidth: 1,
-    boxShadow: '0 -1px 0 #C9D3DB',
   },
   actionCol: { flex: 1 },
+  joinButton: { paddingHorizontal: 0 },
+  joinLabel: { fontSize: 17, lineHeight: 22 },
 });

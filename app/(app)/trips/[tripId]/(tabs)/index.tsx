@@ -19,6 +19,7 @@ import {
 } from '@/features/itinerary/group';
 import { useItinerary, useSetItineraryStatus } from '@/features/itinerary/hooks';
 import { StopStamp } from '@/features/trips/StopStamp';
+import { StampStill } from '@/features/trips/SceneStamp';
 import {
   matchDestination,
   countdownLabel,
@@ -28,7 +29,7 @@ import {
 } from '@/features/trips/destinations';
 import { useTrip, useTripMembers } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
-import { fontFamilies, hairlineWidth, spacing, useTheme } from '@/theme';
+import { fontFamilies, hairlineWidth, shadows, spacing, useTheme } from '@/theme';
 import { formatTime, toDateOnly } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
 
@@ -94,7 +95,7 @@ function DayStamp({
         <View style={styles.dayStampContent}>
           <AppText
             role="tag"
-            style={{ letterSpacing: 0.5, color: selected ? colors.paper : colors.ink2 }}
+            style={{ letterSpacing: 0.5, fontSize: 10, lineHeight: 12, color: selected ? colors.paper : colors.ink2 }}
           >
             {weekday}
           </AppText>
@@ -230,12 +231,12 @@ export default function PlanScreen() {
                   <AppText role="kickerLg">
                     NEXT · {countdownLabel(minutesUntil(next.startAt as string, now))}
                   </AppText>
-                  <StopStamp status={next.status} country={country} />
+                  <StampStill country={country} />
                 </View>
                 <AppText role="cardTitleLg" style={styles.nextTitle}>
                   {next.title}
                 </AppText>
-                <AppText tone="secondary" style={styles.nextLine}>
+                <AppText role="body" tone="secondary" style={styles.nextLine}>
                   {[formattedTime(next), next.location ?? next.description].filter(Boolean).join(' · ')}
                 </AppText>
               </View>
@@ -283,11 +284,18 @@ export default function PlanScreen() {
                 const nowBefore = nowIndex === index;
                 if (row.type === 'free') {
                   return (
-                    <View key={row.key} style={[styles.timelineRow, { borderBottomColor: colors.hairline, borderBottomWidth: hairlineWidth }]}>
+                    <View
+                      key={row.key}
+                      style={[
+                        styles.timelineRow,
+                        styles.freeTimelineRow,
+                        { borderBottomColor: colors.hairline, borderBottomWidth: hairlineWidth },
+                      ]}
+                    >
                       {nowBefore ? <NowLine /> : null}
                       <View style={[styles.cellTime]} />
                       <View style={[styles.cellBody, styles.freeRow]}>
-                        <AppText role="metaSm" tone="muted">
+                        <AppText role="metaSm" tone="muted" style={styles.freeText}>
                           {freeTimeLabel(row.minutes)}
                         </AppText>
                       </View>
@@ -388,7 +396,7 @@ function formattedTime(item: ItineraryItem): string {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { paddingBottom: 120, gap: 0 },
+  content: { flexGrow: 1, gap: 0 },
   titleRow: {
     paddingTop: spacing.s6,
     paddingHorizontal: 20,
@@ -411,14 +419,15 @@ const styles = StyleSheet.create({
   },
   actionLabel: { fontSize: 15, lineHeight: 20 },
   pressed: { opacity: 0.7 },
-  nextCardWrap: { marginTop: spacing.s6, marginHorizontal: spacing.cardGutter },
+  nextCardWrap: { marginTop: spacing.s6, marginHorizontal: spacing.cardGutter, boxShadow: shadows.card },
   nextInner: { paddingTop: 12, paddingBottom: 14, paddingLeft: 16, paddingRight: 14 },
   nextTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   nextTitle: { marginTop: 4 },
-  nextLine: { marginTop: 4 },
+  nextLine: { marginTop: 4, fontSize: 16, lineHeight: 22 },
   dayStrip: { paddingTop: spacing.s7, paddingHorizontal: spacing.s7, gap: 9 },
   dayStampContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 1 },
   sheet: {
+    flexGrow: 1,
     marginTop: spacing.s7,
     marginHorizontal: spacing.cardGutter,
     borderTopLeftRadius: 4,
@@ -428,6 +437,7 @@ const styles = StyleSheet.create({
   },
   marginRule: { position: 'absolute', left: 66, top: 0, bottom: 0, width: 1.5 },
   timelineRow: { flexDirection: 'row', minHeight: 50 },
+  freeTimelineRow: { minHeight: 32 },
   cellTime: { width: 66, paddingTop: 14, paddingLeft: 12 },
   timeText: { fontSize: 15 },
   cellBody: { flex: 1, paddingTop: 12, paddingBottom: 12, paddingLeft: 14, paddingRight: 4 },
@@ -437,9 +447,10 @@ const styles = StyleSheet.create({
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   nextTag: { paddingVertical: 3, paddingHorizontal: 6, borderRadius: 3 },
   freeRow: { height: 32, justifyContent: 'center', paddingTop: 0, paddingBottom: 0 },
+  freeText: { fontSize: 15, lineHeight: 20 },
   emptyDay: { padding: 20, alignItems: 'center' },
   nowRow: { position: 'absolute', left: 0, right: 0, top: -15, height: 30, justifyContent: 'center' },
   nowRowTrailing: { height: 30, justifyContent: 'center' },
   nowLine: { position: 'absolute', left: 0, right: 0, top: 14, height: 2 },
-  nowChip: { marginLeft: 10, alignSelf: 'flex-start', paddingVertical: 3, paddingHorizontal: 6, borderRadius: 3, marginTop: 7 },
+  nowChip: { marginLeft: 10, alignSelf: 'flex-start', paddingVertical: 3, paddingHorizontal: 6, borderRadius: 3 },
 });

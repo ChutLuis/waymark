@@ -19,7 +19,7 @@ import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useMyProfile, useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
 import { hydrateReminderPreference, setRemindersEnabled, useRemindersEnabled } from '@/features/reminders/preference';
-import { hairlineWidth, iconStrokeWidth, radius, spacing, useTheme, type ThemePreference } from '@/theme';
+import { fontFamilies, hairlineWidth, iconStrokeWidth, radius, spacing, useTheme, type ThemePreference } from '@/theme';
 import { pickImage } from '@/lib/images';
 import { toDateOnly } from '@/lib/format/date';
 import { profileSchema, type ProfileForm } from '@/lib/validation/schemas';
@@ -190,7 +190,7 @@ export default function ProfileScreen() {
           style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
         >
           <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
-          <AppText role="button">Trips</AppText>
+          <AppText role="button" style={styles.backLabel}>Trips</AppText>
         </Pressable>
 
         <View style={styles.identity}>
@@ -200,12 +200,17 @@ export default function ProfileScreen() {
             onPress={onChangePhoto}
             style={({ pressed }) => pressed && styles.pressed}
           >
-            <AvatarStamp size="lg" initial={(firstName[0] ?? '?').toUpperCase()} name={firstName.toUpperCase()} />
+            <AvatarStamp
+              size="lg"
+              initial={(firstName[0] ?? '?').toUpperCase()}
+              name={firstName.toUpperCase()}
+              avatarPath={me.avatarPath}
+            />
           </Pressable>
           <View style={styles.identityText}>
             <AppText role="cardTitleLg">{me.displayName}</AppText>
             {session?.user.email ? (
-              <AppText role="kickerLg" tone="secondary" style={styles.email}>
+              <AppText role="bodySm" tone="secondary" style={styles.email}>
                 {session.user.email}
               </AppText>
             ) : null}
@@ -286,6 +291,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   backRow: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 8 },
+  backLabel: { fontFamily: fontFamilies.semibold },
   pressed: { opacity: 0.7 },
   identity: { paddingTop: spacing.s5, paddingHorizontal: spacing.gutter, flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
   identityText: { flex: 1, minWidth: 0 },
@@ -306,7 +312,7 @@ const styles = StyleSheet.create({
   },
   albumCell: { width: '33.33%', alignItems: 'center', gap: 6 },
   albumStampWrap: { width: 80, height: 96, position: 'relative' },
-  albumPostmark: { position: 'absolute', left: -14, top: 22, opacity: 0.85 },
+  albumPostmark: { position: 'absolute', left: -14, top: 22 },
   albumLabels: { alignItems: 'center' },
   albumEmpty: { width: '100%', alignItems: 'center', gap: spacing.s3, paddingVertical: spacing.s5 },
   albumEmptyText: { textAlign: 'center' },

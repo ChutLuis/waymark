@@ -364,6 +364,20 @@ export function formatTripRange(start: string | null, end: string | null): strin
 }
 
 /**
+ * The "with …" line for a trip list card: names every member *except the
+ * viewer*, so a non-creator sees the creator's name rather than their own.
+ * Empty when the viewer would be the only member.
+ */
+export function otherMembersWording(
+  members: { id: string; displayName: string }[],
+  viewerId: string | null,
+): string {
+  return memberNamesWording(
+    members.filter((m) => m.id !== viewerId).map((m) => m.displayName),
+  );
+}
+
+/**
  * "with Theo", "with Theo and Ana", "with Theo, Ana and Jo". Lists the other
  * members' first names; empty when there are none.
  */

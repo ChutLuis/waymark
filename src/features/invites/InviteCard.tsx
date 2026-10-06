@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Share, StyleSheet, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { Copy, Share2 } from 'lucide-react-native';
+import { Copy, Share as ShareIcon } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { AirmailBorder } from '@/components/airmail/AirmailBorder';
-import { fontFamilies, spacing, useTheme } from '@/theme';
+import { fontFamilies, shadows, spacing, useTheme } from '@/theme';
 import { inviteLink, useTripInvite } from './hooks';
 
 function daysUntil(iso: string): number {
@@ -67,9 +67,10 @@ export function InviteCard({ tripId }: { tripId: string }) {
   }
 
   const shown = invite.data.code.slice(0, 4) + ' ' + invite.data.code.slice(4);
+  const days = daysUntil(invite.data.expiresAt);
 
   return (
-    <View>
+    <View style={styles.card}>
       <AirmailBorder padding={6}>
         <View style={styles.inner}>
           <View style={styles.topRow}>
@@ -91,7 +92,7 @@ export function InviteCard({ tripId }: { tripId: string }) {
             {shown}
           </AppText>
           <AppText role="bodySm" tone="secondary" style={styles.note}>
-            Works once · expires in {daysUntil(invite.data.expiresAt)} days
+            Works once · expires in {days} {days === 1 ? 'day' : 'days'}
           </AppText>
         </View>
       </AirmailBorder>
@@ -100,7 +101,7 @@ export function InviteCard({ tripId }: { tripId: string }) {
           <Button
             label="Share link"
             size="md"
-            leading={<Share2 size={18} color={colors.paper} strokeWidth={2.2} />}
+            leading={<ShareIcon size={18} color={colors.paper} strokeWidth={2.2} />}
             onPress={onShare}
           />
         </View>
@@ -131,6 +132,7 @@ const styles = StyleSheet.create({
   parAvionText: { fontSize: 9, lineHeight: 11, letterSpacing: 0.6 },
   code: { marginTop: 4, fontFamily: fontFamilies.mono },
   note: { marginTop: 4 },
-  buttons: { flexDirection: 'row', gap: spacing.s4, paddingTop: spacing.s5, paddingHorizontal: spacing.cardGutter },
+  card: { boxShadow: shadows.cardRaised },
+  buttons: { flexDirection: 'row', gap: spacing.s4, paddingTop: spacing.s5 },
   buttonCol: { flex: 1 },
 });

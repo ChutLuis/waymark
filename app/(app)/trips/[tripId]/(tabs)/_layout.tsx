@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Slot, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
@@ -53,26 +54,36 @@ export default function TripTabsLayout() {
     [trip.data?.destination],
   );
 
-  // The design's 196/104 assume a 47 pt status bar; scale both by the device's
-  // safe-area top inset so the header row is never clipped on notched phones.
-  const heroHeight = 149 + insets.top;
-  const collapsedHeight = 57 + insets.top;
+  const isWide = width >= 720;
+
+  const screenWidth = isWide ? Math.min(680, width) : width;
+
+  // No art for this trip: show the README fallback banner on every tab.
+  const hasArt = country !== null || Boolean(trip.data?.coverImagePath);
+
+  // Scale the design's 196/104 hero heights by the column width so wide (web)
+  // layouts don't show mostly sky; the safe-area floor keeps the header row
+  // clear of the notch on native.
+  const heroHeight = Math.max((196 / 390) * screenWidth, insets.top + 149);
+  const collapsedHeight = hasArt
+    ? Math.max((104 / 390) * screenWidth, insets.top + 57)
+    : insets.top + 104;
 
   // Animate the header height without remounting the Lottie: it is a pure clip
-  // over one mounted hero scene.
+  // over one mounted hero scene. The fallback banner never animates.
   const headerHeight = useLazyAnimatedValue(isPlan ? heroHeight : collapsedHeight);
   useEffect(() => {
     Animated.timing(headerHeight, {
       toValue: isPlan ? heroHeight : collapsedHeight,
-      duration: reducedMotion ? 0 : 300,
+      duration: reducedMotion || !hasArt ? 0 : 300,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [isPlan, headerHeight, reducedMotion, heroHeight, collapsedHeight]);
+  }, [isPlan, headerHeight, reducedMotion, heroHeight, collapsedHeight, hasArt]);
 
-  const isWide = width >= 720;
-
-  const screenWidth = isWide ? Math.min(680, width) : width;
+  const statusBarStyle: 'light' | 'dark' = country
+    ? DESTINATION_INFO[country].statusBar
+    : 'dark';
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -87,20 +98,25 @@ export default function TripTabsLayout() {
           </View>
         ) : trip.data ? (
           <>
-            <Animated.View style={[styles.header, { height: headerHeight }]}>
+            <StatusBar style={statusBarStyle} />
+            <Animated.View
+              style={[styles.header, { height: headerHeight, backgroundColor: hasArt ? undefined : colors.paper }]}
+            >
               {/* One hero scene, mounted once; the animated container clips it to
                   the collapsed height on the non-Plan tabs so the Lottie never
                   remounts. Positioned absolutely so the back row and avatars sit
-                  over it. */}
-              <TripScene
-                country={country}
-                coverImagePath={trip.data.coverImagePath}
-                crop="hero"
-                width={screenWidth}
-                height={heroHeight}
-                live
-                style={StyleSheet.absoluteFill}
-              />
+                  over it. Unknown destinations show the README paper fallback. */}
+              {hasArt ? (
+                <TripScene
+                  country={country}
+                  coverImagePath={trip.data.coverImagePath}
+                  crop="hero"
+                  width={screenWidth}
+                  height={heroHeight}
+                  live
+                  style={StyleSheet.absoluteFill}
+                />
+              ) : null}
               <View style={{ height: insets.top }} />
               <View style={styles.headerRow}>
                 <Pressable
@@ -109,27 +125,40 @@ export default function TripTabsLayout() {
                   onPress={() => router.replace('/')}
                   style={({ pressed }) => [
                     styles.backPill,
-                    { backgroundColor: colors.glass },
+                    { backgroundColor: hasArt ? colors.glass : colors.bg },
                     pressed && styles.pressed,
                   ]}
                 >
                   <ChevronLeft size={22} color={colors.ink} strokeWidth={2.2} />
-                  <AppText role="body" style={{ fontFamily: fontFamilies.semibold }}>
+                  <AppText role="body" style={{ fontFamily: fontFamilies.semibold, fontSize: 16, lineHeight: 20 }}>
                     Trips
                   </AppText>
                 </Pressable>
                 <AvatarStack
                   profiles={(members.data ?? []).map((m) => m.profile)}
                   size={36}
-                  surfaceColor={colors.glass}
+                  surfaceColor={hasArt ? colors.glass : colors.paper}
                 />
               </View>
-              {isPlan && country ? (
-                <View style={[styles.captionChip, { backgroundColor: colors.paper }]}>
+              {hasArt && country ? (
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.captionChip,
+                    {
+                      backgroundColor: colors.paper,
+                      opacity: headerHeight.interpolate({
+                        inputRange: [collapsedHeight, heroHeight],
+                        outputRange: [0, 1],
+                        extrapolate: 'clamp',
+                      }),
+                    },
+                  ]}
+                >
                   <AppText role="tag" style={{ letterSpacing: 0.8 }}>
                     {DESTINATION_INFO[country].chip}
                   </AppText>
-                </View>
+                </Animated.View>
               ) : null}
             </Animated.View>
             <PatternBand
