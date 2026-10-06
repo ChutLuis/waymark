@@ -189,7 +189,12 @@ export default function SignUpScreen() {
 
         <AppText role="bodySm" tone="secondary" style={styles.privacy}>
           We keep only what your trips need.{' '}
-          <AppText role="link" style={{ color: colors.ink, textDecorationLine: 'underline' }}>
+          <AppText
+            role="link"
+            accessibilityRole="link"
+            onPress={() => router.push('/privacy')}
+            style={{ color: colors.ink, textDecorationLine: 'underline' }}
+          >
             Read the privacy note
           </AppText>
         </AppText>

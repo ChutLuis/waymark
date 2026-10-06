@@ -264,10 +264,15 @@ export default function ProfileScreen() {
               accessibilityLabel="Trip reminders"
             />
           </View>
-          <View style={styles.settingsRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Read the privacy note"
+            onPress={() => router.push('/privacy')}
+            style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}
+          >
             <AppText role="link">Privacy note</AppText>
             <ChevronRight size={20} color={colors.ink2} strokeWidth={iconStrokeWidth} />
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.signOutWrap}>
