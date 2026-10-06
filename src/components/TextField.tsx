@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   Platform,
   Pressable,
@@ -21,6 +21,8 @@ interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   revealable?: boolean;
   /** Extra input styling (e.g. the mono invite-code field). */
   inputStyle?: StyleProp<TextStyle>;
+  /** Right-aligned node on the label row (e.g. "Stamp ready"). */
+  labelAccessory?: ReactNode;
 }
 
 /** Labeled form field with inline validation, per the component spec. */
@@ -31,6 +33,7 @@ export function TextField({
   multiline = false,
   revealable = false,
   inputStyle,
+  labelAccessory,
   secureTextEntry,
   ...inputProps
 }: TextFieldProps) {
@@ -52,6 +55,7 @@ export function TextField({
             {optionalTag}
           </AppText>
         ) : null}
+        {labelAccessory ? <View style={styles.labelAccessory}>{labelAccessory}</View> : null}
       </View>
       <View
         style={[
@@ -116,11 +120,15 @@ export function TextField({
 const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.s2,
     marginBottom: spacing.s2,
   },
   optional: {
     textTransform: 'lowercase',
+  },
+  labelAccessory: {
+    marginLeft: 'auto',
   },
   field: {
     minHeight: 52,

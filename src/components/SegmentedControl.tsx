@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
-import { radius, spacing, useTheme } from '@/theme';
+import { fontFamilies, radius, spacing, useTheme } from '@/theme';
 
 interface SegmentedControlProps<T extends string> {
   options: { value: T; label: string }[];
@@ -58,11 +58,14 @@ export function SegmentedControl<T extends string>({
             ]}
           >
             <AppText
-              role={selected ? 'button' : 'link'}
-              style={[
-                { color: selected ? colors.paper : colors.ink },
-                size === 'compact' && { fontSize: 14, lineHeight: 18 },
-              ]}
+              // One size for both states so labels don't jump on tap; only the
+              // weight and colour change.
+              style={{
+                color: selected ? colors.paper : colors.ink,
+                fontFamily: selected ? fontFamilies.bold : fontFamilies.semibold,
+                fontSize: size === 'compact' ? 14 : 15,
+                lineHeight: size === 'compact' ? 18 : 20,
+              }}
             >
               {option.label}
             </AppText>

@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { AppText } from './AppText';
 import { fontFamilies, radius, useTheme } from '@/theme';
-import { initials } from '@/lib/format/date';
+import { firstInitial } from '@/lib/format/date';
 import { useSignedUrl } from '@/lib/supabase/storage';
 import type { Profile } from '@/lib/types';
 
@@ -37,8 +37,10 @@ export function Avatar({
           height: size,
           backgroundColor: filled ? colors.ink : colors.paper,
         },
+        // Non-owners keep their ink outline; the separating ring only applies
+        // to the filled (owner / first) avatar so it isn't replaced.
         !filled && { borderWidth: 2, borderColor: colors.ink },
-        ringColor ? { borderWidth: 3, borderColor: ringColor } : null,
+        filled && ringColor ? { borderWidth: 3, borderColor: ringColor } : null,
       ]}
     >
       <AppText
@@ -49,7 +51,7 @@ export function Avatar({
           color: filled ? colors.paper : colors.ink,
         }}
       >
-        {initials(name)}
+        {firstInitial(name)}
       </AppText>
       {photoUrl.data ? (
         <Image

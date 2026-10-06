@@ -15,7 +15,9 @@ export function BrandMark({ size = 26 }: { size?: number }) {
         { width: size, height: size, padding: pad, borderRadius: radius.brandOuter },
       ]}
     >
-      <AirmailStripes size="brand" />
+      <View style={StyleSheet.absoluteFill}>
+        <AirmailStripes size="brand" />
+      </View>
       <View
         style={[
           styles.inset,

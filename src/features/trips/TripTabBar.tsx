@@ -5,7 +5,7 @@ import { Calendar, Luggage, Mail } from 'lucide-react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 import { AppText } from '@/components/AppText';
 import { AirmailStripes } from '@/components/airmail/AirmailBorder';
-import { fontFamilies, iconStrokeWidth, radius, shadows, useTheme } from '@/theme';
+import { fontFamilies, iconStrokeWidth, useTheme } from '@/theme';
 
 export type TripTab = 'plan' | 'packing' | 'notes' | 'trip';
 
@@ -16,23 +16,30 @@ const TABS: { key: TripTab; label: string; segment: string }[] = [
   { key: 'trip', label: 'Trip', segment: 'settings' },
 ];
 
-/** The custom stamp icon used for the Trip tab (README: Icons). */
+/** The custom stamp icon used for the Trip tab (README: Icons, 24 grid). */
 function StampIcon({ color }: { color: string }) {
   return (
-    <Svg width={22} height={22} viewBox="0 0 22 22">
+    <Svg width={22} height={22} viewBox="0 0 24 24">
       <Rect
-        x={3}
-        y={1.5}
+        x={4}
+        y={2.5}
         width={16}
         height={19}
-        rx={2}
         fill="none"
         stroke={color}
         strokeWidth={iconStrokeWidth}
         strokeDasharray="2 2.2"
       />
-      <Rect x={7} y={6} width={8} height={8} rx={1} fill="none" stroke={color} strokeWidth={iconStrokeWidth} />
-      <Line x1={11} y1={14} x2={11} y2={18} stroke={color} strokeWidth={iconStrokeWidth} strokeLinecap="round" />
+      <Rect x={8} y={6.5} width={8} height={8} fill="none" stroke={color} strokeWidth={iconStrokeWidth} />
+      <Line
+        x1={8}
+        y1={18}
+        x2={16}
+        y2={18}
+        stroke={color}
+        strokeWidth={iconStrokeWidth}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
@@ -68,7 +75,12 @@ export function TripTabBar({ tripId, active }: { tripId: string; active: TripTab
       accessibilityRole="tablist"
       style={[
         styles.bar,
-        { backgroundColor: colors.paper, paddingBottom: insets.bottom, boxShadow: shadows.hairlineTop },
+        {
+          backgroundColor: colors.paper,
+          paddingBottom: insets.bottom,
+          borderTopWidth: 1,
+          borderTopColor: colors.divider,
+        },
       ]}
     >
       {TABS.map((tab) => {
@@ -83,11 +95,11 @@ export function TripTabBar({ tripId, active }: { tripId: string; active: TripTab
             style={({ pressed }) => [styles.item, pressed && styles.pressed]}
           >
             {selected ? (
-              <View style={styles.indicator}>
+              <View style={[styles.indicator, { backgroundColor: colors.airmailRed }]}>
                 <AirmailStripes size="tab" />
               </View>
             ) : null}
-            <View style={[styles.itemInner, !selected && styles.itemInnerInactive]}>
+            <View style={styles.itemInner}>
               {tabIcon(tab.key, selected ? colors.ink : colors.ink3)}
               <AppText
                 role="tab"
@@ -115,21 +127,19 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   indicator: {
     position: 'absolute',
     top: 0,
+    alignSelf: 'center',
     width: 44,
     height: 5,
-    borderRadius: radius.chip,
     overflow: 'hidden',
   },
   itemInner: {
     alignItems: 'center',
     gap: 4,
-  },
-  itemInnerInactive: {
     paddingTop: 14,
   },
   pressed: {

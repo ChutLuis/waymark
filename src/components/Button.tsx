@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { AppText } from './AppText';
-import { radius, useTheme } from '@/theme';
+import { fontFamilies, radius, useTheme } from '@/theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'text' | 'destructive';
 export type ButtonSize = 'lg' | 'md' | 'sm';
@@ -15,6 +15,10 @@ interface ButtonProps {
   loading?: boolean;
   leading?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Extra label styling, on top of the size role/weight. */
+  labelStyle?: StyleProp<TextStyle>;
+  /** Clamp the label to one line (e.g. buttons that must not wrap). */
+  labelLines?: number;
 }
 
 const HEIGHTS: Record<ButtonSize, number> = { lg: 56, md: 48, sm: 44 };
@@ -29,6 +33,8 @@ export function Button({
   loading = false,
   leading,
   style,
+  labelStyle,
+  labelLines,
 }: ButtonProps) {
   const { colors } = useTheme();
 
@@ -73,6 +79,13 @@ export function Button({
         : colors.ink;
 
   const textRole = size === 'lg' ? 'buttonLg' : size === 'md' ? 'button' : 'bodySm';
+  // The `sm` size is Besley 700 15/20 (bodySm is 400), used by claim pills.
+  const textStyle: StyleProp<TextStyle> = [
+      size === 'sm'
+        ? { color: textColor, fontFamily: fontFamilies.bold, fontSize: 15, lineHeight: 20 }
+        : { color: textColor },
+      labelStyle,
+    ];
 
   return (
     <Pressable
@@ -93,7 +106,7 @@ export function Button({
       ) : (
         <>
           {leading}
-          <AppText role={textRole} style={{ color: textColor }}>
+          <AppText role={textRole} style={textStyle} numberOfLines={labelLines}>
             {label}
           </AppText>
         </>

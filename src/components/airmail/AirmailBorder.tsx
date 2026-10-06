@@ -25,10 +25,13 @@ interface AirmailStripesProps {
  * The repeating airmail stripe as an SVG `Pattern`, rotated 45 degrees so the
  * bands run diagonally like the CSS `repeating-linear-gradient(135deg, …)`.
  */
+/** Stripe gaps stay cream in both themes (the design's airmail paper). */
+const STRIPE_GAP = '#FFFCF5';
+
 export function AirmailStripes({ size = 'full', gapColor }: AirmailStripesProps) {
   const { colors } = useTheme();
   const s = AIRMAIL_STRIPES[size];
-  const gap = gapColor ?? colors.paper;
+  const gap = gapColor ?? STRIPE_GAP;
   const id = `airmail-${size}`;
   return (
     <Svg width="100%" height="100%">
