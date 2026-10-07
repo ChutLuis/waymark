@@ -249,9 +249,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    // Keep a gap before "Clear" so a full date ("6 Oct, 0:30") can't touch it.
+    gap: spacing.s4,
   },
   value: {
     ...typeScale.body,
+    // Let a long value shrink instead of shoving "Clear" onto it.
+    flexShrink: 1,
   },
   box: {
     minHeight: 64,
