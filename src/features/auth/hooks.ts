@@ -47,6 +47,24 @@ export function useSignOut() {
   });
 }
 
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      // The auth user can only be deleted server-side (service role), so this
+      // calls the delete-account Edge Function with the caller's token.
+      const { error } = await supabase.functions.invoke('delete-account', {
+        method: 'POST',
+      });
+      if (error) throw error;
+      // The server has already removed the auth user; clear local session and
+      // any cached rows so nothing lingers (mirrors sign-out).
+      await supabase.auth.signOut().catch(() => {});
+    },
+    onSettled: () => queryClient.clear(),
+  });
+}
+
 export const profileKeys = {
   me: (userId: string | null) => ['profile', 'me', userId] as const,
 };

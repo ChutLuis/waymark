@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { SegmentedControl } from '@/components/SegmentedControl';
@@ -17,7 +17,7 @@ import { AvatarStamp, DestinationStamp, SceneStamp } from '@/features/trips/Scen
 import { DESTINATION_INFO, matchDestination, stampName, tripDays } from '@/features/trips/destinations';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
-import { useMyProfile, useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
+import { useDeleteAccount, useMyProfile, useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
 import { hydrateReminderPreference, setRemindersEnabled, useRemindersEnabled } from '@/features/reminders/preference';
 import { fontFamilies, hairlineWidth, iconStrokeWidth, radius, spacing, useTheme, type ThemePreference } from '@/theme';
 import { pickImage } from '@/lib/images';
@@ -79,6 +79,55 @@ function EditNameSheet({
           />
         )}
       />
+    </Sheet>
+  );
+}
+
+/**
+ * Account deletion confirmation. Deletion is irreversible, so the sheet spells
+ * out what happens to shared trips before the person commits.
+ */
+function DeleteAccountSheet({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const { colors } = useTheme();
+  const del = useDeleteAccount();
+  const [error, setError] = useState<string | null>(null);
+
+  const onDelete = async () => {
+    setError(null);
+    try {
+      await del.mutateAsync();
+      // The session is gone; the (app) guard sends the person to sign-in.
+      onClose();
+    } catch {
+      setError("Couldn't delete your account. Try again.");
+    }
+  };
+
+  return (
+    <Sheet
+      visible={visible}
+      title="Delete account"
+      onClose={onClose}
+      actionLabel="Delete"
+      onAction={onDelete}
+      actionDisabled={del.isPending}
+    >
+      <AppText role="body" tone="secondary">
+        This permanently deletes your profile, your trips with no one else on them, and
+        every note and item you added. Trips you own that other people are on stay with
+        them: they pass to the member who joined first.
+      </AppText>
+      {error ? (
+        <AppText role="bodySm" style={[styles.sheetError, { color: colors.wax }]}>
+          {error}
+        </AppText>
+      ) : null}
     </Sheet>
   );
 }
@@ -150,6 +199,7 @@ export default function ProfileScreen() {
   const upsertProfile = useUpsertProfile();
   const remindersEnabled = useRemindersEnabled();
   const [editVisible, setEditVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
 
   useEffect(() => {
     hydrateReminderPreference();
@@ -290,10 +340,20 @@ export default function ProfileScreen() {
             loading={signOut.isPending}
             onPress={() => signOut.mutate()}
           />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Delete account"
+            onPress={() => setDeleteVisible(true)}
+            style={({ pressed }) => [styles.deleteRow, pressed && styles.pressed]}
+          >
+            <Trash2 size={18} color={colors.wax} strokeWidth={iconStrokeWidth} />
+            <AppText role="link" style={{ color: colors.wax }}>Delete account</AppText>
+          </Pressable>
         </View>
       </ScrollView>
 
       <EditNameSheet visible={editVisible} onClose={() => setEditVisible(false)} currentName={me.displayName} />
+      <DeleteAccountSheet visible={deleteVisible} onClose={() => setDeleteVisible(false)} />
     </View>
   );
 }
@@ -332,5 +392,13 @@ const styles = StyleSheet.create({
   albumEmptyText: { textAlign: 'center' },
   settingsCard: { marginTop: spacing.s6, marginHorizontal: spacing.cardGutter, borderRadius: radius.card, paddingHorizontal: 16 },
   settingsRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s5 },
-  signOutWrap: { paddingTop: spacing.s5, paddingHorizontal: spacing.cardGutter },
+  signOutWrap: { paddingTop: spacing.s5, paddingHorizontal: spacing.cardGutter, gap: spacing.s2 },
+  deleteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 44,
+  },
+  sheetError: { marginTop: spacing.s4 },
 });

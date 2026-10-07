@@ -30,7 +30,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: 'Removing your data',
     body:
-      'You can delete a trip you own, which removes its itinerary, packing list and notes.',
+      'You can delete a trip you own, which removes its itinerary, packing list and notes. You can also delete your account: your profile goes, along with any trip no one else is on and every note and item you added. A trip you own that other people are on stays with them — it passes to the member who joined first.',
   },
 ];
 
