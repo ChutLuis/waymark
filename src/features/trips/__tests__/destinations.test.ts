@@ -167,9 +167,15 @@ describe('stampName', () => {
   });
 
   it('keeps whole words that fit in 10 characters', () => {
-    expect(stampName('San Francisco')).toBe('SAN');
     expect(stampName('Rio de Janeiro')).toBe('RIO DE');
     expect(stampName('Ho Chi Minh City')).toBe('HO CHI');
+    expect(stampName('New York City')).toBe('NEW YORK');
+  });
+
+  it('skips a leading filler word and uses the longest word that fits', () => {
+    expect(stampName('San Francisco')).toBe('FRANCISCO');
+    expect(stampName('San Sebastián')).toBe('SEBASTIÁN');
+    expect(stampName('Los Angeles')).toBe('ANGELES');
   });
 
   it('cuts a single word longer than 10 to 10', () => {

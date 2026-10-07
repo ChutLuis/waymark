@@ -78,6 +78,8 @@ export function SegmentedControl<T extends string>({
               // One size for both states so labels don't jump on tap; only the
               // weight and colour change.
               style={{
+                alignSelf: 'stretch',
+                textAlign: 'center',
                 color: selected ? colors.paper : colors.ink,
                 fontFamily: selected ? fontFamilies.bold : fontFamilies.semibold,
                 fontSize: labelSize,

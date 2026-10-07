@@ -189,7 +189,7 @@ export default function SignInScreen() {
           variant="quiet"
           size="md"
           leading={<Mail size={20} color={colors.ink} strokeWidth={iconStrokeWidth} />}
-          onPress={() => router.push('/join')}
+          onPress={() => router.push('/invite-code')}
         />
       </View>
       </ScrollView>

@@ -30,7 +30,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: 'Removing your data',
     body:
-      'You can delete a trip you own, which removes its itinerary, packing list and notes. Deleting your account removes your profile and everything tied to it.',
+      'You can delete a trip you own, which removes its itinerary, packing list and notes.',
   },
 ];
 

@@ -188,7 +188,7 @@ export default function TripsListScreen() {
               size="lg"
               onPress={() => router.push('/join')}
               style={styles.joinButton}
-              labelStyle={styles.joinLabel}
+              labelStyle={[styles.joinLabel, width < 390 && styles.joinLabelNarrow]}
               labelLines={1}
             />
           </View>
@@ -229,4 +229,6 @@ const styles = StyleSheet.create({
   actionCol: { flex: 1 },
   joinButton: { paddingHorizontal: 0 },
   joinLabel: { fontSize: 17, lineHeight: 22 },
+  // Drop a step below 390 so "Join with a code" keeps one line (item 8).
+  joinLabelNarrow: { fontSize: 15, lineHeight: 20 },
 });

@@ -126,11 +126,21 @@ export function SceneStamp({
       {panel}
       {layout.nameStrip > 0 ? (
         <View style={{ height: layout.nameStrip, alignItems: 'center', justifyContent: 'center' }}>
-          {/* No numberOfLines: Android mis-measures mono text with letter
-              spacing and clips names that fit. Uppercased here so every caller
-              prints the same. */}
+          {/* alignSelf/stretch + textAlign centre give the Text the strip's
+              full width, so Android's hair-short mono measurement can't wrap
+              the last letter onto a clipped second line (N4/N10). numberOfLines
+              is back now that the width is unambiguous. */}
           <Text
-            style={{ fontFamily: fontFamilies.mono, fontSize: layout.nameSize, lineHeight: layout.nameLine, letterSpacing: layout.nameLs, color: colors.stampInk }}
+            numberOfLines={1}
+            style={{
+              alignSelf: 'stretch',
+              textAlign: 'center',
+              fontFamily: fontFamilies.mono,
+              fontSize: layout.nameSize,
+              lineHeight: layout.nameLine,
+              letterSpacing: layout.nameLs,
+              color: colors.stampInk,
+            }}
           >
             {(name ?? '').toUpperCase()}
           </Text>
@@ -190,7 +200,18 @@ export function AvatarStamp({
       </View>
       {dims.nameSize > 0 ? (
         <View style={{ height: layout.nameStrip, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontFamily: fontFamilies.mono, fontSize: dims.nameSize, lineHeight: dims.nameLine, letterSpacing: dims.nameLs, color: colors.stampInk }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              alignSelf: 'stretch',
+              textAlign: 'center',
+              fontFamily: fontFamilies.mono,
+              fontSize: dims.nameSize,
+              lineHeight: dims.nameLine,
+              letterSpacing: dims.nameLs,
+              color: colors.stampInk,
+            }}
+          >
             {(name ?? '').toUpperCase()}
           </Text>
         </View>

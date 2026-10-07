@@ -160,39 +160,48 @@ export default function PackingScreen() {
               </AppText>
               <View style={[styles.needsCard, { borderColor: colors.ink3 }]}>
                 {unassigned.map((item) => (
-                  <View key={item.id} style={styles.needsRow}>
-                    <Checkbox
-                      checked={item.isPacked}
-                      label={`${item.label}, ${item.isPacked ? 'packed' : 'not packed'}`}
-                      onPress={() => setPacked.mutate({ itemId: item.id, isPacked: !item.isPacked })}
-                    />
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Edit ${item.label}`}
-                      onPress={() => openEditor(item)}
-                      style={styles.needsLabel}
-                    >
-                      <PackingLabel item={item} semibold />
-                    </Pressable>
-                    {me ? (
-                      <Button
-                        label="Me"
-                        variant="secondary"
-                        size="sm"
-                        onPress={() => claim(item, me.userId)}
-                        style={styles.claimButton}
+                  <View key={item.id} style={styles.needsItem}>
+                    <View style={styles.needsHeadRow}>
+                      <Checkbox
+                        checked={item.isPacked}
+                        label={`${item.label}, ${item.isPacked ? 'packed' : 'not packed'}`}
+                        onPress={() => setPacked.mutate({ itemId: item.id, isPacked: !item.isPacked })}
                       />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Edit ${item.label}`}
+                        onPress={() => openEditor(item)}
+                        style={styles.needsLabel}
+                      >
+                        <PackingLabel item={item} semibold />
+                      </Pressable>
+                    </View>
+                    {/* Claim pills get their own row so "Me" and "Theo" wrap
+                        together, right-aligned, instead of splitting across
+                        lines at 360 (item N13). */}
+                    {me || others.length > 0 ? (
+                      <View style={styles.claimRow}>
+                        {me ? (
+                          <Button
+                            label="Me"
+                            variant="secondary"
+                            size="sm"
+                            onPress={() => claim(item, me.userId)}
+                            style={styles.claimButton}
+                          />
+                        ) : null}
+                        {others.map((m) => (
+                          <Button
+                            key={m.userId}
+                            label={firstName(m)}
+                            variant="secondary"
+                            size="sm"
+                            onPress={() => claim(item, m.userId)}
+                            style={styles.claimButton}
+                          />
+                        ))}
+                      </View>
                     ) : null}
-                    {others.map((m) => (
-                      <Button
-                        key={m.userId}
-                        label={firstName(m)}
-                        variant="secondary"
-                        size="sm"
-                        onPress={() => claim(item, m.userId)}
-                        style={styles.claimButton}
-                      />
-                    ))}
                   </View>
                 ))}
               </View>
@@ -292,7 +301,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.s5,
   },
-  titleBlock: { flexShrink: 1 },
+  titleBlock: { flex: 1, minWidth: 0 },
   subtitle: { marginTop: 2 },
   actionPill: {
     height: 44,
@@ -323,17 +332,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingLeft: 15,
   },
-  needsRow: {
-    minHeight: 64,
+  needsItem: {
+    paddingVertical: 10,
+    gap: 6,
+  },
+  needsHeadRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.s6,
-    flexWrap: 'wrap',
-    // A single line would sit at the top otherwise (item N8).
-    alignContent: 'center',
   },
-  needsLabel: { flex: 1, minWidth: 120 },
-  claimButton: { minHeight: 44, paddingHorizontal: 16 },
+  needsLabel: { flex: 1, minWidth: 0 },
+  // Pills share one row, wrap together, and hug the right edge.
+  claimRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: spacing.s3,
+  },
+  claimButton: { minHeight: 40, paddingHorizontal: 16 },
   checkbox: {
     width: 26,
     height: 26,

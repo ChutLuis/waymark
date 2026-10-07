@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, ChevronLeft, Lock, Mail } from 'lucide-react-native';
@@ -9,6 +9,7 @@ import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
 import { SceneStamp } from '@/features/trips/SceneStamp';
 import { useAcceptInvite, usePreviewTripInvite } from '@/features/invites/hooks';
+import { INVITE_CODE_LENGTH, InviteCodeEntry, sanitizeInviteCode } from '@/features/invites/InviteCodeEntry';
 import {
   DESTINATION_INFO,
   matchDestination,
@@ -16,10 +17,10 @@ import {
   daysUntilLabelUppercase,
   stampName,
 } from '@/features/trips/destinations';
-import { iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
+import { iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
 
-const LENGTH = 8;
+const LENGTH = INVITE_CODE_LENGTH;
 
 function friendlyMessage(error: Error): string {
   if (/invalid invite/i.test(error.message)) {
@@ -41,18 +42,15 @@ export default function JoinScreen() {
   const router = useRouter();
   const { code: linkCode } = useLocalSearchParams<{ code?: string }>();
   const acceptInvite = useAcceptInvite();
-  const inputRef = useRef<TextInput>(null);
 
   const initialCode = typeof linkCode === 'string' ? linkCode : '';
-  const [code, setCode] = useState(initialCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, LENGTH));
+  const [code, setCode] = useState(sanitizeInviteCode(initialCode));
   const [banner, setBanner] = useState<string | null>(null);
   const isWide = width >= 720;
 
   const complete = code.length === LENGTH;
   const preview = usePreviewTripInvite(complete ? code : null);
   const country = preview.data ? matchDestination(preview.data.destination) : null;
-
-  const chars = useMemo(() => Array.from({ length: LENGTH }, (_, i) => code[i] ?? ''), [code]);
 
   const onJoin = async () => {
     setBanner(null);
@@ -88,42 +86,14 @@ export default function JoinScreen() {
         <AppText role="kicker" tone="secondary">JOIN A TRIP</AppText>
         <AppText role="title" style={styles.title}>Enter your code</AppText>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Edit invite code"
-          onPress={() => inputRef.current?.focus()}
-          style={styles.codeRow}
-        >
-          {[0, 1].map((group) => (
-            <View key={group} style={[styles.codeGroup, group === 1 && styles.codeGroupSpaced]}>
-              {chars.slice(group * 4, group * 4 + 4).map((char, index) => (
-                <View
-                  key={group * 4 + index}
-                  style={[styles.codeBox, { backgroundColor: colors.paper, borderColor: colors.ink }]}
-                >
-                  <AppText role="codeBox" style={{ color: colors.ink }}>
-                    {char}
-                  </AppText>
-                </View>
-              ))}
-            </View>
-          ))}
-        </Pressable>
-        <TextInput
-          ref={inputRef}
+        <InviteCodeEntry
           value={code}
-          onChangeText={(text) => setCode(text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, LENGTH))}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          maxLength={LENGTH}
-          accessibilityLabel="Invite code"
-          style={styles.hiddenInput}
+          onChangeText={setCode}
           autoFocus={!linkCode}
-          onSubmitEditing={() => {
+          onSubmit={() => {
             if (complete && !acceptInvite.isPending) onJoin();
           }}
-        />
-
+        >
         {complete && preview.isSuccess ? (
           <View style={styles.foundRow}>
             <View style={[styles.foundCircle, { backgroundColor: colors.ink }]}>
@@ -137,6 +107,7 @@ export default function JoinScreen() {
             {banner ?? friendlyMessage(preview.error as Error)}
           </AppText>
         ) : null}
+        </InviteCodeEntry>
 
         {preview.data ? (
           <View style={styles.previewBlock}>
@@ -238,18 +209,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   title: { marginTop: spacing.s3 },
-  codeRow: { flexDirection: 'row', marginTop: spacing.s9 },
-  codeGroup: { flexDirection: 'row', gap: 6 },
-  codeGroupSpaced: { marginLeft: 14 },
-  codeBox: {
-    width: 36,
-    height: 54,
-    borderRadius: radius.codeBox,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hiddenInput: { position: 'absolute', opacity: 0, height: 1, width: 1 },
   foundRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.s4 },
   foundCircle: { width: 22, height: 22, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   error: { marginTop: spacing.s4 },
@@ -263,7 +222,7 @@ const styles = StyleSheet.create({
   },
   tripDetails: { marginTop: spacing.s7 },
   tripTitleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.s5 },
-  tripName: { flexShrink: 1, fontSize: 22, lineHeight: 26 },
+  tripName: { flex: 1, minWidth: 0, fontSize: 22, lineHeight: 26 },
   tripMeta: { marginTop: 2 },
   rules: { marginTop: spacing.s8, gap: spacing.s5 },
   rule: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.s5 },

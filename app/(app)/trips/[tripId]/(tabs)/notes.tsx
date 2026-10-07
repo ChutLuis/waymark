@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.s5,
   },
-  titleBlock: { flexShrink: 1 },
+  titleBlock: { flex: 1, minWidth: 0 },
   subtitle: { marginTop: 2 },
   actionPill: {
     height: 44,

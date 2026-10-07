@@ -45,7 +45,7 @@ function TitleRow({ title, subtitle, onAdd }: { title: string; subtitle: string;
   return (
     <View style={styles.titleRow}>
       <View style={styles.titleBlock}>
-        <AppText role="tripTitle" numberOfLines={1}>
+        <AppText role="tripTitle" numberOfLines={2}>
           {title}
         </AppText>
         {subtitle ? <AppText role="meta" tone="secondary" style={styles.subtitle}>{subtitle}</AppText> : null}
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.s5,
   },
-  titleBlock: { flexShrink: 1 },
+  titleBlock: { flex: 1, minWidth: 0 },
   subtitle: { marginTop: 2 },
   actionPill: {
     height: 44,
@@ -452,7 +452,9 @@ const styles = StyleSheet.create({
   nextTag: { paddingVertical: 3, paddingHorizontal: 6, borderRadius: 3 },
   freeRow: { height: 32, justifyContent: 'center', paddingTop: 0, paddingBottom: 0 },
   freeText: { fontSize: 15, lineHeight: 20 },
-  emptyDay: { padding: 20, alignItems: 'center' },
+  // Start at the body column (past the margin rule at x=66) so the rule
+// doesn't cut through the sentence (item 8).
+  emptyDay: { minHeight: 50, paddingVertical: 14, paddingLeft: 80, paddingRight: 20, justifyContent: 'center' },
   nowRow: { position: 'absolute', left: 0, right: 0, top: -15, height: 30, justifyContent: 'center' },
   nowRowTrailing: { height: 30, justifyContent: 'center' },
   nowLine: { position: 'absolute', left: 0, right: 0, top: 14, height: 2 },

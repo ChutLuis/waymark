@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.s5,
   },
-  titleBlock: { flexShrink: 1 },
+  titleBlock: { flex: 1, minWidth: 0 },
   subtitle: { marginTop: 2 },
   editPill: {
     height: 44,
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     gap: spacing.s5,
     boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
   },
-  tripCardText: { flex: 1 },
+  tripCardText: { flex: 1, minWidth: 0 },
   tripCardMeta: { marginTop: 2 },
   tripCardKicker: { marginTop: 8 },
   sectionKicker: { paddingTop: spacing.s8, paddingBottom: spacing.s3, paddingHorizontal: spacing.gutter },

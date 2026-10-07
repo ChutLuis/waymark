@@ -300,9 +300,29 @@ export function stampName(destination: string | null | undefined): string {
     if (next.length > 10) break;
     kept.push(word);
   }
-  if (kept.length > 0) return kept.join(' ');
+  if (kept.length > 0) {
+    // A leading filler word ("SAN", "LOS", "EL") on its own says nothing; use
+    // the longest later word that fits instead (San Sebastián → SEBASTIÁN,
+    // Los Angeles → ANGELES).
+    if (kept.length === 1 && kept[0].length <= 3) {
+      const longest = longestWordThatFits(words.slice(1), 10);
+      if (longest) return longest;
+    }
+    return kept.join(' ');
+  }
   // The first word alone is over 10: cut it to 10.
   return words[0].slice(0, 10);
+}
+
+/** The longest of `words` whose length is within `max`, or null. */
+function longestWordThatFits(words: string[], max: number): string | null {
+  let best: string | null = null;
+  for (const word of words) {
+    if (word.length <= max && (best === null || word.length > best.length)) {
+      best = word;
+    }
+  }
+  return best;
 }
 
 /** Inclusive days minus one. */
