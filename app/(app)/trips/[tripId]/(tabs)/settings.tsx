@@ -10,7 +10,7 @@ import { DeleteTripSheet } from '@/features/trips/DeleteTripSheet';
 import { EditTripSheet } from '@/features/trips/EditTripSheet';
 import { InviteCard } from '@/features/invites/InviteCard';
 import { useLeaveTrip, useTrip, useTripMembers } from '@/features/trips/hooks';
-import { DESTINATION_INFO, matchDestination, tripDatesKicker } from '@/features/trips/destinations';
+import { DESTINATION_INFO, matchDestination, stampName, tripDatesKicker } from '@/features/trips/destinations';
 import { useAuth } from '@/features/auth/AuthContext';
 import { hairlineWidth, iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { confirmDestructive } from '@/lib/confirm';
@@ -78,15 +78,23 @@ export default function TripTabScreen() {
             <AppText role="cardTitle" numberOfLines={1}>
               {trip.data.name}
             </AppText>
+            {/* Known region: "Region · stamp: description". Unknown: show the
+                destination as typed when there is one, hide the line when there
+                isn't, and only say "No stamp yet" for the dashed (no-dates)
+                slot. */}
             {info ? (
               <AppText role="meta" tone="secondary" style={styles.tripCardMeta}>
                 {info.region} · stamp: {info.description}
               </AppText>
-            ) : (
+            ) : trip.data.destination ? (
+              <AppText role="meta" tone="secondary" style={styles.tripCardMeta}>
+                {trip.data.destination}
+              </AppText>
+            ) : !trip.data.startDate || !trip.data.endDate ? (
               <AppText role="meta" tone="secondary" style={styles.tripCardMeta}>
                 No stamp yet
               </AppText>
-            )}
+            ) : null}
             <AppText role="kickerLg" style={styles.tripCardKicker}>
               {tripDatesKicker(trip.data.startDate, trip.data.endDate)}
             </AppText>
@@ -98,7 +106,7 @@ export default function TripTabScreen() {
               band="xs"
               image={null}
               initial={(trip.data.name[0] ?? '?').toUpperCase()}
-              name={(trip.data.destination ?? '').toUpperCase()}
+              name={stampName(trip.data.destination)}
             />
           ) : (
             <EmptyStampSlot width={56} height={72} />

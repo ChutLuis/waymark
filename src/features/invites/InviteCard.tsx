@@ -70,8 +70,10 @@ export function InviteCard({ tripId }: { tripId: string }) {
   const days = daysUntil(invite.data.expiresAt);
 
   return (
-    <View style={styles.card}>
-      <AirmailBorder padding={6}>
+    <View>
+      {/* Shadow only under the airmail border, not under the buttons (item N5). */}
+      <View style={styles.card}>
+        <AirmailBorder padding={6}>
         <View style={styles.inner}>
           <View style={styles.topRow}>
             <AppText role="kicker">INVITE CODE</AppText>
@@ -96,6 +98,7 @@ export function InviteCard({ tripId }: { tripId: string }) {
           </AppText>
         </View>
       </AirmailBorder>
+      </View>
       <View style={styles.buttons}>
         <View style={styles.buttonCol}>
           <Button

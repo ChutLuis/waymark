@@ -16,6 +16,7 @@ import {
   DESTINATION_INFO,
   denomination,
   matchDestination,
+  stampName,
   tripDays,
   tripNights,
 } from '@/features/trips/destinations';
@@ -118,7 +119,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
             ) : country ? (
               <SceneStamp band="md" image={DESTINATION_ART[country].sceneStampStill} denomination={null} name={info?.stampName ?? ''} />
             ) : destination ? (
-              <SceneStamp band="md" image={null} initial={(destination[0] ?? '?').toUpperCase()} name={destination.toUpperCase()} />
+              <SceneStamp band="md" image={null} initial={(destination[0] ?? '?').toUpperCase()} name={stampName(destination)} />
             ) : (
               <EmptyStampSlot width={88} height={104} />
             )}
@@ -238,9 +239,9 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
 }
 
 const styles = StyleSheet.create({
-  preview: {
-    // The preview card runs at the card gutter (14), 10 pt wider than the
-    // sheet's 24 pt text column on each side.
+preview: {
+    // Escape the 24 pt column to the 14 pt card gutter (the sheet body is the
+    // padded container, so this negative margin is not clamped by the ScrollView).
     marginHorizontal: -10,
     borderRadius: 4,
     paddingTop: 16,
@@ -257,7 +258,9 @@ const styles = StyleSheet.create({
   previewRange: { marginTop: 10 },
   rule: { height: 1, marginTop: 14 },
   previewStamp: { flexShrink: 0 },
-  helperRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s5, paddingHorizontal: spacing.s6 },
+  // The sheet content already sits at the 24 pt column; the row extends 4 pt to
+// the right so the "Use a photo" button ends 20 pt from the sheet edge (item 21).
+  helperRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s5, marginRight: -4 },
   helperText: { flex: 1 },
   stampReady: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stampReadyText: { fontFamily: fontFamilies.semibold, fontSize: 14, lineHeight: 18 },

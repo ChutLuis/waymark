@@ -55,7 +55,8 @@ interface ArtStampProps {
   /** Name strip text, e.g. GUATEMALA. */
   name?: string | null;
   /** Frame tone: white for art stamps, paper on the trips-list header. */
-  frame?: 'stampPaper' | 'paper' | 'ink';
+  /** Frame tone. Always stamp paper in both themes (correction 3). */
+  frame?: 'stampPaper' | 'ink';
   /** Fallback initial shown in an ink panel (unknown destination with dates). */
   initial?: string | null;
 }
@@ -125,11 +126,13 @@ export function SceneStamp({
       {panel}
       {layout.nameStrip > 0 ? (
         <View style={{ height: layout.nameStrip, alignItems: 'center', justifyContent: 'center' }}>
+          {/* No numberOfLines: Android mis-measures mono text with letter
+              spacing and clips names that fit. Uppercased here so every caller
+              prints the same. */}
           <Text
-            numberOfLines={1}
             style={{ fontFamily: fontFamilies.mono, fontSize: layout.nameSize, lineHeight: layout.nameLine, letterSpacing: layout.nameLs, color: colors.stampInk }}
           >
-            {name ?? ''}
+            {(name ?? '').toUpperCase()}
           </Text>
         </View>
       ) : null}
@@ -149,7 +152,7 @@ export function AvatarStamp({
   size: AvatarStampSize;
   initial: string;
   name?: string | null;
-  frame?: 'stampPaper' | 'paper';
+  frame?: 'stampPaper';
   /** Local or already-signed photo URI; wins over `avatarPath`. */
   imageUri?: string | null;
   /** avatars-bucket object path; resolved to a signed URL. */
@@ -187,8 +190,8 @@ export function AvatarStamp({
       </View>
       {dims.nameSize > 0 ? (
         <View style={{ height: layout.nameStrip, alignItems: 'center', justifyContent: 'center' }}>
-          <Text numberOfLines={1} style={{ fontFamily: fontFamilies.mono, fontSize: dims.nameSize, lineHeight: dims.nameLine, letterSpacing: dims.nameLs, color: colors.stampInk }}>
-            {name ?? ''}
+          <Text style={{ fontFamily: fontFamilies.mono, fontSize: dims.nameSize, lineHeight: dims.nameLine, letterSpacing: dims.nameLs, color: colors.stampInk }}>
+            {(name ?? '').toUpperCase()}
           </Text>
         </View>
       ) : null}
@@ -232,7 +235,8 @@ export function DestinationStamp({
   country: CountryKey | null;
   band: StampBand;
   days: number;
-  frame?: 'stampPaper' | 'paper' | 'ink';
+  /** Frame tone. Always stamp paper in both themes (correction 3). */
+  frame?: 'stampPaper' | 'ink';
   /** Cover photo still path wins (resolved by the caller to an image source). */
   coverImagePath?: ReturnType<typeof require> | null;
 }) {

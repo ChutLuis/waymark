@@ -36,12 +36,15 @@ function friendlyMessage(error: Error): string {
 
 /**
  * The stacked back postcards behind the front sign-in postcard. The stack is
- * authored for a 390 pt screen and centred in a 390 pt box, so it stays
- * centred on larger phones and doesn't run off the edge on 360 pt Androids.
+ * authored for a 390 pt screen; below that it scales down as a whole so nothing
+ * overhangs or clips (item 07), and above it stays centred at full size.
  */
 function PostcardStack() {
+  const { width } = useWindowDimensions();
+  const scale = Math.min(1, width / 390);
   return (
-    <View style={styles.stack}>
+    <View style={[styles.stackOuter, { height: 290 * scale }]}>
+    <View style={[styles.stack, { transform: [{ scale }], transformOrigin: 'top center' }]}>
         <View style={[styles.backCardWrap, styles.backLeft]}>
           <Postcard
             rotation={-8}
@@ -68,6 +71,7 @@ function PostcardStack() {
             <TripScene country="japan" crop="header" width={222} height={144} live />
           </Postcard>
         </View>
+    </View>
     </View>
   );
 }
@@ -98,7 +102,9 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      // Edge-to-edge (SDK 57) ignores adjustResize, so Android needs an explicit
+      // behaviour or the focused field stays under the keyboard.
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
         style={{ backgroundColor: colors.bg }}
@@ -196,7 +202,8 @@ const styles = StyleSheet.create({
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 6, paddingHorizontal: spacing.gutter },
   wordmark: { fontSize: 22, lineHeight: 26 },
-  stack: { width: '100%', maxWidth: 390, alignSelf: 'center', height: 290, position: 'relative' },
+  stackOuter: { width: '100%', overflow: 'visible' },
+  stack: { width: 390, height: 290, position: 'relative', alignSelf: 'center' },
   backCardWrap: { position: 'absolute' },
   backLeft: { left: 10, top: 30, width: 212, height: 142 },
   backRight: { left: 168, top: 20, width: 212, height: 142 },

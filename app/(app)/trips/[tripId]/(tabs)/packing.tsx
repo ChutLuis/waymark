@@ -329,6 +329,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.s6,
     flexWrap: 'wrap',
+    // A single line would sit at the top otherwise (item N8).
+    alignContent: 'center',
   },
   needsLabel: { flex: 1, minWidth: 120 },
   claimButton: { minHeight: 44, paddingHorizontal: 16 },

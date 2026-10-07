@@ -46,7 +46,9 @@ export function WaxSeal({ initial, size = 34, style }: WaxSealProps) {
             style={[
               styles.initial,
               {
-                color: colors.paper,
+                // Fixed cream: the wax is red in both themes, so the initial
+                // must stay light (the theme paper turns navy in dark mode).
+                color: '#FFFCF5',
                 fontFamily: fontFamilies.bold,
                 fontSize: size <= 28 ? 12 : 15,
                 lineHeight: size <= 28 ? 15 : 18,

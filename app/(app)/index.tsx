@@ -96,7 +96,6 @@ export default function TripsListScreen() {
             <AvatarStamp
               size="sm"
               initial={(firstName[0] ?? '?').toUpperCase()}
-              frame="paper"
               avatarPath={profile.data?.avatarPath ?? null}
             />
           </Pressable>

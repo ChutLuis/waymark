@@ -280,6 +280,31 @@ export function tripDays(start: string | null, end: string | null): number {
   return days > 0 ? days : 0;
 }
 
+/**
+ * The name printed on an unknown destination's initial stamp, derived from the
+ * free-text destination so it always fits a 10-character stamp strip:
+ *  1. take the text before the first comma, uppercased;
+ *  2. if it is 10 characters or fewer, use it as is;
+ *  3. otherwise keep whole words that fit in 10 characters;
+ *  4. if the first word alone is longer than 10, cut it to 10.
+ */
+export function stampName(destination: string | null | undefined): string {
+  if (!destination) return '';
+  const beforeComma = destination.split(',')[0].trim().toUpperCase();
+  if (beforeComma.length <= 10) return beforeComma;
+
+  const words = beforeComma.split(/\s+/).filter(Boolean);
+  const kept: string[] = [];
+  for (const word of words) {
+    const next = [...kept, word].join(' ');
+    if (next.length > 10) break;
+    kept.push(word);
+  }
+  if (kept.length > 0) return kept.join(' ');
+  // The first word alone is over 10: cut it to 10.
+  return words[0].slice(0, 10);
+}
+
 /** Inclusive days minus one. */
 export function tripNights(start: string | null, end: string | null): number {
   const days = tripDays(start, end);

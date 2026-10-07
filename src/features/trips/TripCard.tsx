@@ -13,6 +13,7 @@ import {
   formatTripRange,
   matchDestination,
   otherMembersWording,
+  stampName,
   tripDays,
 } from './destinations';
 import { spacing, useTheme } from '@/theme';
@@ -155,7 +156,7 @@ export function TripCard({ trip, variant, onPress, paused = false }: TripCardPro
           ) : country ? (
             <DestinationStamp country={country} band="xs" days={days} />
           ) : (
-            <SceneStamp band="xs" image={null} initial={initial(trip.name)} name={trip.destination ?? undefined} />
+            <SceneStamp band="xs" image={null} initial={initial(trip.name)} name={stampName(trip.destination)} />
           )}
         </View>
       </View>

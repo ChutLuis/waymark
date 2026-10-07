@@ -8,6 +8,7 @@ import {
   matchDestination,
   otherMembersWording,
   romanMonth,
+  stampName,
   tripDays,
   tripNights,
 } from '../destinations';
@@ -151,6 +152,35 @@ describe('countdownLabel', () => {
   });
   it('uses hours at an hour or more', () => {
     expect(countdownLabel(120)).toBe('IN 2 H');
+  });
+});
+
+describe('stampName', () => {
+  it('uppercases the text before the first comma', () => {
+    expect(stampName('Berlin')).toBe('BERLIN');
+    expect(stampName('Berlin, Germany')).toBe('BERLIN');
+  });
+
+  it('keeps names of 10 characters or fewer as is', () => {
+    expect(stampName('New York')).toBe('NEW YORK');
+    expect(stampName('Reykjavík')).toBe('REYKJAVÍK');
+  });
+
+  it('keeps whole words that fit in 10 characters', () => {
+    expect(stampName('San Francisco')).toBe('SAN');
+    expect(stampName('Rio de Janeiro')).toBe('RIO DE');
+    expect(stampName('Ho Chi Minh City')).toBe('HO CHI');
+  });
+
+  it('cuts a single word longer than 10 to 10', () => {
+    expect(stampName('Llanfairpwllgwyngyll')).toBe('LLANFAIRPW');
+    expect(stampName('Constantinople')).toBe('CONSTANTIN');
+  });
+
+  it('is empty for a missing destination', () => {
+    expect(stampName(null)).toBe('');
+    expect(stampName('')).toBe('');
+    expect(stampName('   ')).toBe('');
   });
 });
 

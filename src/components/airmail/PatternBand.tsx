@@ -131,7 +131,10 @@ export function PatternBand({ pattern, height = 12, tile, style }: PatternBandPr
 
 const styles = StyleSheet.create({
   host: {
-    width: '100%',
+    // `alignSelf: stretch` lets the band span its container (including the
+    // preview's negative margins); `width: 100%` overrode those margins and
+    // left the band short of the card edge (item 21).
+    alignSelf: 'stretch',
     overflow: 'hidden',
   },
 });

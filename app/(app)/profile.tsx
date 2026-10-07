@@ -14,7 +14,7 @@ import { Toggle } from '@/components/Toggle';
 import { Postmark } from '@/components/airmail/Postmark';
 import { EmptyStampSlot, ErrorState, LoadingState } from '@/components/StateViews';
 import { AvatarStamp, DestinationStamp, SceneStamp } from '@/features/trips/SceneStamp';
-import { DESTINATION_INFO, matchDestination, tripDays } from '@/features/trips/destinations';
+import { DESTINATION_INFO, matchDestination, stampName, tripDays } from '@/features/trips/destinations';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useMyProfile, useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
@@ -108,7 +108,7 @@ function AlbumCell({ trip, today }: { trip: TripListItem; today: string }) {
         ) : country ? (
           <DestinationStamp country={country} band="sm" days={days} />
         ) : (
-          <SceneStamp band="sm" image={null} initial={(trip.name[0] ?? '?').toUpperCase()} name={trip.destination ?? ''} />
+          <SceneStamp band="sm" image={null} initial={(trip.name[0] ?? '?').toUpperCase()} name={stampName(trip.destination)} />
         )}
         {past && country ? (
           <Postmark
@@ -119,10 +119,17 @@ function AlbumCell({ trip, today }: { trip: TripListItem; today: string }) {
         ) : null}
       </View>
       <View style={styles.albumLabels}>
-        <AppText role="kicker" style={{ fontSize: 10, lineHeight: 12, letterSpacing: 0.6 }}>
+        <AppText
+          role="kicker"
+          style={[styles.albumLabelText, { fontSize: 10, lineHeight: 12, letterSpacing: 0.6 }]}
+        >
           {(info?.caption ?? trip.destination ?? trip.name).toUpperCase()}
         </AppText>
-        <AppText role="metaSm" tone="secondary" style={{ fontSize: 12, lineHeight: 15 }}>
+        <AppText
+          role="metaSm"
+          tone="secondary"
+          style={[styles.albumLabelText, { fontSize: 12, lineHeight: 15 }]}
+        >
           {albumStatus(trip, today)}
         </AppText>
       </View>
@@ -318,7 +325,9 @@ const styles = StyleSheet.create({
   albumCell: { width: '33.33%', alignItems: 'center', gap: 6 },
   albumStampWrap: { width: 80, height: 96, position: 'relative' },
   albumPostmark: { position: 'absolute', left: -14, top: 22 },
-  albumLabels: { alignItems: 'center' },
+  albumLabels: { alignItems: 'center', alignSelf: 'stretch' },
+  // Centred so short lines ("May") sit under the stamp, not left of centre (N7).
+  albumLabelText: { textAlign: 'center', alignSelf: 'stretch' },
   albumEmpty: { width: '100%', alignItems: 'center', gap: spacing.s3, paddingVertical: spacing.s5 },
   albumEmptyText: { textAlign: 'center' },
   settingsCard: { marginTop: spacing.s6, marginHorizontal: spacing.cardGutter, borderRadius: radius.card, paddingHorizontal: 16 },

@@ -248,6 +248,7 @@ export default function PlanScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.dayStripScroll}
             contentContainerStyle={styles.dayStrip}
           >
             {strip.map((d) => (
@@ -425,6 +426,9 @@ const styles = StyleSheet.create({
   nextTitle: { marginTop: 4 },
   nextLine: { marginTop: 4, fontSize: 16, lineHeight: 22 },
   dayStrip: { paddingTop: spacing.s7, paddingHorizontal: spacing.s7, gap: 9 },
+  // The Plan scroll content grows (item 14); without this the horizontal strip
+  // would absorb half the free space, leaving a band above the sheet.
+  dayStripScroll: { flexGrow: 0 },
   dayStampContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 1 },
   sheet: {
     flexGrow: 1,

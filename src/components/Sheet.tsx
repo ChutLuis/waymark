@@ -82,7 +82,9 @@ export function Sheet({
         <Pressable accessibilityLabel="Close" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // Edge-to-edge (SDK 57) ignores adjustResize; Android needs an explicit
+        // behaviour so the sheet's focused field clears the keyboard.
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={[styles.host, isWide && styles.hostWide]}
         pointerEvents="box-none"
       >
@@ -160,7 +162,6 @@ const styles = StyleSheet.create({
   },
   card: {
     paddingTop: 0,
-    paddingHorizontal: spacing.gutter,
     maxHeight: '92%',
   },
   cardSheet: {
@@ -185,6 +186,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 52,
+    paddingHorizontal: spacing.gutter,
   },
   headerSlot: {
     flex: 1,
@@ -228,6 +230,7 @@ const styles = StyleSheet.create({
   body: {
     gap: spacing.s6,
     paddingTop: spacing.s3,
+    paddingHorizontal: spacing.gutter,
   },
   pressed: {
     opacity: 0.7,

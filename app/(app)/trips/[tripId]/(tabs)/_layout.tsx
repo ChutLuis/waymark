@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Slot, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { Slot, useIsFocused, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
@@ -30,10 +30,11 @@ import { fontFamilies, radius, useTheme } from '@/theme';
  */
 export default function TripTabsLayout() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
+  const isFocused = useIsFocused();
   const { width } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
 
@@ -65,25 +66,32 @@ export default function TripTabsLayout() {
   // layouts don't show mostly sky; the safe-area floor keeps the header row
   // clear of the notch on native.
   const heroHeight = Math.max((196 / 390) * screenWidth, insets.top + 149);
-  const collapsedHeight = hasArt
-    ? Math.max((104 / 390) * screenWidth, insets.top + 57)
-    : insets.top + 104;
+  // The 104 banner already includes the status bar. Without art every tab uses
+  // this collapsed height (no 196 hero, no animation) so a Berlin/Narnia trip
+  // doesn't open on a blank block.
+  const collapsedHeight = Math.max((104 / 390) * screenWidth, insets.top + 57);
+  const targetHeight = hasArt && isPlan ? heroHeight : collapsedHeight;
 
   // Animate the header height without remounting the Lottie: it is a pure clip
   // over one mounted hero scene. The fallback banner never animates.
-  const headerHeight = useLazyAnimatedValue(isPlan ? heroHeight : collapsedHeight);
+  const headerHeight = useLazyAnimatedValue(targetHeight);
   useEffect(() => {
     Animated.timing(headerHeight, {
-      toValue: isPlan ? heroHeight : collapsedHeight,
+      toValue: targetHeight,
       duration: reducedMotion || !hasArt ? 0 : 300,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [isPlan, headerHeight, reducedMotion, heroHeight, collapsedHeight, hasArt]);
+  }, [targetHeight, headerHeight, reducedMotion, hasArt]);
 
+  // Over art, follow the scene. Without art, follow the theme (dark icons in
+// light mode, light icons in dark) — the paper banner is light in light mode
+// and navy in dark mode (item 08, correction 2).
   const statusBarStyle: 'light' | 'dark' = country
     ? DESTINATION_INFO[country].statusBar
-    : 'dark';
+    : scheme === 'dark'
+      ? 'light'
+      : 'dark';
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -98,7 +106,8 @@ export default function TripTabsLayout() {
           </View>
         ) : trip.data ? (
           <>
-            <StatusBar style={statusBarStyle} />
+            {/* Only while focused, so the style doesn't outlive the screen. */}
+            {isFocused ? <StatusBar style={statusBarStyle} /> : null}
             <Animated.View
               style={[styles.header, { height: headerHeight, backgroundColor: hasArt ? undefined : colors.paper }]}
             >

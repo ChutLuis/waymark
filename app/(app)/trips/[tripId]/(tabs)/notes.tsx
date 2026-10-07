@@ -148,8 +148,8 @@ export default function NotesScreen() {
                     <View style={styles.envelopeBody}>
                       <View style={styles.envelopeHeader}>
                         <View style={styles.headerLeft}>
-                          <Lock size={14} color={colors.stampInk} strokeWidth={2.4} />
-                          <AppText role="kicker" style={{ color: colors.stampInk, letterSpacing: 0.6 }}>
+                          <Lock size={14} color={colors.ink} strokeWidth={2.4} />
+                          <AppText role="kicker" style={{ color: colors.ink, letterSpacing: 0.6 }}>
                             ONLY YOU
                           </AppText>
                         </View>
@@ -157,7 +157,7 @@ export default function NotesScreen() {
                           {relativeLabel(note.updatedAt)}
                         </AppText>
                       </View>
-                      <AppText role="noteBody" style={[styles.envelopeText, { color: colors.stampInk }]}>
+                      <AppText role="noteBody" style={[styles.envelopeText, { color: colors.ink }]}>
                         {note.body}
                       </AppText>
                     </View>

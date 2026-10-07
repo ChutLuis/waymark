@@ -14,6 +14,7 @@ import {
   matchDestination,
   formatTripRange,
   daysUntilLabelUppercase,
+  stampName,
 } from '@/features/trips/destinations';
 import { iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
@@ -169,7 +170,7 @@ export default function JoinScreen() {
                       band="xs"
                       image={null}
                       initial={(preview.data.name[0] ?? '?').toUpperCase()}
-                      name={preview.data.destination?.toUpperCase() ?? ''}
+                      name={stampName(preview.data.destination)}
                     />
                   </View>
                 )}
