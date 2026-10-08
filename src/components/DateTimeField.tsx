@@ -130,7 +130,7 @@ export function DateTimeField({
             </AppText>
           </View>
         ) : (
-          <AppText style={[styles.value, !value && { color: colors.ink3 }]}>
+          <AppText numberOfLines={1} style={[styles.value, !value && { color: colors.ink3 }]}>
             {display ?? placeholder}
           </AppText>
         )}
@@ -140,6 +140,7 @@ export function DateTimeField({
             accessibilityLabel={`Clear ${label}`}
             hitSlop={10}
             onPress={() => onChange(null)}
+            style={styles.clear}
           >
             <AppText role="link" tone="muted">
               Clear
@@ -245,18 +246,21 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: radius.input,
     borderWidth: 1.5,
-    paddingHorizontal: spacing.s7,
+    paddingHorizontal: spacing.s5,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     // Keep a gap before "Clear" so a full date ("6 Oct, 0:30") can't touch it.
-    gap: spacing.s4,
+    gap: spacing.s3,
   },
   value: {
     ...typeScale.body,
-    // Let a long value shrink instead of shoving "Clear" onto it.
+    // Let a long value shrink instead of shoving "Clear" onto it, and keep the
+    // value and Clear on one line in the item editor's narrow date columns (N14).
     flexShrink: 1,
+    minWidth: 0,
   },
+  clear: { flexShrink: 0 },
   box: {
     minHeight: 64,
     borderRadius: radius.input,
