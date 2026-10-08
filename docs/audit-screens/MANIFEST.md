@@ -1,6 +1,6 @@
 # Airmail audit — fourth-pass screenshot build
 
-**Code commit:** `aabe66790deb4f113813bd7b34513e4d81832272`
+**Code:** `aabe667` (items 1–9) + `4aaf3ee` (N14 item-editor one-line fix)
 **Capture window (local, UTC-6):** 2026-10-07 19:31 → 2026-10-08 09:26
 (one pass; the machine slept overnight, splitting the clock range)
 **Captured:** Android emulator `emulator-5554`; headless Chromium via the
