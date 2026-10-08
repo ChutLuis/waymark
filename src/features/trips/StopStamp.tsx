@@ -9,11 +9,16 @@ import type { CountryKey } from './destinations';
 
 /** The stamp animation runs 96x112 at 30 fps, 36 frames (stamp then postmark). */
 const FPS = 30;
-/** Frame each status lands on, read from the stamp's confirm/done markers. */
+/**
+ * Frame each status lands on, from the stamp's markers: `confirm` runs 0–17 and
+ * `done` runs 18–35 (op is 36), so each status holds on the LAST frame of its
+ * marker. Frame 36 is out of range and renders nothing on web (N17); frame 18
+ * is the first frame of the done marker, not a confirmed postmark.
+ */
 const STATUS_FRAME: Record<ItineraryStatus, number> = {
   planned: 0,
-  confirmed: 18,
-  done: 36,
+  confirmed: 17,
+  done: 35,
 };
 /** Haptic accents: the stamp lands ~frame 10, the postmark ~5 frames into done. */
 const HAPTIC_FRAMES = { stamp: 10, postmark: 23 };
@@ -109,11 +114,20 @@ export function StopStamp({
   // change). Seek it to the right frame without playing — this is also the web
   // player's only static-seek path, since it isn't ready during the first
   // effect run.
-  const onLoaded = () => {
-    const frame = prevFrame.current ?? targetFrame;
+  const apply = () => {
+    const frame = prevFrame.current ?? STATUS_FRAME[status];
     ref.current?.play(frame, frame);
     ref.current?.pause();
   };
+
+  // The web player does not consistently fire onAnimationLoaded for a mount
+  // that starts on a non-zero frame, so seek on a short timer as well. A no-op
+  // once the frame is held (N17).
+  useEffect(() => {
+    const timers = [setTimeout(apply, 50), setTimeout(apply, 250)];
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, source]);
 
   return (
     <View style={[{ width, height }, style]} pointerEvents="none" accessibilityElementsHidden>
@@ -122,7 +136,7 @@ export function StopStamp({
         source={source}
         loop={false}
         autoPlay={false}
-        onAnimationLoaded={onLoaded}
+        onAnimationLoaded={apply}
         style={styles.lottie}
       />
     </View>

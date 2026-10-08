@@ -112,16 +112,17 @@ function DeleteAccountSheet({
   return (
     <Sheet
       visible={visible}
-      title="Delete account"
+      title="Delete account?"
       onClose={onClose}
       actionLabel="Delete"
       onAction={onDelete}
       actionDisabled={del.isPending}
+      actionDestructive
     >
       <AppText role="body" tone="secondary">
-        This permanently deletes your profile, your trips with no one else on them, and
-        every note and item you added. Trips you own that other people are on stay with
-        them: they pass to the member who joined first.
+        This permanently deletes your profile, photo and notes, plus any trip no one
+        else is on. A trip you own that others are on passes to the member who joined
+        first — with the plan and packing items you added left in place.
       </AppText>
       {error ? (
         <AppText role="bodySm" style={[styles.sheetError, { color: colors.wax }]}>

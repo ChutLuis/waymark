@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +20,7 @@ import { TextField } from '@/components/TextField';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { KraftEnvelope, WaxSeal } from '@/components/airmail/KraftEnvelope';
 import { useSignUp } from '@/features/auth/hooks';
+import { peekPendingInviteCode } from '@/features/invites/pendingInvite';
 import { STRENGTH_LABELS, strengthOf } from '@/features/auth/passwordStrength';
 import { radius, spacing, useTheme } from '@/theme';
 import { signUpSchema, type SignUpForm } from '@/lib/validation/schemas';
@@ -75,6 +76,10 @@ export default function SignUpScreen() {
   });
 
   const password = watch('password');
+  const scrollRef = useRef<ScrollView>(null);
+  // The password field sits above the strength meter and the privacy note;
+  // scroll the meter fully into view when the field is focused (N21).
+  const onPasswordFocus = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
 
   const onSubmit = handleSubmit(async (form) => {
     setBanner(null);
@@ -110,9 +115,12 @@ export default function SignUpScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
     <ScrollView
+      ref={scrollRef}
       style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      automaticallyAdjustKeyboardInsets
       showsVerticalScrollIndicator={false}
     >
       <Pressable
@@ -127,8 +135,12 @@ export default function SignUpScreen() {
       <View style={styles.body}>
         <AppText role="kicker" tone="secondary">NEW HERE</AppText>
         <AppText role="title" style={styles.title}>Create an account</AppText>
+        {/* Coming from an invite code? Say so — the code is stashed and replays on
+            /join once the account exists (N11). peek() does not consume it. */}
         <AppText role="body" tone="secondary" style={styles.subtitle}>
-          Then start a trip and invite the person you&apos;re going with.
+          {peekPendingInviteCode()
+            ? 'Then we\u2019ll drop you straight into the trip you were invited to.'
+            : 'Then start a trip and invite the person you\u2019re going with.'}
         </AppText>
 
         <View style={styles.promiseRow}>
@@ -191,6 +203,7 @@ export default function SignUpScreen() {
                 value={field.value}
                 onChangeText={field.onChange}
                 onBlur={field.onBlur}
+                onFocus={onPasswordFocus}
                 error={fieldState.error?.message}
                 secureTextEntry
                 autoComplete="new-password"

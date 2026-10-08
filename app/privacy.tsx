@@ -27,10 +27,14 @@ const SECTIONS: { heading: string; body: string }[] = [
     body:
       'We do not run analytics, advertising or third-party trackers. The only people who see your trips are the people in them.',
   },
+  // Account deletion is built and verified locally, but the delete-account Edge
+  // Function is not yet deployed to a hosted project. This note only describes
+  // what is live, so it keeps the trip-deletion sentence until the deploy lands
+  // (then restore the account-deletion wording).
   {
     heading: 'Removing your data',
     body:
-      'You can delete a trip you own, which removes its itinerary, packing list and notes. You can also delete your account: your profile goes, along with any trip no one else is on and every note and item you added. A trip you own that other people are on stays with them — it passes to the member who joined first.',
+      'You can delete a trip you own, which removes its itinerary, packing list and notes.',
   },
 ];
 
@@ -44,14 +48,17 @@ export default function PrivacyNoteScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      {/* Pin a page-coloured bar over the status-bar area so scrolled content
+          never shows through behind the clock (N18). */}
+      <View style={[styles.statusBar, { height: insets.top, backgroundColor: colors.bg }]} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() => router.back()}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
         >
           <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
@@ -89,9 +96,10 @@ export default function PrivacyNoteScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  statusBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   content: { paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 680, alignSelf: 'center' },
-  backRow: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 8 },
+  backRow: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 8, marginTop: 6 },
   backLabel: { fontFamily: fontFamilies.semibold, fontSize: 16, lineHeight: 20 },
   pressed: { opacity: 0.7 },
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },

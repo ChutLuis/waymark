@@ -216,10 +216,13 @@ const styles = StyleSheet.create({
   cardWrapPast: { marginBottom: spacing.s3 },
   emptySecondary: { marginTop: spacing.s3 },
   actionBar: {
+    // Overlay the list, but stay inside the centred content column on web
+    // (left/right:0 alone spanned the whole window at 1280 — N22).
     position: 'absolute',
-    left: 0,
-    right: 0,
     bottom: 0,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 680,
     flexDirection: 'row',
     gap: spacing.s4,
     paddingTop: spacing.s7,

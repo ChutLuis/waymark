@@ -26,6 +26,8 @@ interface SheetProps {
   actionLabel?: string;
   onAction?: () => void;
   actionDisabled?: boolean;
+  /** Paint the header action in the wax-red destructive colour (N20). */
+  actionDestructive?: boolean;
   children: ReactNode;
 }
 
@@ -40,6 +42,7 @@ export function Sheet({
   actionLabel,
   onAction,
   actionDisabled = false,
+  actionDestructive = false,
   children,
 }: SheetProps) {
   const { colors } = useTheme();
@@ -93,7 +96,14 @@ export function Sheet({
             styles.card,
             {
               backgroundColor: colors.bg,
-              paddingBottom: isWide ? spacing.s11 : Math.max(insets.bottom, spacing.s11) + spacing.s7,
+              // iOS keeps a home-indicator inset; Android's KeyboardAvoidingView
+              // ("height") already lifts the card, so a large bottom padding there
+              // just left an empty strip above the keyboard (N19).
+              paddingBottom: isWide
+                ? spacing.s11
+                : Platform.OS === 'ios'
+                  ? Math.max(insets.bottom, spacing.s11) + spacing.s7
+                  : 0,
               opacity: progress,
               transform: [{ translateY }],
             },
@@ -127,7 +137,7 @@ export function Sheet({
                   hitSlop={12}
                   style={({ pressed }) => [
                     styles.headerAction,
-                    { backgroundColor: actionDisabled ? colors.border : colors.ink },
+                    { backgroundColor: actionDisabled ? colors.border : actionDestructive ? colors.wax : colors.ink },
                     pressed && styles.pressed,
                   ]}
                 >
@@ -140,8 +150,13 @@ export function Sheet({
           </View>
           <ScrollView
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            // Keep the focused field above the keyboard: iOS adjusts insets, and
+            // the extra scroll space below lets a bottom field scroll fully into
+            // view (N19).
+            automaticallyAdjustKeyboardInsets
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.body}
+            contentContainerStyle={[styles.body, { paddingBottom: isWide ? spacing.s4 : spacing.s8 }]}
           >
             {children}
           </ScrollView>

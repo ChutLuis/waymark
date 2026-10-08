@@ -122,6 +122,8 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'stretch',
+    // A little side inset so the end labels never touch the window edge (N16).
+    paddingHorizontal: 8,
   },
   item: {
     flex: 1,

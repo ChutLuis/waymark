@@ -31,14 +31,17 @@ export default function DeleteAccountPage() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      {/* Pin a page-coloured bar over the status-bar area (N18). */}
+      <View style={[styles.statusBar, { height: insets.top, backgroundColor: colors.bg }]} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() => router.back()}
+          // Google Play opens this page cold, so there is nothing to go back to.
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
         >
           <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
@@ -64,10 +67,10 @@ export default function DeleteAccountPage() {
           <View style={styles.section}>
             <AppText role="rowTitle">What gets deleted</AppText>
             <AppText role="body" tone="secondary" style={styles.sectionBody}>
-              Your profile and photo, every trip no one else is on (with its itinerary,
-              packing list and notes), and every note and item you added. Trips you own
-              that other people are on stay with them: they pass to the member who joined
-              first.
+              Your profile, photo and notes, plus any trip no one else is on (with its
+              itinerary, packing list and notes). A trip you own that other people are on
+              stays with them: it passes to the member who joined first, and the plan and
+              packing items you added stay in it.
             </AppText>
           </View>
 
@@ -100,9 +103,10 @@ export default function DeleteAccountPage() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  statusBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   content: { paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 680, alignSelf: 'center' },
-  backRow: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 8 },
+  backRow: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 8, marginTop: 6 },
   backLabel: { fontFamily: fontFamilies.semibold, fontSize: 16, lineHeight: 20 },
   pressed: { opacity: 0.7 },
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },

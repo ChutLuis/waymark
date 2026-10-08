@@ -84,7 +84,13 @@ function RootStack() {
     if (isRestoring || !session) return;
     if (profile.isPending || profile.data == null) return;
     const code = takePendingInviteCode();
-    if (code) router.replace(`/join?code=${code}` as never);
+    if (code) {
+      // Land on Trips first, then push /join on top, so the chevron, "Not now"
+      // and hardware back all have somewhere to go (N11). Replacing straight to
+      // /join left nothing under it and GO_BACK threw.
+      router.replace('/');
+      router.push(`/join?code=${code}` as never);
+    }
   }, [isRestoring, session, profile.isPending, profile.data, router]);
 
   // A tapped reminder routes to its trip (REM-3).

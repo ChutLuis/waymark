@@ -55,9 +55,12 @@ export default function TripTabsLayout() {
     [trip.data?.destination],
   );
 
-  const isWide = width >= 720;
-
-  const screenWidth = isWide ? Math.min(680, width) : width;
+  // The shell is always a centred column capped at 680, not only at ≥720: at
+  // 680 (a tablet/desktop window) the full-bleed layout pushed the tab labels
+  // to the window edges (N16). `screenWidth` is the column width the content
+  // and hero must fit into.
+  const columnWidth = Math.min(680, width);
+  const screenWidth = columnWidth;
 
   // No art for this trip: show the README fallback banner on every tab.
   const hasArt = country !== null || Boolean(trip.data?.coverImagePath);
@@ -95,7 +98,7 @@ export default function TripTabsLayout() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={[styles.column, isWide && styles.columnWide]}>
+      <View style={[styles.column, styles.columnClamped]}>
         {trip.isPending ? (
           <View style={{ paddingTop: insets.top }}>
             <LoadingState />
@@ -194,7 +197,9 @@ export function destinationArt(country: CountryKey | null) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   column: { flex: 1 },
-  columnWide: { width: '100%', maxWidth: 680, alignSelf: 'center' },
+  // Keep the shell inside a centred 680 column at every width so the tab bar
+  // and content never run past the window (N16).
+  columnClamped: { width: '100%', maxWidth: 680, alignSelf: 'center' },
   header: { overflow: 'hidden' },
   headerRow: {
     height: 52,

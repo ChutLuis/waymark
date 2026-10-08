@@ -59,7 +59,7 @@ export default function InviteCodeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() => router.back()}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}
           style={({ pressed }) => [styles.back, pressed && styles.pressed]}
         >
           <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
@@ -88,7 +88,12 @@ export default function InviteCodeScreen() {
             leading={<Mail size={20} color={complete ? colors.paper : colors.ink} strokeWidth={iconStrokeWidth} />}
             onPress={onContinue}
           />
-          <Button label="Not now" variant="text" size="sm" onPress={() => router.back()} />
+          <Button
+            label="Not now"
+            variant="text"
+            size="sm"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}
+          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

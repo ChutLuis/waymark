@@ -9,11 +9,17 @@
 --     its itinerary/packing/notes survive for them;
 --   * every trip the user owns with no other members is deleted (its rows
 --     cascade).
+-- It returns the ids of the trips it deleted, so the caller can remove those
+-- trips' cover images from storage (the rows are gone but the objects are not).
 -- The remaining rows the user authored (profile, their notes, their
--- memberships, invites) fall away with the auth-user cascade.
+-- memberships, invites) fall away with the auth-user cascade; itinerary and
+-- packing items keep living in shared trips with created_by set null.
+
+-- Old void signature is replaced by a uuid[] return, so drop it first.
+drop function if exists public.delete_account_prepare(uuid);
 
 create or replace function public.delete_account_prepare(_user_id uuid)
-returns void
+returns uuid[]
 language plpgsql
 security definer
 set search_path = public, pg_temp
@@ -21,6 +27,7 @@ as $$
 declare
   v_trip_id uuid;
   v_heir uuid;
+  v_deleted uuid[] := '{}';
 begin
   if _user_id is null then
     raise exception 'delete_account_prepare: user id is required';
@@ -43,8 +50,9 @@ begin
     limit 1;
 
     if v_heir is null then
-      -- No one else on the trip: delete it (children cascade).
+      -- No one else on the trip: delete it (children cascade) and remember it.
       delete from public.trips where id = v_trip_id;
+      v_deleted := v_deleted || v_trip_id;
     else
       -- Hand the trip to the earliest-joined remaining member.
       update public.trips
@@ -67,6 +75,8 @@ begin
   -- and on the trips just handed over). The auth cascade would do this too;
   -- doing it here leaves the database consistent as soon as prepare returns.
   delete from public.trip_members where user_id = _user_id;
+
+  return v_deleted;
 end;
 $$;
 

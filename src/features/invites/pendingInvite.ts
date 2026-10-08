@@ -17,3 +17,8 @@ export function takePendingInviteCode(): string | null {
   pendingCode = null;
   return code;
 }
+
+/** Reads the stashed code without consuming it (for copy that references it). */
+export function peekPendingInviteCode(): string | null {
+  return pendingCode;
+}

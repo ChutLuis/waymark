@@ -149,6 +149,12 @@ export function useDeleteTrip() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (tripId: string) => {
+      // Remove the cover folder first: the row delete cascades, but the stored
+      // objects live on. list() + remove() are RLS-limited to the owner's trips.
+      const { data: objects } = await supabase.storage.from('trip-covers').list(tripId);
+      if (objects && objects.length > 0) {
+        await supabase.storage.from('trip-covers').remove(objects.map((o) => `${tripId}/${o.name}`));
+      }
       // RLS restricts the delete to the owner; cascades clean up the rest.
       const { error } = await supabase.from('trips').delete().eq('id', tripId);
       if (error) throw error;

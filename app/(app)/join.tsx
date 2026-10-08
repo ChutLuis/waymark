@@ -75,9 +75,9 @@ export default function JoinScreen() {
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Back"
-        onPress={() => router.back()}
-        style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+accessibilityLabel="Back"
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
       >
         <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
       </Pressable>
@@ -196,7 +196,12 @@ export default function JoinScreen() {
           loading={acceptInvite.isPending}
           onPress={onJoin}
         />
-        <Button label="Not now" variant="text" size="sm" onPress={() => router.back()} />
+        <Button
+          label="Not now"
+          variant="text"
+          size="sm"
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        />
       </View>
     </ScrollView>
   );
