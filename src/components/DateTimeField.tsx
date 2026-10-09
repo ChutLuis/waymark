@@ -18,6 +18,8 @@ export interface DateTimeFieldProps {
   mode?: 'datetime' | 'date';
   placeholder?: string;
   clearable?: boolean;
+  /** Reduced side padding for paired fields in a narrow editor. */
+  compact?: boolean;
   error?: string;
   /** Sensible starting point when the field is empty (e.g. trip start date). */
   initialDate?: Date;
@@ -38,6 +40,7 @@ export function DateTimeField({
   mode = 'datetime',
   placeholder = 'Add',
   clearable = false,
+  compact = false,
   error,
   initialDate,
   variant = 'default',
@@ -111,6 +114,7 @@ export function DateTimeField({
         onPress={openPicker}
         style={({ pressed }) => [
           variant === 'box' ? styles.box : styles.field,
+          compact && variant === 'default' && styles.fieldCompact,
           {
             backgroundColor: colors.paper,
             borderColor: error ? colors.wax : colors.border,
@@ -260,6 +264,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  fieldCompact: { paddingHorizontal: spacing.s3 },
   clear: { flexShrink: 0 },
   box: {
     minHeight: 64,

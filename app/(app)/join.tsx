@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, ChevronLeft, Lock, Mail } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
 import { SceneStamp } from '@/features/trips/SceneStamp';
@@ -19,6 +20,7 @@ import {
 } from '@/features/trips/destinations';
 import { iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
+import { takePendingInviteCode } from '@/features/invites/pendingInvite';
 
 const LENGTH = INVITE_CODE_LENGTH;
 
@@ -66,6 +68,11 @@ export default function JoinScreen() {
     ? daysUntilLabelUppercase(preview.data.startDate, toDateOnly(new Date()))
     : null;
 
+  const leaveInvite = () => {
+    takePendingInviteCode();
+    router.dismissTo('/');
+  };
+
   return (
     <ScrollView
       style={{ backgroundColor: colors.bg }}
@@ -73,11 +80,12 @@ export default function JoinScreen() {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
+      <ScreenStatusBar />
       <Pressable
         accessibilityRole="button"
-accessibilityLabel="Back"
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+        accessibilityLabel="Back"
+        onPress={leaveInvite}
+        style={({ pressed }) => [styles.back, pressed && styles.pressed]}
       >
         <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
       </Pressable>
@@ -200,7 +208,7 @@ accessibilityLabel="Back"
           label="Not now"
           variant="text"
           size="sm"
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          onPress={leaveInvite}
         />
       </View>
     </ScrollView>

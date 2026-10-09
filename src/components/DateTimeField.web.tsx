@@ -27,6 +27,7 @@ export function DateTimeField({
   error,
   placeholder = 'Add',
   variant = 'default',
+  compact = false,
 }: DateTimeFieldProps) {
   const { colors } = useTheme();
   const isDateOnly = mode === 'date';
@@ -118,7 +119,7 @@ export function DateTimeField({
               border: `1.5px solid ${error ? colors.wax : colors.border}`,
               background: colors.paper,
               color: 'transparent',
-              padding: `0 ${spacing.s7}px`,
+              padding: `0 ${compact ? spacing.s3 : spacing.s7}px`,
               fontFamily: `${fontFamilies.regular}, system-ui, sans-serif`,
               fontSize: 17,
               width: '100%',
@@ -129,7 +130,7 @@ export function DateTimeField({
             aria-hidden
             style={{
               position: 'absolute',
-              left: spacing.s7,
+              left: compact ? spacing.s3 : spacing.s7,
               top: 0,
               bottom: 0,
               display: 'flex',

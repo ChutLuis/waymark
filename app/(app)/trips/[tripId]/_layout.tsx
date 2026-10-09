@@ -7,7 +7,7 @@ export default function TripLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.bg },
+        contentStyle: { backgroundColor: colors.bg, flex: 1, minHeight: 0 },
       }}
     />
   );

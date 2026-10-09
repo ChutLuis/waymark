@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { fontFamilies, spacing, useTheme } from '@/theme';
 
 /** The sections of the note. Copy is generic and matches the shipped model. */
@@ -48,6 +49,7 @@ export default function PrivacyNoteScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <ScreenStatusBar />
       {/* Pin a page-coloured bar over the status-bar area so scrolled content
           never shows through behind the clock (N18). */}
       <View style={[styles.statusBar, { height: insets.top, backgroundColor: colors.bg }]} />

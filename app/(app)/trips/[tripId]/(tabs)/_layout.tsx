@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Slot, useIsFocused, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,7 +35,7 @@ export default function TripTabsLayout() {
   const router = useRouter();
   const pathname = usePathname();
   const isFocused = useIsFocused();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
 
   const trip = useTrip(tripId);
@@ -97,8 +97,17 @@ export default function TripTabsLayout() {
       : 'dark';
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={[styles.column, styles.columnClamped]}>
+    <View
+      testID="trip-shell"
+      style={[
+        styles.screen,
+        { backgroundColor: colors.bg },
+        // On web the root must equal the window height exactly so the tab bar's
+        // bottom edge sits on the window's bottom edge (N16).
+        Platform.OS === 'web' ? { height, maxHeight: height } : null,
+      ]}
+    >
+      <View testID="trip-column" style={[styles.column, styles.columnClamped]}>
         {trip.isPending ? (
           <View style={{ paddingTop: insets.top }}>
             <LoadingState />
@@ -178,7 +187,7 @@ export default function TripTabsLayout() {
               height={isPlan ? 12 : 10}
             />
             <OfflineBanner />
-            <View style={styles.pane}>
+            <View testID="trip-scroll-area" style={styles.pane}>
               <Slot />
             </View>
             <TripTabBar tripId={tripId} active={activeTab} />
@@ -195,8 +204,11 @@ export function destinationArt(country: CountryKey | null) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  column: { flex: 1 },
+  // overflow hidden: anything taller than the window is clipped here, and the
+  // tab's own ScrollView does the scrolling, so the tab bar never leaves the
+  // window's bottom edge (N16).
+  screen: { flex: 1, minHeight: 0, overflow: 'hidden' },
+  column: { flex: 1, minHeight: 0 },
   // Keep the shell inside a centred 680 column at every width so the tab bar
   // and content never run past the window (N16).
   columnClamped: { width: '100%', maxWidth: 680, alignSelf: 'center' },
@@ -225,6 +237,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: radius.chip,
   },
-  pane: { flex: 1 },
+  // minHeight 0 lets the tab's scroller shrink below its content on web, so the
+  // tab bar stays on the window's bottom edge (N16).
+  pane: { flex: 1, minHeight: 0, overflow: 'hidden' },
   pressed: { opacity: 0.7 },
 });

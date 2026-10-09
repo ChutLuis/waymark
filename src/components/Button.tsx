@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type TextStyl
 import { AppText } from './AppText';
 import { fontFamilies, radius, useTheme } from '@/theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'text' | 'destructive';
+export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'text' | 'destructive' | 'destructiveSolid';
 export type ButtonSize = 'lg' | 'md' | 'sm';
 
 interface ButtonProps {
@@ -59,6 +59,11 @@ export function Button({
           borderColor: colors.border,
           opacity: pressed ? 0.7 : 1,
         };
+      case 'destructiveSolid':
+        return {
+          backgroundColor: disabled ? colors.border : colors.wax,
+          opacity: pressed && !disabled ? 0.7 : 1,
+        };
       case 'quiet':
         return {
           backgroundColor: 'transparent',
@@ -72,11 +77,13 @@ export function Button({
   };
 
   const textColor =
-    variant === 'primary'
-      ? colors.paper
-      : variant === 'destructive'
-        ? colors.wax
-        : colors.ink;
+    variant === 'destructiveSolid'
+      ? colors.stampPaper
+      : variant === 'primary'
+        ? colors.paper
+        : variant === 'destructive'
+          ? colors.wax
+          : colors.ink;
 
   const textRole = size === 'lg' ? 'buttonLg' : size === 'md' ? 'button' : 'bodySm';
   // The `sm` size is Besley 700 15/20 (bodySm is 400), used by claim pills.

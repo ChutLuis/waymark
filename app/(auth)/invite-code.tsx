@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Mail } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import {
   INVITE_CODE_LENGTH,
   InviteCodeEntry,
@@ -50,6 +51,7 @@ export default function InviteCodeScreen() {
       style={{ flex: 1, backgroundColor: colors.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <ScreenStatusBar />
       <ScrollView
         style={{ backgroundColor: colors.bg }}
         contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}

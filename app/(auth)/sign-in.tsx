@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { BrandMark } from '@/components/BrandMark';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { TextField } from '@/components/TextField';
@@ -106,6 +107,7 @@ export default function SignInScreen() {
       // behaviour or the focused field stays under the keyboard.
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <ScreenStatusBar />
       <ScrollView
         style={{ backgroundColor: colors.bg }}
         contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}

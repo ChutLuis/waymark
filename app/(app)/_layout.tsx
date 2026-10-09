@@ -42,7 +42,7 @@ export default function AppLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
+          contentStyle: { backgroundColor: colors.bg, flex: 1, minHeight: 0 },
         }}
       >
         {/* The create-trip sheet draws its own scrim over the list. */}

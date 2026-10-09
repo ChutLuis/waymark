@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Mail } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { fontFamilies, iconStrokeWidth, spacing, useTheme } from '@/theme';
 
 /**
@@ -31,10 +32,11 @@ export default function DeleteAccountPage() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <ScreenStatusBar />
       {/* Pin a page-coloured bar over the status-bar area (N18). */}
       <View style={[styles.statusBar, { height: insets.top, backgroundColor: colors.bg }]} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
         <Pressable

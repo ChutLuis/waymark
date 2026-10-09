@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronLeft } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { TextField } from '@/components/TextField';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
@@ -94,6 +95,7 @@ export default function SignUpScreen() {
   if (awaitingConfirmation) {
     return (
       <View style={[styles.screen, { backgroundColor: colors.bg, paddingTop: insets.top + 40, paddingHorizontal: spacing.gutter }]}>
+        <ScreenStatusBar />
         <AppText role="title">Check your email</AppText>
         <AppText role="body" tone="secondary" style={styles.subtitle}>
           We sent a confirmation link. Open it, then sign in.
@@ -114,6 +116,13 @@ export default function SignUpScreen() {
       // behaviour or the focused field stays under the keyboard (item 33).
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+    <ScreenStatusBar />
+    {/* Opaque page-coloured band behind the status bar (N18): scrolling content
+        passes under this, never under the clock. */}
+    <View
+      pointerEvents="none"
+      style={[styles.statusBand, { height: insets.top, backgroundColor: colors.bg }]}
+    />
     <ScrollView
       ref={scrollRef}
       style={{ backgroundColor: colors.bg }}
@@ -250,6 +259,8 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  // Pinned over the top inset so scrolling content slides beneath it (N18).
+  statusBand: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   content: { paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },

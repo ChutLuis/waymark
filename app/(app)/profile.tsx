@@ -9,6 +9,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { Sheet } from '@/components/Sheet';
+import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { TextField } from '@/components/TextField';
 import { Toggle } from '@/components/Toggle';
 import { Postmark } from '@/components/airmail/Postmark';
@@ -109,16 +110,11 @@ function DeleteAccountSheet({
     }
   };
 
+  // Stacked layout (N20): title and explanation, then a full-width wax-red
+  // Delete button, then Cancel. The title is never squeezed beside a header
+  // action, so it can't wrap.
   return (
-    <Sheet
-      visible={visible}
-      title="Delete account?"
-      onClose={onClose}
-      actionLabel="Delete"
-      onAction={onDelete}
-      actionDisabled={del.isPending}
-      actionDestructive
-    >
+    <Sheet visible={visible} title="Delete account?" headerLayout="stacked" onClose={onClose}>
       <AppText role="body" tone="secondary">
         This permanently deletes your profile, photo and notes, plus any trip no one
         else is on. A trip you own that others are on passes to the member who joined
@@ -129,6 +125,15 @@ function DeleteAccountSheet({
           {error}
         </AppText>
       ) : null}
+      <Button
+        label="Delete account"
+        variant="destructiveSolid"
+        disabled={del.isPending}
+        loading={del.isPending}
+        onPress={onDelete}
+        style={styles.deleteButton}
+      />
+      <Button label="Cancel" variant="quiet" onPress={onClose} style={styles.deleteButton} />
     </Sheet>
   );
 }
@@ -237,6 +242,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
+      <ScreenStatusBar />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
@@ -402,4 +408,5 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   sheetError: { marginTop: spacing.s4 },
+  deleteButton: { alignSelf: 'stretch', marginTop: spacing.s3 },
 });

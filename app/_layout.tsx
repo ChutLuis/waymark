@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -62,6 +62,7 @@ function inviteCodeFromUrl(url: string | null): string | null {
 
 function RootStack() {
   const { scheme, colors } = useTheme();
+  const { height } = useWindowDimensions();
   const router = useRouter();
   const { session, isRestoring } = useAuth();
   const profile = useMyProfile();
@@ -106,15 +107,22 @@ function RootStack() {
   }, [router]);
 
   return (
-    <>
+    <View
+      testID="app-viewport"
+      style={[
+        styles.root,
+        { backgroundColor: colors.bg },
+        Platform.OS === 'web' ? { height, maxHeight: height, overflow: 'hidden' } : null,
+      ]}
+    >
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
+          contentStyle: { backgroundColor: colors.bg, flex: 1, minHeight: 0 },
         }}
       />
-    </>
+    </View>
   );
 }
 
@@ -145,3 +153,7 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, minHeight: 0 },
+});

@@ -85,7 +85,7 @@ export default function NotesScreen() {
     .filter((m) => m.userId !== userId)
     .map((m) => m.profile.displayName);
   const names = memberNamesWording(others).replace(/^with /, '');
-  const pronoun = others.length > 1 ? 'they' : 'he';
+  const onlyOtherFirstName = others.length === 1 ? (others[0].split(' ')[0] ?? '') : '';
 
   const firstNameOf = (authorId: string): string => {
     const member = members.data?.find((m) => m.userId === authorId);
@@ -113,7 +113,9 @@ export default function NotesScreen() {
         <AppText role="body" style={[styles.intro, { color: colors.inkBody }]}>
           {others.length === 0
             ? `Postcards are shared with anyone you invite. Sealed notes are only for you.`
-            : `Postcards are shared with ${names}. Sealed notes are only for you: ${pronoun} can't open yours, and you can't open ${pronoun === 'they' ? 'theirs' : 'his'}.`}
+            : others.length === 1
+              ? `Postcards are shared with ${names}. Sealed notes are only for you. ${onlyOtherFirstName} can't open yours, and you can't open ${onlyOtherFirstName}'s.`
+              : `Postcards are shared with ${names}. Sealed notes are only for you. No one else can open yours, and you can't open theirs.`}
         </AppText>
 
         <View style={styles.filterWrap}>

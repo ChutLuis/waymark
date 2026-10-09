@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useIsFocused } from 'expo-router';
 import { useLazyAnimatedValue } from './useLazyAnimatedValue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
@@ -28,6 +29,8 @@ interface SheetProps {
   actionDisabled?: boolean;
   /** Paint the header action in the wax-red destructive colour (N20). */
   actionDestructive?: boolean;
+  /** Confirmation sheets put a full-width title above their body actions. */
+  headerLayout?: 'inline' | 'stacked';
   children: ReactNode;
 }
 
@@ -43,12 +46,14 @@ export function Sheet({
   onAction,
   actionDisabled = false,
   actionDestructive = false,
+  headerLayout = 'inline',
   children,
 }: SheetProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
+  const isFocused = useIsFocused();
   const isWide = width >= 720;
 
   const progress = useLazyAnimatedValue(0);
@@ -76,9 +81,12 @@ export function Sheet({
 
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose}>
-      {/* Light status text over the scrim while the sheet is open; expo-status-bar
-          stacks, so unmounting this restores the trip shell's style. */}
-      <StatusBar style="light" />
+      {/* Light status text over the scrim while the sheet is open. Gated on the
+          owning route's focus: a Modal left mounted under a pushed route (warm
+          invite link, Plan → Add → invite) would otherwise keep light icons on
+          the route above. When the route loses focus this entry unmounts and the
+          root's theme style applies again (N24). */}
+      {isFocused ? <StatusBar style="light" /> : null}
       <Animated.View
         style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim, opacity: progress }]}
       >
@@ -111,42 +119,48 @@ export function Sheet({
           ]}
         >
           {!isWide && <View style={[styles.grabber, { backgroundColor: colors.border }]} />}
-          <View style={styles.header}>
-            <View style={styles.headerSlot}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Cancel"
-                onPress={onClose}
-                hitSlop={12}
-                style={({ pressed }) => [styles.headerCancel, pressed && styles.pressed]}
-              >
-                <AppText style={styles.headerCancelText}>{'Cancel'}</AppText>
-              </Pressable>
-            </View>
-            <View style={styles.headerTitleSlot}>
-              <AppText style={styles.headerTitle}>{title}</AppText>
-            </View>
-            <View style={[styles.headerSlot, styles.headerSlotRight]}>
-              {actionLabel && onAction ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={actionLabel}
-                  accessibilityState={{ disabled: actionDisabled }}
-                  disabled={actionDisabled}
-                  onPress={onAction}
-                  hitSlop={12}
-                  style={({ pressed }) => [
-                    styles.headerAction,
-                    { backgroundColor: actionDisabled ? colors.border : actionDestructive ? colors.wax : colors.ink },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <AppText style={[styles.headerActionText, { color: colors.paper }]}>
-                    {actionLabel}
-                  </AppText>
-                </Pressable>
-              ) : null}
-            </View>
+          <View style={[styles.header, headerLayout === 'stacked' && styles.headerStacked]}>
+            {headerLayout === 'stacked' ? (
+              <AppText numberOfLines={1} style={styles.headerTitle}>{title}</AppText>
+            ) : (
+              <>
+                <View style={styles.headerSlot}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel"
+                    onPress={onClose}
+                    hitSlop={12}
+                    style={({ pressed }) => [styles.headerCancel, pressed && styles.pressed]}
+                  >
+                    <AppText style={styles.headerCancelText}>{'Cancel'}</AppText>
+                  </Pressable>
+                </View>
+                <View style={styles.headerTitleSlot}>
+                  <AppText style={styles.headerTitle}>{title}</AppText>
+                </View>
+                <View style={[styles.headerSlot, styles.headerSlotRight]}>
+                  {actionLabel && onAction ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={actionLabel}
+                      accessibilityState={{ disabled: actionDisabled }}
+                      disabled={actionDisabled}
+                      onPress={onAction}
+                      hitSlop={12}
+                      style={({ pressed }) => [
+                        styles.headerAction,
+                        { backgroundColor: actionDisabled ? colors.border : actionDestructive ? colors.wax : colors.ink },
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <AppText style={[styles.headerActionText, { color: colors.paper }]}>
+                        {actionLabel}
+                      </AppText>
+                    </Pressable>
+                  ) : null}
+                </View>
+              </>
+            )}
           </View>
           <ScrollView
             keyboardShouldPersistTaps="handled"
@@ -208,6 +222,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
+  },
+  headerStacked: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   headerSlotRight: {
     justifyContent: 'flex-end',

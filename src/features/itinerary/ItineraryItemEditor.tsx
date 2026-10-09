@@ -68,7 +68,7 @@ export function ItineraryItemEditor({
   const setReminder = useSetReminder();
   const clearReminder = useClearReminder();
 
-  const { control, handleSubmit, reset, watch } = useForm<ItineraryItemForm>({
+  const { control, handleSubmit, reset, setValue, watch } = useForm<ItineraryItemForm>({
     resolver: zodResolver(itineraryItemSchema),
     defaultValues: defaultsFor(item),
   });
@@ -91,6 +91,7 @@ export function ItineraryItemEditor({
   }, [visible, item, reset]);
 
   const startAt = watch('startAt');
+  const endAt = watch('endAt');
 
   const onToggleReminder = useCallback(async (next: boolean) => {
     if (!next) {
@@ -205,10 +206,10 @@ export function ItineraryItemEditor({
             render={({ field }) => (
               <DateTimeField
                 label="Starts"
+                compact
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add"
-                clearable
                 initialDate={tripStartDate ? new Date(`${tripStartDate}T10:00:00`) : undefined}
               />
             )}
@@ -220,12 +221,12 @@ export function ItineraryItemEditor({
             name="endAt"
             render={({ field, fieldState }) => (
               <DateTimeField
-                label="Ends"
-                optionalTag="opt."
+                label="ENDS"
+                optionalTag="optional"
+                compact
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add"
-                clearable
                 error={fieldState.error?.message}
                 initialDate={startAt ? new Date(startAt) : undefined}
               />
@@ -233,6 +234,20 @@ export function ItineraryItemEditor({
           />
         </View>
       </View>
+      {startAt || endAt ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Clear dates"
+          hitSlop={8}
+          onPress={() => {
+            setValue('startAt', null, { shouldDirty: true });
+            setValue('endAt', null, { shouldDirty: true });
+          }}
+          style={({ pressed }) => [styles.clearDates, pressed && { opacity: 0.7 }]}
+        >
+          <AppText role="link" tone="muted">Clear</AppText>
+        </Pressable>
+      ) : null}
       <Controller
         control={control}
         name="status"
@@ -317,6 +332,11 @@ const styles = StyleSheet.create({
   },
   dateCol: {
     flex: 1,
+    minWidth: 0,
+  },
+  clearDates: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.s2,
   },
   statusLabel: {
     marginBottom: spacing.s1 + 2,

@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { palettes, type Palette } from './tokens';
 
 export {
+  dayStampLayout,
   fontFamilies,
   hairlineWidth,
   hitTargetMin,

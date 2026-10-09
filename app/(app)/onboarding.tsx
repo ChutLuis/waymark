@@ -16,6 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Users } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { AvatarStamp, StampStill } from '@/features/trips/SceneStamp';
 import { useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
 import { pickImage, type PickedImage } from '@/lib/images';
@@ -66,6 +67,7 @@ export default function OnboardingScreen() {
       // behaviour or the focused field stays under the keyboard (item 33).
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+    <ScreenStatusBar />
     <ScrollView
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}

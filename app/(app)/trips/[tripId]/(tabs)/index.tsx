@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
@@ -29,7 +29,7 @@ import {
 } from '@/features/trips/destinations';
 import { useTrip, useTripMembers } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
-import { fontFamilies, hairlineWidth, shadows, spacing, useTheme } from '@/theme';
+import { dayStampLayout, fontFamilies, hairlineWidth, shadows, spacing, useTheme } from '@/theme';
 import { formatTime, toDateOnly } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
 
@@ -74,12 +74,14 @@ function DayStamp({
   day,
   selected,
   label,
+  width,
   onPress,
 }: {
   weekday: string;
   day: number | string;
   selected: boolean;
   label: string;
+  width: number;
   onPress: () => void;
 }) {
   const { colors } = useTheme();
@@ -91,11 +93,17 @@ function DayStamp({
       onPress={onPress}
       style={({ pressed }) => pressed && styles.pressed}
     >
-      <PerforatedStamp width={48} height={56} size="sm" tone={selected ? 'ink' : 'paper'}>
+      <PerforatedStamp width={width} height={dayStampLayout.height} size="sm" tone={selected ? 'ink' : 'paper'}>
         <View style={styles.dayStampContent}>
+          {/* Always three letters (SAT, SUN, MON): the word never shrinks or
+              wraps; the stamp is what gives way on a narrow strip (N26). */}
           <AppText
             role="tag"
-            style={{ letterSpacing: 0.5, fontSize: 10, lineHeight: 12, color: selected ? colors.paper : colors.ink2 }}
+            numberOfLines={1}
+            style={{
+              flexShrink: 0,
+              color: selected ? colors.paper : colors.ink2,
+            }}
           >
             {weekday}
           </AppText>
@@ -139,8 +147,17 @@ function StopStampCell({
 
 export default function PlanScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
+  const { width } = useWindowDimensions();
   const { colors } = useTheme();
   const { userId } = useAuth();
+  const dayStampWidth = Math.min(
+    dayStampLayout.width,
+    Math.max(
+      dayStampLayout.minWidth,
+      (Math.min(width, 680) - spacing.s7 * 2 - dayStampLayout.gap * (dayStampLayout.visibleDays - 1)) /
+        dayStampLayout.visibleDays,
+    ),
+  );
   const trip = useTrip(tripId);
   const members = useTripMembers(tripId);
   const itinerary = useItinerary(tripId);
@@ -216,7 +233,15 @@ export default function PlanScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {/* flex:1 + minHeight:0 bounds this scroller to the pane on web, so the
+          page no longer grows past the window and pushes the tab bar's bottom
+          edge below it (N16). */}
+      <ScrollView
+        testID="plan-scroll-view"
+        style={styles.scroller}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <TitleRow
           title={trip.data?.name ?? ''}
           subtitle={subtitle}
@@ -257,6 +282,7 @@ export default function PlanScreen() {
                 weekday={d.weekday}
                 day={d.day}
                 label={d.label}
+                width={dayStampWidth}
                 selected={selectedDay === d.key}
                 onPress={() => setSelectedDayChoice(d.key)}
               />
@@ -396,7 +422,8 @@ function formattedTime(item: ItineraryItem): string {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, minHeight: 0 },
+  scroller: { flex: 1, minHeight: 0 },
   content: { flexGrow: 1, gap: 0 },
   titleRow: {
     paddingTop: spacing.s6,
@@ -425,7 +452,7 @@ const styles = StyleSheet.create({
   nextTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   nextTitle: { marginTop: 4 },
   nextLine: { marginTop: 4, fontSize: 16, lineHeight: 22 },
-  dayStrip: { paddingTop: spacing.s7, paddingHorizontal: spacing.s7, gap: 9 },
+  dayStrip: { paddingTop: spacing.s7, paddingHorizontal: spacing.s7, gap: dayStampLayout.gap },
   // The Plan scroll content grows (item 14); without this the horizontal strip
   // would absorb half the free space, leaving a band above the sheet.
   dayStripScroll: { flexGrow: 0 },

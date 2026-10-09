@@ -5,7 +5,7 @@ import { Calendar, Luggage, Mail } from 'lucide-react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 import { AppText } from '@/components/AppText';
 import { AirmailStripes } from '@/components/airmail/AirmailBorder';
-import { fontFamilies, iconStrokeWidth, useTheme } from '@/theme';
+import { fontFamilies, iconStrokeWidth, spacing, useTheme } from '@/theme';
 
 export type TripTab = 'plan' | 'packing' | 'notes' | 'trip';
 
@@ -72,6 +72,7 @@ export function TripTabBar({ tripId, active }: { tripId: string; active: TripTab
 
   return (
     <View
+      testID="trip-tab-bar"
       accessibilityRole="tablist"
       style={[
         styles.bar,
@@ -121,13 +122,14 @@ export function TripTabBar({ tripId, active }: { tripId: string; active: TripTab
 const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
+    flexShrink: 0,
     alignItems: 'stretch',
     // A little side inset so the end labels never touch the window edge (N16).
     paddingHorizontal: 8,
   },
   item: {
     flex: 1,
-    height: 52,
+    paddingBottom: spacing.s3,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
