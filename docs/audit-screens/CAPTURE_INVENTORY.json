@@ -1,0 +1,1637 @@
+[
+  {
+    "file": "delete-account-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:13.065343-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "cf72354273275846a9ec8c6fa71325ec7e041ff71bfea3a00ceed94c9b81de2e",
+    "expectedScreen": [
+      "Delete your account",
+      "What gets deleted"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "invite-code-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:31:46.104225-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "c12084863d4be8ef6cf29807be8bc5422a1c3a95fcc148fe37b8af864ff9ee8d",
+    "expectedScreen": [
+      "Enter your code"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "invite-code-filled-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:31:49.242175-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "9c97d4f14fbc48b1750c758fc409068dd11f2ad1ae8e0f18c5f63d0f8a248342",
+    "expectedScreen": [
+      "Enter your code"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "item-editor-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:22.333115-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "db68bcca05a917ce5e42525402c7933894ae391c7b1549a827739a70abebdf7a",
+    "expectedScreen": [
+      "7 Oct, 10:30",
+      "optional",
+      "Clear dates"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "item-editor-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:33.573573-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "dd686d9a3452cba51eb9fdb5aabf316168fc52eac2be26eabdc47bf2ede51a6c",
+    "expectedScreen": [
+      "7 Oct, 10:30",
+      "optional",
+      "Clear dates"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "item-editor-cleared-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:38.131051-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "a157e2c75beea9b93b8c161f6a0e0b3314612edba683efef22874168849ec825",
+    "expectedScreen": [
+      "Starts: not set",
+      "ENDS: not set"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "join-invalid-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:42:39.530186-06:00",
+    "actor": "Joiner",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "e983a0be8e447eeb0c3e1d90fb825ea0bad544a5c759526df6b7c1f36cf14e1d",
+    "expectedScreen": [
+      "Not now"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "join-notnow-preview-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:42:31.210602-06:00",
+    "actor": "Joiner",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "e0e21d245eef640d7f158ad49bcccf7a84768134cd807826fa8c533d9d24b680",
+    "expectedScreen": [
+      "Code found",
+      "Pass five invite"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "join-notnow-returns-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:42:35.831238-06:00",
+    "actor": "Joiner",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "c3da28b7d22e2719a9ed2522979548ef5add5476f5849f680478f240d7674e90",
+    "expectedScreen": [
+      "Your trips"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "join-preview-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:40:33.319641-06:00",
+    "actor": "Joiner",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "016b529b21096c4b763919c95fd92ff47fa46499666a473edfa6706b46ff3835",
+    "expectedScreen": [
+      "Code found",
+      "Pass five invite"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "joined-trip-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:41:35.477192-06:00",
+    "actor": "Joiner",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "14e44cdae1edaafeb60f0b4c2a9408bc042f5180d3cea0ecbac195e24279d2c0",
+    "expectedScreen": [
+      "Pass five invite",
+      "with Mia"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "newtrip-typed-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:59.303402-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "0c5037506ea7c3b5d70eb4bec91e3b8621d0d113a2cb9d6aa2f1ece823ea3ffb",
+    "expectedScreen": [
+      "Pass five draft",
+      "Kyoto"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "notes-360-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:11.859984-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "39311b1d5473197dca096a842e81b367dd12ca713ff8da9c2e4ce55c1e1f9cab",
+    "expectedScreen": [
+      "Only you \u00b7 1"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "notes-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:00:47.506452-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "e50452d2e2a5fd4fc78102583aaadcf384be2b153e1e04606efb4b89c9896e66",
+    "expectedScreen": [
+      "Only you \u00b7 1"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "notes-390-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:03.067639-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "18bdd13844f99338a1f5a90d2cc4a82c018cf0907476ca091919385c6d715fee",
+    "expectedScreen": [
+      "Only you \u00b7 1"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "notes-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:38.649153-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "bb39bf82acc0dc47b8b4d9214e377753c364f58e1531f0f610448b21ae96dee6",
+    "expectedScreen": [
+      "Only you \u00b7 1"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "notes-430-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:03:00.854332-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "3e59ef8884c06a00d806144c225d71d3fa31d0e0ee479d3854ffba4426f2cb25",
+    "expectedScreen": [
+      "Only you \u00b7 1"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "notes-430-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:29.897296-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "e15f2429c280f4d1796c74e78ce7ec765b25ff30ddd79bff171475ae5e4ce7c7",
+    "expectedScreen": [
+      "Only you \u00b7 1"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "notes-noart-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:06:24.644990-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "69b36f8bcf56d963d525ccc1104dcb7cf5d07187f0c9a106041890173e33a05d",
+    "expectedScreen": [
+      "Notes"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "notes-theo-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:16:14.885415-06:00",
+    "actor": "Theo",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "9a8d13fb97771889afb1f5fb6689925586019b16918dffe2a2bb4cd563f1a63f",
+    "expectedScreen": [
+      "Only you \u00b7 0"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "onboarding-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:40:23.922262-06:00",
+    "actor": "Joiner",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "59eee133a0725cfc7cf1e4fffa119fbdbfd7946e9549af89a2365abf7bd8b249",
+    "expectedScreen": [
+      "What's your name?",
+      "Joiner"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "packing-360-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:08.139177-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "0661ec7068a0a8d0abe1a4e5e44cd1d7b8b84305cb3c6baf77a13f23f17fb24e",
+    "expectedScreen": [
+      "Packing"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "packing-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:00:43.783740-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "e38713951fdfa66decb4d7d7dac1701fb7208dee314c2f2c7297e70f218ddceb",
+    "expectedScreen": [
+      "Packing"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "packing-390-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:59.345359-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "b8985801e825892fef1e85a5301686a200a538ac1054ceedf7c0a4acc1516445",
+    "expectedScreen": [
+      "Packing"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "packing-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:34.936651-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "dd2da08593dc9811d58adee78805efccd8abdf75370ccbe66600cdf0582b3582",
+    "expectedScreen": [
+      "Packing"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "packing-430-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:57.129076-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "ea09c3fa87608e1f2ded1df2e25d575701f251413fa2d18ea3bb4288b048cd0c",
+    "expectedScreen": [
+      "Packing"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "packing-430-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:26.183372-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "b51fdb97ae3f42e1b26bb6b728921f567f7fb6862727a34f5787a4a0897f54d4",
+    "expectedScreen": [
+      "Packing"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "packing-noart-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:06:20.941630-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "f9c94d10ee5d956618607ea6b145743e384d3841bf9b7235453cb036344f6f13",
+    "expectedScreen": [
+      "Packing"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "packing-theo-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:16:09.186111-06:00",
+    "actor": "Theo",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "49c0577533fea0a764afb3d519deb8e8ef768ca312f0f5d4a2d9b0385c046cc6",
+    "expectedScreen": [
+      "Packing"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-360-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:04.425501-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "d59fef7b702e145be3a3491ba99aaf779e69974bec1ebd204019e5184690be6a",
+    "expectedScreen": [
+      "Fushimi Inari"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:00:40.073803-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "f16c0ff6c191825b41178694c65d9ee937e9c0bac77b9f2dfcdc81b700f2cdff",
+    "expectedScreen": [
+      "Fushimi Inari"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-390-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:55.587243-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "0fa91b96f71ea3300defadd4712408b4586d861ecc7f0751d83a92bd29498135",
+    "expectedScreen": [
+      "Fushimi Inari"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:31.227878-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "d63feda3704635614eea8862096e34065d110cb357394fc182706d4c76c9948b",
+    "expectedScreen": [
+      "Fushimi Inari"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-430-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:53.411954-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "17c2cfcc1991c12645ffdf3d19402a379e0e4672f0a62608f9c25c9be4d41d56",
+    "expectedScreen": [
+      "Fushimi Inari"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-430-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:22.453135-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "fc9e6fb37ed4f41495598b2691037f91d0c09652a1dfae41225393ee8d23964a",
+    "expectedScreen": [
+      "Fushimi Inari"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-noart-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:06:17.256507-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "d6b331112d09bb49eafecefa5dd1233989f8b90fcca529be56b84c2d9888334a",
+    "expectedScreen": [
+      "Berlin weekend"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-theo-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:16:05.435050-06:00",
+    "actor": "Theo",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "61e569c21b94b9aa6fb00f535d68b7223381d12df750258bf54d23d01abca3bc",
+    "expectedScreen": [
+      "with Mia"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-today-360-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T18:58:23.389451-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "eb30949bf1db99401fda31d7857081c2d8e435f2d9d1251927e33f92f7481d2a",
+    "expectedScreen": [
+      "NEXT",
+      "Kyoto &amp; Nara"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-today-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T18:58:10.097140-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "d7b0d66b6e4e33acb8277abd1568517562c5a8366de845bf22b7fdda7afc8f62",
+    "expectedScreen": [
+      "NEXT",
+      "Kyoto &amp; Nara"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-today-390-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T18:58:44.735552-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "66dddd4e1d574f4cad7139ca009767c8a265e1912405789e0d4aeb3c5f3c5be6",
+    "expectedScreen": [
+      "NEXT",
+      "Kyoto &amp; Nara"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-today-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T18:58:35.274054-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "d95b4d161ead9d916d5e3ea3e03a72b22252ebd6637675f91c39eb4e3abc4557",
+    "expectedScreen": [
+      "NEXT",
+      "Kyoto &amp; Nara"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-today-430-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T18:59:06.090379-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "b127f5cd19c01f97e1a271566b37aef197b54a3eaab077cd1879dd51d6de1ae6",
+    "expectedScreen": [
+      "NEXT",
+      "Kyoto &amp; Nara"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "plan-today-430-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T18:58:56.620953-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "068a9cdf69e077e7aa2b9c4ba3529b4cf73c7e1f78967004442461fb80347686",
+    "expectedScreen": [
+      "NEXT",
+      "Kyoto &amp; Nara"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "privacy-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:05.912867-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "562c6db05afe346c840e9fa49a7952aaa483aec08c5bdc961926d94779fc2c8e",
+    "expectedScreen": [
+      "How your data is kept"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "privacy-bottom-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:09.390686-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "237b21bbefcbbfc9a6f4aaf15017351da8920148cffbb1511098bd23ce84677b",
+    "expectedScreen": [
+      "Removing your data"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "profile-390-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:06:52.300702-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "4265260281efb4f43c0d6aee71328a40665d3ed5d2d345ac9ae5bd929e840edf",
+    "expectedScreen": [
+      "Mia",
+      "YOUR STAMPS"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "profile-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:06:33.416604-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "21fc10603b1df4bdba625391e0f436d4c072cfeef7fc59c9561054d4de4dd9e0",
+    "expectedScreen": [
+      "Mia",
+      "YOUR STAMPS"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "profile-430-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:00.942918-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "f44295b085fa922c064aad2c857cd414771bfb41479d8779fc311140521a3524",
+    "expectedScreen": [
+      "Mia",
+      "YOUR STAMPS"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "profile-bottom-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:06:36.918556-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "4aa2b0e2046c26eb2218fa5b8569f2a364754d7f339bba70d1f952de02d9566d",
+    "expectedScreen": [
+      "Delete account"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "profile-delete-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:06:41.757742-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "4687f4e2cd57588621629aaf95a203f2dd2ee51d500b1f02fb055ed7bc1e5d53",
+    "expectedScreen": [
+      "Delete account?",
+      "Cancel"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "signin-360-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:30:33.470817-06:00",
+    "actor": "Signed out",
+    "theme": "dark",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "ca55f67adb059e9447c72fb6fc2b5f426302551af94ab252fb615540b89fce36",
+    "expectedScreen": [
+      "Welcome back."
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "signin-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:31:03.934445-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "17d2730d0751bb8a9f9cdd3800aed31cc3b6c0fdd7b2d5a5c78373763bc74556",
+    "expectedScreen": [
+      "Welcome back."
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "signin-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:31:09.255924-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "06aa5c8f92f9f98820025107b82739f461c93660a6ae4b415f66158bac050494",
+    "expectedScreen": [
+      "Welcome back."
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "signin-keyboard-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:31:14.308032-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "76f569a1dd0e0e3722854fa1c7f404b25a403e297f46b30708570e2ccaa4c5dc",
+    "expectedScreen": [
+      "Welcome back.",
+      "EMAIL"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "signup-from-code-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:31:54.497690-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "5abd8a35e6a42272c01f3acdca41bb792aac9316389f7123d1f2f3a8acc72eb2",
+    "expectedScreen": [
+      "Create an account",
+      "invited to"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "signup-keyboard-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:31:27.714498-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "132baafd75d5f71e0039a65a51f4b6e2c3f11bae7e7e2e2291f4754151f45145",
+    "expectedScreen": [
+      "STRONG",
+      "Read the privacy note"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "signup-keyboard-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:31:41.171458-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "8b58df39524a5533e91612e0497be02f54a11c652a8c9e95281116a15cffea25",
+    "expectedScreen": [
+      "STRONG",
+      "Read the privacy note"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "statusbar-notnow-trips-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:30:20.464589-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "44e411fbfe6f4a3a66459ff2bc72c294d7405a0e38c17b1c1f71a5500f022ad8",
+    "expectedScreen": [
+      "Your trips"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "statusbar-sheet-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:30:12.043845-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "c25e8bfe086d6371a25bc5cea6d7839084726b78f04d227ac24711e37639de5b",
+    "expectedScreen": [
+      "New trip",
+      "Cancel"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "statusbar-warm-invite-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:30:15.783552-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "b8e12090d70c541f161e399b55f7a646b46f34dac8a6834da3f7c2db1e48b5bf",
+    "expectedScreen": [
+      "Code found",
+      "Not now"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-360-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:15.611156-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "ea4d1b7b7f330e5b21f4016fb5b9b27d30c1e94d47b38bf2d94265b9dbf62543",
+    "expectedScreen": [
+      "Details, people and invites"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:00:51.249657-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "5adcb172b19b290699a6c8b72a1269a7a9df1f0c42deea268e6a7a795312bc5c",
+    "expectedScreen": [
+      "Details, people and invites"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-390-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:06.801205-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "fb9e953fc6c71d8a7005eea674a501c0f35ad96eb8607b3e65efec3e2e4896b0",
+    "expectedScreen": [
+      "Details, people and invites"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:42.387437-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "7ceb451c3d4da2a67018ea7490753c2217092db6e35e661653c51fb7ca522ff3",
+    "expectedScreen": [
+      "Details, people and invites"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-430-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:03:04.590488-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "5925542f400ee94d23148e029cac38c8020ab5232fc0a73b495a6070906f1769",
+    "expectedScreen": [
+      "Details, people and invites"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-430-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:33.640353-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "176fccf4346cde6564c9af71af84e85313b4146d234af912ee63a728608f1feb",
+    "expectedScreen": [
+      "Details, people and invites"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-edit-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:45.926206-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "11c46816d90f6c57674c488e81e2aa300d23ee6ef3297e1fcf0b59fcd26c186b",
+    "expectedScreen": [
+      "Edit trip",
+      "Clear dates"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-edit-cleared-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:07:50.479287-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "89249f60263c301b1385c92baf5e507328ca1be3b6ab50321032e83fd4316ec7",
+    "expectedScreen": [
+      "STARTS: not set",
+      "ENDS: not set"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-member-390-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:16:25.998416-06:00",
+    "actor": "Theo",
+    "theme": "dark",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "5c6b89fb92f919b0ba4ca7381e676e4bb5f1aa8132ff197a98aa24efd9fbfdbb",
+    "expectedScreen": [
+      "Leave trip"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-noart-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:06:28.359772-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "d58d1d8714a32a9c4503652350641ab206a218d1fb8d39948ad207b8964e01da",
+    "expectedScreen": [
+      "Details, people and invites"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trip-theo-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:16:18.674685-06:00",
+    "actor": "Theo",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "912e551bfd94ea920f96dd845d0c460849ee0b967999012d86209de414f1171f",
+    "expectedScreen": [
+      "Leave trip"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trips-360-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:00:58.540195-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "10d5325afe208e059e5e964d061017dd96002b8bf2e50699947e6c2f90fe1bf0",
+    "expectedScreen": [
+      "Your trips",
+      "Mia"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trips-360-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:00:34.163149-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 360,
+    "density": 480,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "6889c4035625258f5ab41e77d8dbd0b62c8b7245368710e6ccf3f4366cd1abeb",
+    "expectedScreen": [
+      "Your trips",
+      "Mia"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trips-390-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:49.685988-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "e1663cf0482982b4e9ad2c45a67c2cf9cbb9b8e6b16a422b609d1b957142032a",
+    "expectedScreen": [
+      "Your trips",
+      "Mia"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trips-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:01:25.315523-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "5daf18c74ad666ed76552310151d512fde166a8507bfada261bb1f61b7055c7a",
+    "expectedScreen": [
+      "Your trips",
+      "Mia"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trips-430-dark.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:42.817361-06:00",
+    "actor": "Mia",
+    "theme": "dark",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "f0226b18b2df9531782da4affc7bff87bd6266b0b99b982810cf4c482bc673a0",
+    "expectedScreen": [
+      "Your trips",
+      "Mia"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trips-430-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:02:16.537162-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "targetWidth": 430,
+    "density": 402,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "4d6958784bad841d9e2bf82465f9cda23b6df57557ce72b37d261687c7819b7b",
+    "expectedScreen": [
+      "Your trips",
+      "Mia"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "trips-theo-390-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:15:59.451491-06:00",
+    "actor": "Theo",
+    "theme": "light",
+    "targetWidth": 390,
+    "density": 443,
+    "pixels": [
+      1080,
+      2400
+    ],
+    "sha256": "a09435ec1b8eae9adbbe6cc4d4cb561ae47dd74e4ec111310f6d8c03a435303f",
+    "expectedScreen": [
+      "Your trips",
+      "Theo"
+    ],
+    "noDebugOverlay": true,
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-delete-account-680-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:22:45.589383-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "pixels": [
+      680,
+      1100
+    ],
+    "sha256": "a8ad57b99587750f8da672b2607be21800ac51ec52ec7b48f5ea29af657ab05b",
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-newtrip-1280-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:21:09.476337-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "pixels": [
+      1280,
+      900
+    ],
+    "sha256": "d1c45e19a2d0db62c0eb335a30b8a75467d19b48472120cc6629b449114d6a27",
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-newtrip-680-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:20:12.803900-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "pixels": [
+      680,
+      1100
+    ],
+    "sha256": "a0a7dd5ae70ed3e8ff5bc1582902417aa547e4559e656ce12d1903e0c581d0d7",
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-plan-1280-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:10:45.192148-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "pixels": [
+      1280,
+      900
+    ],
+    "sha256": "a84864b041f5bf2626b1ab9f6c1c3f946f318c6812d686bcb39cc7da121d0d73",
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-plan-680-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:09:32.489085-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "pixels": [
+      680,
+      1100
+    ],
+    "sha256": "056f0f5eaeb39999bb052bfdc703cd9874791f9feb1548238b722b85ad5d968d",
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-signin-1280-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:25:14.862901-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "pixels": [
+      1280,
+      900
+    ],
+    "sha256": "1cf0ae5c936772c2b97afd4fa80d0325065409c0fec75e984dde1d5d261f15ce",
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-signin-680-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:24:25.634390-06:00",
+    "actor": "Signed out",
+    "theme": "light",
+    "pixels": [
+      680,
+      1100
+    ],
+    "sha256": "c9f4fc51110bc8b4f7acd2a803006a26b603c324030567ea6cd8cabbcca0b7a0",
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-trips-1280-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:18:36.708835-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "pixels": [
+      1280,
+      900
+    ],
+    "sha256": "0073759813a7e84f6d2e2b002ccdb0cc1f644d47195a4e5b3ed57b550d34c3d9",
+    "visualReview": "passed"
+  },
+  {
+    "file": "web-trips-680-light.png",
+    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
+    "capturedAt": "2026-10-08T19:19:25.506364-06:00",
+    "actor": "Mia",
+    "theme": "light",
+    "pixels": [
+      680,
+      1100
+    ],
+    "sha256": "be8c3703bd011a0cb15a988cd25daef1debd899b01c21dfaa7a964e854ca0cbb",
+    "visualReview": "passed"
+  }
+]
