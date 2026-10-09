@@ -1,11 +1,11 @@
 {
-  "codeCommit": "37844ee07323b194a8bbf1250fd8a92b81c0bf3b",
+  "codeCommit": "7a4f60ccaf0ba6653065700e0042eca5ae2e1003",
   "android": {
     "buildType": "release",
     "freshInstall": true,
     "installMethod": "adb uninstall app.waymark; adb install app-release.apk",
-    "apkSha256": "9428824354eba9ba6856ea74915f70f7d7547a1042beccc9ab19c3e05c1a1fe7",
-    "installedApkSha256": "9428824354eba9ba6856ea74915f70f7d7547a1042beccc9ab19c3e05c1a1fe7",
+    "apkSha256": "b714c16c67719664eeb0ea2c412ee9776be85053b44a2ad60977fc240f7e132f",
+    "installedApkSha256": "b714c16c67719664eeb0ea2c412ee9776be85053b44a2ad60977fc240f7e132f",
     "physicalPixels": [
       1080,
       2400
@@ -20,10 +20,11 @@
   },
   "web": {
     "buildType": "production static export",
-    "bundle": "entry-06f7f99cc5a4a8b40a96909c174f9cb2.js",
-    "bundleSha256": "84bf68f4a4e0b45370f92d632c80122f8d55d5bc28a3ad3ee66507649d5e8e37",
-    "browser": "Headful Chrome via Chrome DevTools MCP 1.10.1 CLI",
+    "bundle": "entry-6891148c1202081e713d3854f763d6ea.js",
+    "bundleSha256": "4cbafb943e6e848033c605a2ae5ba6cfc5e093acb2a7fb0e3d95224bdd688bdf",
+    "browser": "Headful Chrome via Chrome DevTools MCP CLI",
     "devicePixelRatio": 1,
+    "colorScheme": "light",
     "viewports": [
       [
         680,
@@ -33,32 +34,85 @@
         1280,
         900
       ]
-    ]
+    ],
+    "bundleVerifiedOnEveryNavigation": true
   },
-  "tripDataUnchanged": {
-    "trips": true,
-    "itinerary_items": true,
-    "packing_items": true,
-    "trip_notes": true,
-    "trip_members": true
+  "fixtureHashes": {
+    "method": "per table: count(*) and md5(string_agg(row::text, '|' order by row::text))",
+    "before": {
+      "trips": {
+        "rows": 14,
+        "md5": "42ce292fd5ac7b5d801d1fe4b432ebbd"
+      },
+      "itinerary_items": {
+        "rows": 12,
+        "md5": "1ae6d002e0dbdb7d71df1fd84219c4ef"
+      },
+      "packing_items": {
+        "rows": 16,
+        "md5": "7a4e7f41e9fbb514fa958829805adc10"
+      },
+      "trip_notes": {
+        "rows": 6,
+        "md5": "329d54432b55f370ec5662658831f07e"
+      },
+      "trip_members": {
+        "rows": 24,
+        "md5": "9c27a0fe6c5154302d000f5a1cae53a8"
+      },
+      "trip_invites": {
+        "rows": 13,
+        "md5": "32d84b970f2044f2c248c7b53f781a64"
+      }
+    },
+    "after": {
+      "trips": {
+        "rows": 14,
+        "md5": "42ce292fd5ac7b5d801d1fe4b432ebbd"
+      },
+      "itinerary_items": {
+        "rows": 12,
+        "md5": "1ae6d002e0dbdb7d71df1fd84219c4ef"
+      },
+      "packing_items": {
+        "rows": 16,
+        "md5": "7a4e7f41e9fbb514fa958829805adc10"
+      },
+      "trip_notes": {
+        "rows": 6,
+        "md5": "329d54432b55f370ec5662658831f07e"
+      },
+      "trip_members": {
+        "rows": 24,
+        "md5": "9c27a0fe6c5154302d000f5a1cae53a8"
+      },
+      "trip_invites": {
+        "rows": 13,
+        "md5": "32d84b970f2044f2c248c7b53f781a64"
+      }
+    },
+    "unchanged": true
   },
+  "invitesAcceptedOutsidePgTap": 0,
   "quality": {
     "typecheck": "passed",
     "lintErrors": 0,
-    "preExistingLintWarnings": 5,
+    "lintWarnings": 0,
     "vitestTestsPassed": 73,
-    "pgTapAssertionsPassed": 52,
-    "finalChecksCompletedAt": "2026-10-09T11:11:31.029579-06:00"
+    "pgTapAssertionsPassed": 63,
+    "pgTapFiles": 10,
+    "finalChecksCompletedAt": "2026-10-09T14:39:43.454865-06:00"
   },
   "finalEmulatorState": {
-    "restoredAt": "2026-10-09T11:02:57.092507-06:00",
+    "restoredAt": "2026-10-09T14:36:38.491173-06:00",
     "actor": "Mia",
     "signedInAccount": "tester@waymark.test",
     "density": "Physical density: 420",
     "fontScale": "1.0",
     "automaticTime": "1",
-    "deviceTime": "Fri Oct  9 11:02:57 CST 2026",
+    "deviceTime": "Fri Oct  9 14:36:38 CST 2026",
     "timezone": "America/Guatemala",
+    "nightMode": "Night mode: no",
     "screen": "Your trips"
   }
 }

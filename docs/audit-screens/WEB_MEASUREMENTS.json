@@ -47,35 +47,36 @@
     "labels": {
       "Plan": {
         "x": 75.203125,
-        "y": 1073,
+        "y": 1076,
         "width": 31.59375,
-        "height": 22,
-        "bottom": 1095
+        "height": 16,
+        "bottom": 1092
       },
       "Packing": {
         "x": 229.890625,
-        "y": 1073,
+        "y": 1076,
         "width": 54.203125,
-        "height": 22,
-        "bottom": 1095
+        "height": 16,
+        "bottom": 1092
       },
       "Notes": {
         "x": 403.703125,
-        "y": 1073,
+        "y": 1076,
         "width": 38.578125,
-        "height": 22,
-        "bottom": 1095
+        "height": 16,
+        "bottom": 1092
       },
       "Trip": {
         "x": 574.0625,
-        "y": 1073,
+        "y": 1076,
         "width": 29.875,
-        "height": 22,
-        "bottom": 1095
+        "height": 16,
+        "bottom": 1092
       }
     },
-    "commit": "37844ee07323b194a8bbf1250fd8a92b81c0bf3b",
-    "measuredAt": "2026-10-09T07:49:06.724601-06:00"
+    "commit": "7a4f60ccaf0ba6653065700e0042eca5ae2e1003",
+    "exportBundle": "entry-6891148c1202081e713d3854f763d6ea.js",
+    "measuredAt": "2026-10-09T14:29:37.165105-06:00"
   },
   {
     "viewport": {
@@ -125,34 +126,35 @@
     "labels": {
       "Plan": {
         "x": 375.203125,
-        "y": 873,
+        "y": 876,
         "width": 31.59375,
-        "height": 22,
-        "bottom": 895
+        "height": 16,
+        "bottom": 892
       },
       "Packing": {
         "x": 529.890625,
-        "y": 873,
+        "y": 876,
         "width": 54.203125,
-        "height": 22,
-        "bottom": 895
+        "height": 16,
+        "bottom": 892
       },
       "Notes": {
         "x": 703.703125,
-        "y": 873,
+        "y": 876,
         "width": 38.578125,
-        "height": 22,
-        "bottom": 895
+        "height": 16,
+        "bottom": 892
       },
       "Trip": {
         "x": 874.0625,
-        "y": 873,
+        "y": 876,
         "width": 29.875,
-        "height": 22,
-        "bottom": 895
+        "height": 16,
+        "bottom": 892
       }
     },
-    "commit": "37844ee07323b194a8bbf1250fd8a92b81c0bf3b",
-    "measuredAt": "2026-10-09T07:49:08.801567-06:00"
+    "commit": "7a4f60ccaf0ba6653065700e0042eca5ae2e1003",
+    "exportBundle": "entry-6891148c1202081e713d3854f763d6ea.js",
+    "measuredAt": "2026-10-09T14:29:45.221018-06:00"
   }
 ]
