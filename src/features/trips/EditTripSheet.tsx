@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/Button';
@@ -8,6 +9,15 @@ import { TextField } from '@/components/TextField';
 import { tripSchema, type TripForm } from '@/lib/validation/schemas';
 import type { Trip } from '@/lib/types';
 import { useUpdateTrip } from './hooks';
+
+function defaultsFor(trip: Trip): TripForm {
+  return {
+    name: trip.name,
+    destination: trip.destination ?? '',
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+  };
+}
 
 interface EditTripSheetProps {
   visible: boolean;
@@ -23,15 +33,20 @@ interface EditTripSheetProps {
 export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
   const update = useUpdateTrip(trip.id);
 
-  const { control, handleSubmit, watch, setValue } = useForm<TripForm>({
+  const { control, handleSubmit, reset, watch, setValue } = useForm<TripForm>({
     resolver: zodResolver(tripSchema),
-    values: {
-      name: trip.name,
-      destination: trip.destination ?? '',
-      startDate: trip.startDate,
-      endDate: trip.endDate,
-    },
+    defaultValues: defaultsFor(trip),
   });
+
+  // Each open starts from the saved trip: a cancelled edit (e.g. Clear dates)
+  // must not survive into the next open, like the other editors.
+  const { reset: resetUpdate } = update;
+  useEffect(() => {
+    if (visible) {
+      reset(defaultsFor(trip));
+      resetUpdate();
+    }
+  }, [visible, trip, reset, resetUpdate]);
 
   const startDate = watch('startDate');
   const endDate = watch('endDate');
