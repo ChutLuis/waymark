@@ -1,7 +1,9 @@
 # Airmail audit — seventh-pass release capture
 
-**Code commit:** `7a4f60c` (UI, migration `20260725000000_invite_existing_member.sql` and pgTAP).
-**Capture window (local, UTC−6):** 2026-10-09 14:05:28 → 14:32:04.
+**Code commits:** `7a4f60c` (UI, migration `20260725000000_invite_existing_member.sql`
+and pgTAP) and `4ed9ffb` (Edit trip form reset). Every frame was captured from
+`4ed9ffb`, which contains both.
+**Capture window (local, UTC−6):** 2026-10-09 17:05:52 → 17:18:16.
 **87 fresh PNGs:** 78 Android release frames and 9 headful Chrome frames.
 Every frame was visually reviewed. There are no runtime error screens, LogBox
 or toasts; `join-invalid-390-light` is the requested invalid-code validation state.
@@ -20,6 +22,7 @@ last row of text ink.
 | N37 · One date-pair style | `trip-edit-390-light`, `trip-edit-cleared-390-light`, `newtrip-empty-390-light`, `item-editor-open-390-light`, `item-editor-{360,390}-light`, `item-editor-cleared-390-light`, `web-newtrip-{680,1280}-light` | Every STARTS / ENDS label sits **above** its field like TRIP NAME and DESTINATION: label bottom → field top **6.1dp** at 390 (6.0dp at 360), left edges aligned (0dp), never inside the field. Both pairs read **STARTS optional / ENDS optional** with the same **Add date** placeholder. Web: label → input **6px** at both viewports, `optional` on the label row. New trip gains the same Clear dates link as Edit trip. |
 | N38 · Clear link spacing | `item-editor-open-390-light`, `item-editor-{360,390}-light`, `trip-edit-390-light` | Pair → link glyph: **8.3dp** (Clear times, 390), **8.7dp** (360), **8.3dp** (Clear dates). Link → STATUS glyph: **21.3dp** (390), **21.0dp** (360), the full 14dp section gap. Pass six: 28dp / 22dp. |
 | N39 · Sheet header edge | `item-editor-open-390-light` (top), `item-editor-{360,390}-light` (scrolled to the end) | At the top no full-width line exists under the header. Scrolled, a full-width divider-coloured hairline (`#C9D3DB`) appears at y=392–393px (390) and 408–410px (360). The 1dp edge is reserved in both states, so content does not shift. |
+| Edit trip reset | `trip-edit-390-light` → `trip-edit-cleared-390-light` → Cancel → `trip-edit-keyboard-390-light` | Reopened on the same mounted Trip screen straight after the cancelled Clear dates, the fields read **STARTS: Tue 13 Oct / ENDS: Fri 16 Oct** (native accessibility labels). The sheet now resets to the saved trip and clears any failed-save state on every open, like the item, packing and note editors. |
 | N40 · No-art join card | `join-preview-dated-390-light`, `join-member-390-light`; `join-preview-390-light` keeps its scene | Berlin weekend now shows New trip's preview card: cream fill **#FFFCF5**, destination on ruled address lines, the stamp on the right half at the top, airmail band along the bottom, **23.8dp** clear of the stamp. New trip and Join share one `TripPreviewCard` component. |
 
 Retained from pass six (re-measured from these frames): Privacy / Delete
@@ -31,15 +34,15 @@ seven closed sheets (N29); empty-state gaps **16.3 / 15.9 / 15.5dp** with the
 
 ## Build and capture provenance
 
-- Android: `./gradlew assembleRelease -q` from the code commit, then a fresh
+- Android: `./gradlew assembleRelease -q` from `4ed9ffb`, then a fresh
   `adb uninstall app.waymark` / `adb install app-release.apk` and sign-in.
   Local and installed APK SHA-256 both equal
-  `b714c16c67719664eeb0ea2c412ee9776be85053b44a2ad60977fc240f7e132f`.
+  `c8d139fcb5409062548473296ffa5977f72acd7a1943ea47fdf8dab393da748b`.
 - Android `emulator-5554`: physical 1080×2400, font scale **1.0**.
   Densities **480 / 443 / 402** supply nominal **360 / 390 / 430dp** widths.
   The app was force-stopped and relaunched after every density and theme change.
 - Web: production static export from the same commit, bundle
-  `entry-6891148c1202081e713d3854f763d6ea.js`, verified as the loaded script on
+  `entry-118dd1e08e7671551836178648fa86a2.js`, verified as the loaded script on
   every navigation. Headful Chrome via the Chrome DevTools MCP CLI, viewports
   **680×1100** and **1280×900**, DPR **1**, light colour scheme forced.
 - Per-file timestamps, actor, theme, density/viewport, dimensions, SHA-256,
@@ -47,10 +50,6 @@ seven closed sheets (N29); empty-state gaps **16.3 / 15.9 / 15.5dp** with the
   [CAPTURE_INVENTORY.json](CAPTURE_INVENTORY.json). APK/export hashes, fixture
   hashes, quality gates and restored device state:
   [BUILD_PROVENANCE.json](BUILD_PROVENANCE.json).
-- `trip-edit-keyboard-390-light` was taken on a freshly mounted Trip screen:
-  Edit trip keeps a cancelled Clear dates in its form until the screen remounts,
-  so a capture straight after `trip-edit-cleared` would show empty dates that
-  were never saved.
 
 ## Plan-today clock
 

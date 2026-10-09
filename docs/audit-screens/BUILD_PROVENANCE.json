@@ -1,11 +1,15 @@
 {
-  "codeCommit": "7a4f60ccaf0ba6653065700e0042eca5ae2e1003",
+  "codeCommit": "4ed9ffb6ce4e342194b90cb6fbf40de10cddea1b",
+  "codeCommitsThisPass": [
+    "7a4f60c",
+    "4ed9ffb"
+  ],
   "android": {
     "buildType": "release",
     "freshInstall": true,
     "installMethod": "adb uninstall app.waymark; adb install app-release.apk",
-    "apkSha256": "b714c16c67719664eeb0ea2c412ee9776be85053b44a2ad60977fc240f7e132f",
-    "installedApkSha256": "b714c16c67719664eeb0ea2c412ee9776be85053b44a2ad60977fc240f7e132f",
+    "apkSha256": "c8d139fcb5409062548473296ffa5977f72acd7a1943ea47fdf8dab393da748b",
+    "installedApkSha256": "c8d139fcb5409062548473296ffa5977f72acd7a1943ea47fdf8dab393da748b",
     "physicalPixels": [
       1080,
       2400
@@ -20,8 +24,8 @@
   },
   "web": {
     "buildType": "production static export",
-    "bundle": "entry-6891148c1202081e713d3854f763d6ea.js",
-    "bundleSha256": "4cbafb943e6e848033c605a2ae5ba6cfc5e093acb2a7fb0e3d95224bdd688bdf",
+    "bundle": "entry-118dd1e08e7671551836178648fa86a2.js",
+    "bundleSha256": "db28467b3509de34c696f9b3a9b0f0f38421f0244aef6031ce195f0109cb77cf",
     "browser": "Headful Chrome via Chrome DevTools MCP CLI",
     "devicePixelRatio": 1,
     "colorScheme": "light",
@@ -101,16 +105,16 @@
     "vitestTestsPassed": 73,
     "pgTapAssertionsPassed": 63,
     "pgTapFiles": 10,
-    "finalChecksCompletedAt": "2026-10-09T14:39:43.454865-06:00"
+    "finalChecksCompletedAt": "2026-10-09T17:22:22.036250-06:00"
   },
   "finalEmulatorState": {
-    "restoredAt": "2026-10-09T14:36:38.491173-06:00",
+    "restoredAt": "2026-10-09T17:21:47.378673-06:00",
     "actor": "Mia",
     "signedInAccount": "tester@waymark.test",
     "density": "Physical density: 420",
     "fontScale": "1.0",
     "automaticTime": "1",
-    "deviceTime": "Fri Oct  9 14:36:38 CST 2026",
+    "deviceTime": "Fri Oct  9 17:21:47 CST 2026",
     "timezone": "America/Guatemala",
     "nightMode": "Night mode: no",
     "screen": "Your trips"

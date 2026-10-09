@@ -1,6 +1,6 @@
 {
-  "codeCommit": "7a4f60ccaf0ba6653065700e0042eca5ae2e1003",
-  "measuredAt": "2026-10-09T14:34:38.803777-06:00",
+  "codeCommit": "4ed9ffb6ce4e342194b90cb6fbf40de10cddea1b",
+  "measuredAt": "2026-10-09T17:20:39.640901-06:00",
   "method": "Android UIAutomator bounds from the capture moment for controls and text nodes; original PNG pixels for glyph ink, gesture pill, shadows and hairlines. px × 160 / density converts to dp. \"Glyph\" gaps run from the date field's bottom border edge to the first/last row of text ink.",
   "N35": {
     "notScrolled": {
@@ -793,6 +793,19 @@
     ],
     "airmailBandTopPx": 1187,
     "stampToBandDp": 23.84
+  },
+  "EditTripReset": {
+    "sequence": [
+      "trip-edit-390-light.png (saved dates)",
+      "Clear dates → trip-edit-cleared-390-light.png",
+      "Cancel",
+      "reopen Edit trip on the same mounted Trip screen → trip-edit-keyboard-390-light.png"
+    ],
+    "reopenedFieldValues": [
+      "STARTS: Tue 13 Oct",
+      "ENDS: Fri 16 Oct"
+    ],
+    "savedDatesRestored": true
   },
   "N28": [
     {
