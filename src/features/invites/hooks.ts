@@ -93,12 +93,15 @@ export interface InvitePreview {
   startDate: string | null;
   endDate: string | null;
   inviterName: string;
+  /** The caller is already on this trip, so there is nothing to join. */
+  isMember: boolean;
 }
 
 /**
  * Read-only preview of the trip behind a valid invite code, for the Join
  * screen, via the security-definer `preview_trip_invite` RPC. Returns exactly
- * the fields the preview needs; RLS on the tables is untouched.
+ * the fields the preview needs, plus whether the caller is already a member;
+ * RLS on the tables is untouched.
  */
 export function usePreviewTripInvite(code: string | null) {
   const normalised = code && /^[A-Z0-9]{8}$/.test(code.toUpperCase()) ? code.toUpperCase() : null;
@@ -118,6 +121,7 @@ export function usePreviewTripInvite(code: string | null) {
         startDate: row.start_date,
         endDate: row.end_date,
         inviterName: row.inviter_name,
+        isMember: row.is_member,
       };
     },
   });

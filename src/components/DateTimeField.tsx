@@ -5,7 +5,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
-import { fontFamilies, hitTargetMin, radius, spacing, typeScale, useTheme } from '@/theme';
+import { hitTargetMin, radius, spacing, typeScale, useTheme } from '@/theme';
 import { formatDate, formatDateTime, toDateOnly } from '@/lib/format/date';
 
 export interface DateTimeFieldProps {
@@ -17,14 +17,11 @@ export interface DateTimeFieldProps {
   /** 'datetime' (default) or a date-only picker (trip dates). */
   mode?: 'datetime' | 'date';
   placeholder?: string;
-  clearable?: boolean;
   /** Reduced side padding for paired fields in a narrow editor. */
   compact?: boolean;
   error?: string;
   /** Sensible starting point when the field is empty (e.g. trip start date). */
   initialDate?: Date;
-  /** 'box' renders the 64-high new-trip date box (label inside). */
-  variant?: 'default' | 'box';
 }
 
 /**
@@ -39,11 +36,9 @@ export function DateTimeField({
   onChange,
   mode = 'datetime',
   placeholder = 'Add',
-  clearable = false,
   compact = false,
   error,
   initialDate,
-  variant = 'default',
 }: DateTimeFieldProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -98,23 +93,21 @@ export function DateTimeField({
 
   return (
     <View>
-      {variant === 'default' ? (
-        <View style={styles.labelRow}>
-          <AppText role="kicker" tone="secondary">{label}</AppText>
-          {optionalTag ? (
-            <AppText role="kicker" tone="muted" style={styles.optional}>
-              {optionalTag}
-            </AppText>
-          ) : null}
-        </View>
-      ) : null}
+      <View style={styles.labelRow}>
+        <AppText role="kicker" tone="secondary">{label}</AppText>
+        {optionalTag ? (
+          <AppText role="kicker" tone="muted" style={styles.optional}>
+            {optionalTag}
+          </AppText>
+        ) : null}
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${display ?? 'not set'}`}
         onPress={openPicker}
         style={({ pressed }) => [
-          variant === 'box' ? styles.box : styles.field,
-          compact && variant === 'default' && styles.fieldCompact,
+          styles.field,
+          compact && styles.fieldCompact,
           {
             backgroundColor: colors.paper,
             borderColor: error ? colors.wax : colors.border,
@@ -122,35 +115,9 @@ export function DateTimeField({
           },
         ]}
       >
-        {variant === 'box' ? (
-          <View>
-            <AppText role="tag" tone="secondary" style={{ letterSpacing: 0.6 }}>
-              {label}
-            </AppText>
-            <AppText
-              style={[styles.boxValue, { fontFamily: fontFamilies.semibold }, !value && { color: colors.ink3 }]}
-            >
-              {display ?? placeholder}
-            </AppText>
-          </View>
-        ) : (
-          <AppText numberOfLines={1} style={[styles.value, !value && { color: colors.ink3 }]}>
-            {display ?? placeholder}
-          </AppText>
-        )}
-        {clearable && value && variant === 'default' ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Clear ${label}`}
-            hitSlop={10}
-            onPress={() => onChange(null)}
-            style={styles.clear}
-          >
-            <AppText role="link" tone="muted">
-              Clear
-            </AppText>
-          </Pressable>
-        ) : null}
+        <AppText numberOfLines={1} style={[styles.value, !value && { color: colors.ink3 }]}>
+          {display ?? placeholder}
+        </AppText>
       </Pressable>
       {error ? (
         <AppText role="caption" tone="danger" style={styles.error}>
@@ -237,14 +204,15 @@ export function DateTimeField({
 }
 
 const styles = StyleSheet.create({
+  // Same label row as TextField, so Destination and the date pair match.
   labelRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.s2,
     marginBottom: spacing.s2,
   },
   optional: {
     textTransform: 'lowercase',
-    marginLeft: spacing.s1,
   },
   field: {
     minHeight: 52,
@@ -254,30 +222,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // Keep a gap before "Clear" so a full date ("6 Oct, 0:30") can't touch it.
-    gap: spacing.s3,
   },
   value: {
     ...typeScale.body,
-    // Let a long value shrink instead of shoving "Clear" onto it, and keep the
-    // value and Clear on one line in the item editor's narrow date columns (N14).
+    // A long value shrinks on one line in the narrow paired columns (N14).
     flexShrink: 1,
     minWidth: 0,
   },
   fieldCompact: { paddingHorizontal: spacing.s3 },
-  clear: { flexShrink: 0 },
-  box: {
-    minHeight: 64,
-    borderRadius: radius.input,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    justifyContent: 'center',
-    gap: 2,
-  },
-  boxValue: {
-    fontSize: 18,
-    lineHeight: 24,
-  },
   error: {
     marginTop: spacing.s2,
   },

@@ -9,6 +9,7 @@ import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
 import { SceneStamp } from '@/features/trips/SceneStamp';
+import { TripPreviewCard } from '@/features/trips/TripPreviewCard';
 import { useAcceptInvite, usePreviewTripInvite } from '@/features/invites/hooks';
 import { INVITE_CODE_LENGTH, InviteCodeEntry, sanitizeInviteCode } from '@/features/invites/InviteCodeEntry';
 import {
@@ -53,6 +54,13 @@ export default function JoinScreen() {
   const complete = code.length === LENGTH;
   const preview = usePreviewTripInvite(complete ? code : null);
   const country = preview.data ? matchDestination(preview.data.destination) : null;
+  // Already on the trip: open it, never spend the code (N36).
+  const isMember = preview.data?.isMember ?? false;
+  const artWidth = Math.min(width, 440) - spacing.gutter * 2 - 14;
+
+  const openTrip = () => {
+    if (preview.data) router.replace(`/trips/${preview.data.tripId}` as never);
+  };
 
   const onJoin = async () => {
     setBanner(null);
@@ -107,7 +115,8 @@ export default function JoinScreen() {
           onChangeText={setCode}
           autoFocus={!linkCode}
           onSubmit={() => {
-            if (complete && !acceptInvite.isPending) onJoin();
+            if (isMember) openTrip();
+            else if (complete && !acceptInvite.isPending) onJoin();
           }}
         >
         {complete && preview.isSuccess ? (
@@ -115,7 +124,9 @@ export default function JoinScreen() {
             <View style={[styles.foundCircle, { backgroundColor: colors.ink }]}>
               <Check size={13} color={colors.paper} strokeWidth={3.2} />
             </View>
-            <AppText role="link">Code found</AppText>
+            <AppText role="link" style={styles.foundText}>
+              {isMember ? `You’re already on ${preview.data.name}` : 'Code found'}
+            </AppText>
           </View>
         ) : null}
         {banner || preview.isError ? (
@@ -131,37 +142,37 @@ export default function JoinScreen() {
               {preview.data.inviterName.split(' ')[0].toUpperCase()} SENT YOU
             </AppText>
             <View style={styles.postcardWrap}>
-              <Postcard
-                rotation={-1.5}
-                padding={7}
-                shadow="postcardJoin"
-                caption={country ? DESTINATION_INFO[country].caption : undefined}
-                captionCorner="bottomLeft"
-              >
-                {country ? (
-                  <TripScene
-                    country={country}
-                    crop="header"
-                    width={Math.min(width, 440) - spacing.gutter * 2 - 14}
-                    height={150}
-                    live
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.unknownArt,
-                      { width: Math.min(width, 440) - spacing.gutter * 2 - 14 },
-                    ]}
-                  >
+              {country ? (
+                <Postcard
+                  rotation={-1.5}
+                  padding={7}
+                  shadow="postcardJoin"
+                  caption={DESTINATION_INFO[country].caption}
+                  captionCorner="bottomLeft"
+                >
+                  <TripScene country={country} crop="header" width={artWidth} height={150} live />
+                </Postcard>
+              ) : (
+                // No scene art: New trip's cream postcard, addressed to the
+                // destination, with its stamp at the top right (N40).
+                <TripPreviewCard
+                  pattern="airmail"
+                  stamp={
                     <SceneStamp
-                      band="xs"
+                      band="md"
                       image={null}
                       initial={(preview.data.name[0] ?? '?').toUpperCase()}
                       name={stampName(preview.data.destination)}
                     />
-                  </View>
-                )}
-              </Postcard>
+                  }
+                >
+                  {preview.data.destination ? (
+                    <AppText role="meta" tone="secondary" numberOfLines={2}>
+                      {preview.data.destination}
+                    </AppText>
+                  ) : null}
+                </TripPreviewCard>
+              )}
             </View>
             <View style={styles.tripDetails}>
               <View style={styles.tripTitleRow}>
@@ -177,41 +188,48 @@ export default function JoinScreen() {
               </AppText>
             </View>
 
-            <View style={styles.rules}>
-              <View style={styles.rule}>
-                <View style={[styles.ruleCircle, { backgroundColor: colors.paper }]}>
-                  <Mail size={17} color={colors.ink} strokeWidth={iconStrokeWidth} />
+            {/* What joining means; nothing to explain to someone already on it. */}
+            {!isMember ? (
+              <View style={styles.rules}>
+                <View style={styles.rule}>
+                  <View style={[styles.ruleCircle, { backgroundColor: colors.paper }]}>
+                    <Mail size={17} color={colors.ink} strokeWidth={iconStrokeWidth} />
+                  </View>
+                  <AppText role="body" style={styles.ruleText}>
+                    You&apos;ll both see the plan, packing and postcards.
+                  </AppText>
                 </View>
-                <AppText role="body" style={styles.ruleText}>
-                  You&apos;ll both see the plan, packing and postcards.
-                </AppText>
-              </View>
-              <View style={styles.rule}>
-                <View
-                  style={[
-                    styles.ruleCircle,
-                    { backgroundColor: colors.wax, borderWidth: 3, borderColor: colors.waxRing },
-                  ]}
-                >
-                  <Lock size={15} color={colors.paper} strokeWidth={2.4} />
+                <View style={styles.rule}>
+                  <View
+                    style={[
+                      styles.ruleCircle,
+                      { backgroundColor: colors.wax, borderWidth: 3, borderColor: colors.waxRing },
+                    ]}
+                  >
+                    <Lock size={15} color={colors.paper} strokeWidth={2.4} />
+                  </View>
+                  <AppText role="body" style={styles.ruleText}>
+                    Sealed notes stay sealed: {preview.data.inviterName.split(' ')[0]} can&apos;t open yours.
+                  </AppText>
                 </View>
-                <AppText role="body" style={styles.ruleText}>
-                  Sealed notes stay sealed: {preview.data.inviterName.split(' ')[0]} can&apos;t open yours.
-                </AppText>
               </View>
-            </View>
+            ) : null}
           </View>
         ) : null}
       </View>
 
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 34 }]}>
-        <Button
-          label={preview.data ? `Join ${preview.data.name}` : 'Join trip'}
-          size="lg"
-          disabled={!complete || preview.isError}
-          loading={acceptInvite.isPending}
-          onPress={onJoin}
-        />
+        {isMember ? (
+          <Button label="Open trip" size="lg" onPress={openTrip} />
+        ) : (
+          <Button
+            label={preview.data ? `Join ${preview.data.name}` : 'Join trip'}
+            size="lg"
+            disabled={!complete || preview.isError}
+            loading={acceptInvite.isPending}
+            onPress={onJoin}
+          />
+        )}
         <Button
           label="Not now"
           variant="text"
@@ -232,15 +250,11 @@ const styles = StyleSheet.create({
   title: { marginTop: spacing.s3 },
   foundRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.s4 },
   foundCircle: { width: 22, height: 22, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  foundText: { flexShrink: 1 },
   error: { marginTop: spacing.s4 },
   previewBlock: { marginTop: spacing.s10 },
   sentKicker: { marginTop: 0 },
   postcardWrap: { marginTop: spacing.s5 },
-  unknownArt: {
-    height: 150,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   tripDetails: { marginTop: spacing.s7 },
   tripTitleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.s5 },
   tripName: { flex: 1, minWidth: 0, fontSize: 22, lineHeight: 26 },

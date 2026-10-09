@@ -347,6 +347,7 @@ export type Database = {
           destination: string | null
           end_date: string | null
           inviter_name: string
+          is_member: boolean
           name: string
           start_date: string | null
           trip_id: string

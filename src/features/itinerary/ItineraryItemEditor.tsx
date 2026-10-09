@@ -6,6 +6,7 @@ import { Bell } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
+import { DatePair } from '@/components/DatePair';
 import { DateTimeField } from '@/components/DateTimeField';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { Sheet } from '@/components/Sheet';
@@ -198,8 +199,17 @@ export function ItineraryItemEditor({
           />
         )}
       />
-      <View style={styles.dateRow}>
-        <View style={styles.dateCol}>
+      <DatePair
+        clearLabel="Clear times"
+        onClear={
+          startAt || endAt
+            ? () => {
+                setValue('startAt', null, { shouldDirty: true });
+                setValue('endAt', null, { shouldDirty: true });
+              }
+            : undefined
+        }
+        start={
           <Controller
             control={control}
             name="startAt"
@@ -210,13 +220,13 @@ export function ItineraryItemEditor({
                 compact
                 value={field.value}
                 onChange={field.onChange}
-                placeholder="Add"
+                placeholder="Add date"
                 initialDate={tripStartDate ? new Date(`${tripStartDate}T10:00:00`) : undefined}
               />
             )}
           />
-        </View>
-        <View style={styles.dateCol}>
+        }
+        end={
           <Controller
             control={control}
             name="endAt"
@@ -227,28 +237,14 @@ export function ItineraryItemEditor({
                 compact
                 value={field.value}
                 onChange={field.onChange}
-                placeholder="Add"
+                placeholder="Add date"
                 error={fieldState.error?.message}
                 initialDate={startAt ? new Date(startAt) : undefined}
               />
             )}
           />
-        </View>
-      </View>
-      {startAt || endAt ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Clear times"
-          hitSlop={8}
-          onPress={() => {
-            setValue('startAt', null, { shouldDirty: true });
-            setValue('endAt', null, { shouldDirty: true });
-          }}
-          style={({ pressed }) => [styles.clearTimes, pressed && { opacity: 0.7 }]}
-        >
-          <AppText role="link" tone="muted">Clear times</AppText>
-        </Pressable>
-      ) : null}
+        }
+      />
       <Controller
         control={control}
         name="status"
@@ -327,18 +323,6 @@ export function ItineraryItemEditor({
 }
 
 const styles = StyleSheet.create({
-  dateRow: {
-    flexDirection: 'row',
-    gap: spacing.s5,
-  },
-  dateCol: {
-    flex: 1,
-    minWidth: 0,
-  },
-  clearTimes: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.s4,
-  },
   statusLabel: {
     marginBottom: spacing.s1 + 2,
   },

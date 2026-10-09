@@ -63,6 +63,8 @@ select throws_ok(
 
 -- S15: an accepted invite cannot be accepted again by another user.
 reset role;
+select tests.create_supabase_user('d@test.com');
+select tests.create_supabase_user('e@test.com');
 insert into trip_invites (trip_id, code, created_by, expires_at)
 values (
   '11111111-1111-1111-1111-111111111111',
@@ -70,12 +72,12 @@ values (
   tests.get_supabase_uid('a@test.com'),
   now() + interval '1 day'
 );
-select tests.authenticate_as('b@test.com');
+select tests.authenticate_as('d@test.com');
 select lives_ok(
   $$select accept_trip_invite('single-use-trip-1-invite')$$,
-  'S15: B can accept an unused invite'
+  'S15: D can accept an unused invite'
 );
-select tests.authenticate_as('c@test.com');
+select tests.authenticate_as('e@test.com');
 select throws_ok(
   $$select accept_trip_invite('single-use-trip-1-invite')$$,
   'P0001',

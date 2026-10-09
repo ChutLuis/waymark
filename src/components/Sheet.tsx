@@ -18,7 +18,7 @@ import { useLazyAnimatedValue } from './useLazyAnimatedValue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
 import { useReducedMotion } from './useReducedMotion';
-import { fontFamilies, hitTargetMin, motion, radius, shadows, spacing, useTheme } from '@/theme';
+import { fontFamilies, hairlineWidth, hitTargetMin, motion, radius, shadows, spacing, useTheme } from '@/theme';
 
 interface SheetProps {
   visible: boolean;
@@ -60,7 +60,10 @@ export function Sheet({
   const progress = useLazyAnimatedValue(0);
   const [mounted, setMounted] = useState(visible);
   const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible());
+  // Hairline under the header once the body scrolls beneath it (N39).
+  const [scrolled, setScrolled] = useState(false);
   if (visible && !mounted) setMounted(true);
+  if (!mounted && scrolled) setScrolled(false);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -132,7 +135,13 @@ export function Sheet({
           ]}
         >
           {!isWide && <View style={[styles.grabber, { backgroundColor: colors.border }]} />}
-          <View style={[styles.header, headerLayout === 'stacked' && styles.headerStacked]}>
+          <View
+            style={[
+              styles.header,
+              headerLayout === 'stacked' && styles.headerStacked,
+              { borderBottomColor: scrolled ? colors.divider : 'transparent' },
+            ]}
+          >
             {headerLayout === 'stacked' ? (
               <AppText numberOfLines={1} style={styles.headerTitle}>{title}</AppText>
             ) : (
@@ -183,6 +192,11 @@ export function Sheet({
             // view (N19).
             automaticallyAdjustKeyboardInsets
             showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(event) => {
+              const next = event.nativeEvent.contentOffset.y > 0;
+              if (next !== scrolled) setScrolled(next);
+            }}
             contentContainerStyle={[styles.body, { paddingBottom: isWide ? spacing.s4 : spacing.s8 }]}
           >
             {children}
@@ -229,6 +243,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 52,
     paddingHorizontal: spacing.gutter,
+    // Always reserved so the body does not shift when the line appears.
+    borderBottomWidth: hairlineWidth,
   },
   headerSlot: {
     flex: 1,

@@ -1,12 +1,10 @@
-import { Pressable, StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { DatePair } from '@/components/DatePair';
 import { DateTimeField } from '@/components/DateTimeField';
 import { Sheet } from '@/components/Sheet';
 import { TextField } from '@/components/TextField';
-import { spacing } from '@/theme';
 import { tripSchema, type TripForm } from '@/lib/validation/schemas';
 import type { Trip } from '@/lib/types';
 import { useUpdateTrip } from './hooks';
@@ -85,17 +83,26 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
           />
         )}
       />
-      {/* 64 pt boxes like New trip, so a full date never wraps beside a Clear
-          link; one "Clear dates" link below the pair clears both (item N14). */}
-      <View style={styles.dateRow}>
-        <View style={styles.dateCol}>
+      {/* One "Clear dates" link below the pair clears both (item N14). */}
+      <DatePair
+        clearLabel="Clear dates"
+        onClear={
+          startDate || endDate
+            ? () => {
+                setValue('startDate', null, { shouldDirty: true });
+                setValue('endDate', null, { shouldDirty: true });
+              }
+            : undefined
+        }
+        start={
           <Controller
             control={control}
             name="startDate"
             render={({ field }) => (
               <DateTimeField
                 label="STARTS"
-                variant="box"
+                optionalTag="optional"
+                compact
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}
@@ -103,15 +110,16 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
               />
             )}
           />
-        </View>
-        <View style={styles.dateCol}>
+        }
+        end={
           <Controller
             control={control}
             name="endDate"
             render={({ field, fieldState }) => (
               <DateTimeField
                 label="ENDS"
-                variant="box"
+                optionalTag="optional"
+                compact
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}
@@ -121,32 +129,11 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
               />
             )}
           />
-        </View>
-      </View>
-      {startDate || endDate ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Clear dates"
-          hitSlop={8}
-          onPress={() => {
-            setValue('startDate', null, { shouldDirty: true });
-            setValue('endDate', null, { shouldDirty: true });
-          }}
-          style={({ pressed }) => [styles.clearDates, pressed && styles.pressed]}
-        >
-          <AppText role="link" tone="muted">Clear dates</AppText>
-        </Pressable>
-      ) : null}
+        }
+      />
       {update.isError ? (
         <Button label="Try again" variant="secondary" onPress={onSave} />
       ) : null}
     </Sheet>
   );
 }
-
-const styles = StyleSheet.create({
-  dateRow: { flexDirection: 'row', gap: spacing.s5 },
-  dateCol: { flex: 1 },
-  clearDates: { alignSelf: 'flex-start', marginTop: spacing.s4 },
-  pressed: { opacity: 0.7 },
-});

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,6 +18,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { ErrorBanner } from '@/components/ErrorBanner';
+import { useLazyAnimatedValue } from '@/components/useLazyAnimatedValue';
 import { TextField } from '@/components/TextField';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { KraftEnvelope, WaxSeal } from '@/components/airmail/KraftEnvelope';
@@ -25,6 +27,9 @@ import { peekPendingInviteCode } from '@/features/invites/pendingInvite';
 import { STRENGTH_LABELS, strengthOf } from '@/features/auth/passwordStrength';
 import { radius, spacing, useTheme } from '@/theme';
 import { signUpSchema, type SignUpForm } from '@/lib/validation/schemas';
+
+/** Scroll distance over which the postcard shadows fade out (N35). */
+const SHADOW_FADE = 48;
 
 function friendlyMessage(error: Error): string {
   if (/already registered/i.test(error.message)) {
@@ -78,6 +83,17 @@ export default function SignUpScreen() {
 
   const password = watch('password');
   const scrollRef = useRef<ScrollView>(null);
+  // The postcard shadows fade out as the page scrolls and are gone before the
+  // cards reach the status band, so nothing spills below it (N35).
+  const scrollY = useLazyAnimatedValue(0);
+  const [bodyY, setBodyY] = useState(0);
+  const [promiseY, setPromiseY] = useState(0);
+  const shadowGoneAt = Math.max(bodyY + promiseY - insets.top - spacing.s3, 1);
+  const shadowOpacity = scrollY.interpolate({
+    inputRange: [Math.max(shadowGoneAt - SHADOW_FADE, 0), shadowGoneAt],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
   // The password field sits above the strength meter and the privacy note;
   // scroll the meter fully into view when the field is focused (N21).
   const onPasswordFocus = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
@@ -123,7 +139,7 @@ export default function SignUpScreen() {
       pointerEvents="none"
       style={[styles.statusBand, { height: insets.top, backgroundColor: colors.bg }]}
     />
-    <ScrollView
+    <Animated.ScrollView
       ref={scrollRef}
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
@@ -131,6 +147,10 @@ export default function SignUpScreen() {
       keyboardDismissMode="interactive"
       automaticallyAdjustKeyboardInsets
       showsVerticalScrollIndicator={false}
+      scrollEventThrottle={16}
+      onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: true,
+      })}
     >
       <Pressable
         accessibilityRole="button"
@@ -141,7 +161,7 @@ export default function SignUpScreen() {
         <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
       </Pressable>
 
-      <View style={styles.body}>
+      <View style={styles.body} onLayout={(event) => setBodyY(event.nativeEvent.layout.y)}>
         <AppText role="kicker" tone="secondary">NEW HERE</AppText>
         <AppText role="title" style={styles.title}>Create an account</AppText>
         {/* Coming from an invite code? Say so — the code is stashed and replays on
@@ -152,18 +172,28 @@ export default function SignUpScreen() {
             : 'Then start a trip and invite the person you\u2019re going with.'}
         </AppText>
 
-        <View style={styles.promiseRow}>
-          <View style={[styles.promise, { backgroundColor: colors.paper }]}>
-            <View style={styles.promiseStamp}>
-              <PerforatedStamp width={24} height={28} size="xs" tone="airmailBlue">
-                <View style={[styles.promiseInner, { borderColor: 'rgba(255,252,245,0.7)' }]} />
-              </PerforatedStamp>
+        <View style={styles.promiseRow} onLayout={(event) => setPromiseY(event.nativeEvent.layout.y)}>
+          <View style={styles.promiseSlot}>
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.promiseShadow, { backgroundColor: colors.paper, opacity: shadowOpacity }]}
+            />
+            <View style={[styles.promise, { backgroundColor: colors.paper }]}>
+              <View style={styles.promiseStamp}>
+                <PerforatedStamp width={24} height={28} size="xs" tone="airmailBlue">
+                  <View style={[styles.promiseInner, { borderColor: 'rgba(255,252,245,0.7)' }]} />
+                </PerforatedStamp>
+              </View>
+              <AppText role="kicker">POSTCARDS</AppText>
+              <AppText role="link" style={styles.promiseText}>Shared with the person you invite</AppText>
             </View>
-            <AppText role="kicker">POSTCARDS</AppText>
-            <AppText role="link" style={styles.promiseText}>Shared with the person you invite</AppText>
           </View>
-          <View style={styles.promiseEnvelope}>
-            <KraftEnvelope flapHeight={24} style={styles.promise}>
+          <View style={styles.promiseSlot}>
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.promiseShadow, { backgroundColor: colors.kraft, opacity: shadowOpacity }]}
+            />
+            <KraftEnvelope flapHeight={24} style={[styles.promise]}>
               <View style={styles.promiseSeal}>
                 <WaxSeal size={24} />
               </View>
@@ -252,7 +282,7 @@ export default function SignUpScreen() {
           </Link>
         </View>
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -268,24 +298,28 @@ const styles = StyleSheet.create({
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   title: { marginTop: spacing.s3 },
   subtitle: { marginTop: spacing.s3 },
-  // Keep postcard shadows inside the group as it scrolls under the status band.
-  promiseRow: { flexDirection: 'row', gap: spacing.s5, marginTop: spacing.s9, overflow: 'hidden' },
+  promiseRow: { flexDirection: 'row', gap: spacing.s5, marginTop: spacing.s9 },
+  promiseSlot: { flex: 1, height: 112 },
+  // The shadow lives on its own layer behind each card so it can fade with
+  // scroll on the native driver; the card faces themselves cast none.
+  promiseShadow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: radius.card,
+    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
+  },
   promise: {
     flex: 1,
-    height: 112,
     borderRadius: radius.card,
     padding: spacing.s5,
     justifyContent: 'flex-end',
-    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
+    boxShadow: [],
   },
   promiseStamp: { position: 'absolute', right: 12, top: 12 },
   promiseInner: { flex: 1, margin: 2, borderWidth: 1 },
-  promiseEnvelope: {
-    // KraftEnvelope clips its rounded surface; promiseRow contains its shadow.
-    flex: 1,
-    height: 112,
-    borderRadius: radius.card,
-  },
   promiseSeal: { position: 'absolute', top: 10, left: '50%', marginLeft: -12 },
   promiseEnvelopeText: { position: 'absolute', left: spacing.s5, right: spacing.s5, bottom: spacing.s5 },
   promiseText: { marginTop: 4 },
