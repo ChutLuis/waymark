@@ -1,0 +1,64 @@
+{
+  "codeCommit": "37844ee07323b194a8bbf1250fd8a92b81c0bf3b",
+  "android": {
+    "buildType": "release",
+    "freshInstall": true,
+    "installMethod": "adb uninstall app.waymark; adb install app-release.apk",
+    "apkSha256": "9428824354eba9ba6856ea74915f70f7d7547a1042beccc9ab19c3e05c1a1fe7",
+    "installedApkSha256": "9428824354eba9ba6856ea74915f70f7d7547a1042beccc9ab19c3e05c1a1fe7",
+    "physicalPixels": [
+      1080,
+      2400
+    ],
+    "fontScale": 1.0,
+    "densities": {
+      "360": 480,
+      "390": 443,
+      "430": 402
+    },
+    "restartAfterEveryDensityChange": true
+  },
+  "web": {
+    "buildType": "production static export",
+    "bundle": "entry-06f7f99cc5a4a8b40a96909c174f9cb2.js",
+    "bundleSha256": "84bf68f4a4e0b45370f92d632c80122f8d55d5bc28a3ad3ee66507649d5e8e37",
+    "browser": "Headful Chrome via Chrome DevTools MCP 1.10.1 CLI",
+    "devicePixelRatio": 1,
+    "viewports": [
+      [
+        680,
+        1100
+      ],
+      [
+        1280,
+        900
+      ]
+    ]
+  },
+  "tripDataUnchanged": {
+    "trips": true,
+    "itinerary_items": true,
+    "packing_items": true,
+    "trip_notes": true,
+    "trip_members": true
+  },
+  "quality": {
+    "typecheck": "passed",
+    "lintErrors": 0,
+    "preExistingLintWarnings": 5,
+    "vitestTestsPassed": 73,
+    "pgTapAssertionsPassed": 52,
+    "finalChecksCompletedAt": "2026-10-09T11:11:31.029579-06:00"
+  },
+  "finalEmulatorState": {
+    "restoredAt": "2026-10-09T11:02:57.092507-06:00",
+    "actor": "Mia",
+    "signedInAccount": "tester@waymark.test",
+    "density": "Physical density: 420",
+    "fontScale": "1.0",
+    "automaticTime": "1",
+    "deviceTime": "Fri Oct  9 11:02:57 CST 2026",
+    "timezone": "America/Guatemala",
+    "screen": "Your trips"
+  }
+}

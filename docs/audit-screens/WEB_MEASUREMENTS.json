@@ -1,10 +1,9 @@
 [
   {
-    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
-    "capturedAt": "2026-10-09T01:09:07.704Z",
     "viewport": {
       "width": 680,
-      "height": 1100
+      "height": 1100,
+      "devicePixelRatio": 1
     },
     "root": {
       "x": 0,
@@ -29,51 +28,60 @@
     },
     "scroller": {
       "x": 0,
-      "y": 353.7375183105469,
+      "y": 353.734375,
       "width": 680,
-      "height": 681.4625244140625,
-      "bottom": 1035.2000427246094,
+      "height": 681.265625,
+      "bottom": 1035
+    },
+    "scrollerStyle": {
       "flex": "1 1 0%",
       "minHeight": "0px"
     },
-    "bar": {
+    "tabBar": {
       "x": 0,
-      "y": 1035.2000732421875,
+      "y": 1035,
       "width": 680,
-      "height": 64.80000305175781,
-      "bottom": 1100.0000762939453
+      "height": 65,
+      "bottom": 1100
     },
-    "bottomDelta": 7.62939453125e-05,
-    "labels": [
-      {
-        "text": "Plan",
-        "top": 1072.800048828125,
-        "bottom": 1094.4000244140625
+    "labels": {
+      "Plan": {
+        "x": 75.203125,
+        "y": 1073,
+        "width": 31.59375,
+        "height": 22,
+        "bottom": 1095
       },
-      {
-        "text": "Packing",
-        "top": 1072.800048828125,
-        "bottom": 1094.4000244140625
+      "Packing": {
+        "x": 229.890625,
+        "y": 1073,
+        "width": 54.203125,
+        "height": 22,
+        "bottom": 1095
       },
-      {
-        "text": "Notes",
-        "top": 1072.800048828125,
-        "bottom": 1094.4000244140625
+      "Notes": {
+        "x": 403.703125,
+        "y": 1073,
+        "width": 38.578125,
+        "height": 22,
+        "bottom": 1095
       },
-      {
-        "text": "Trip",
-        "top": 1072.800048828125,
-        "bottom": 1094.4000244140625
+      "Trip": {
+        "x": 574.0625,
+        "y": 1073,
+        "width": 29.875,
+        "height": 22,
+        "bottom": 1095
       }
-    ],
-    "documentHeight": 1100
+    },
+    "commit": "37844ee07323b194a8bbf1250fd8a92b81c0bf3b",
+    "measuredAt": "2026-10-09T07:49:06.724601-06:00"
   },
   {
-    "commit": "2e646c84ea32ee61e35a3da1cd6615f8ca6b7364",
-    "capturedAt": "2026-10-09T01:10:22.528Z",
     "viewport": {
       "width": 1280,
-      "height": 900
+      "height": 900,
+      "devicePixelRatio": 1
     },
     "root": {
       "x": 0,
@@ -98,43 +106,53 @@
     },
     "scroller": {
       "x": 300,
-      "y": 353.7375183105469,
+      "y": 353.734375,
       "width": 680,
-      "height": 481.4624938964844,
-      "bottom": 835.2000122070312,
+      "height": 481.265625,
+      "bottom": 835
+    },
+    "scrollerStyle": {
       "flex": "1 1 0%",
       "minHeight": "0px"
     },
-    "bar": {
+    "tabBar": {
       "x": 300,
-      "y": 835.2000122070312,
+      "y": 835,
       "width": 680,
-      "height": 64.80000305175781,
-      "bottom": 900.0000152587891
+      "height": 65,
+      "bottom": 900
     },
-    "bottomDelta": 1.52587890625e-05,
-    "labels": [
-      {
-        "text": "Plan",
-        "top": 872.7999877929688,
-        "bottom": 894.4000244140625
+    "labels": {
+      "Plan": {
+        "x": 375.203125,
+        "y": 873,
+        "width": 31.59375,
+        "height": 22,
+        "bottom": 895
       },
-      {
-        "text": "Packing",
-        "top": 872.7999877929688,
-        "bottom": 894.4000244140625
+      "Packing": {
+        "x": 529.890625,
+        "y": 873,
+        "width": 54.203125,
+        "height": 22,
+        "bottom": 895
       },
-      {
-        "text": "Notes",
-        "top": 872.7999877929688,
-        "bottom": 894.4000244140625
+      "Notes": {
+        "x": 703.703125,
+        "y": 873,
+        "width": 38.578125,
+        "height": 22,
+        "bottom": 895
       },
-      {
-        "text": "Trip",
-        "top": 872.7999877929688,
-        "bottom": 894.4000244140625
+      "Trip": {
+        "x": 874.0625,
+        "y": 873,
+        "width": 29.875,
+        "height": 22,
+        "bottom": 895
       }
-    ],
-    "documentHeight": 900
+    },
+    "commit": "37844ee07323b194a8bbf1250fd8a92b81c0bf3b",
+    "measuredAt": "2026-10-09T07:49:08.801567-06:00"
   }
 ]
