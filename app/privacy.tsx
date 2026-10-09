@@ -54,7 +54,7 @@ export default function PrivacyNoteScreen() {
           never shows through behind the clock (N18). */}
       <View style={[styles.statusBar, { height: insets.top, backgroundColor: colors.bg }]} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
         <Pressable

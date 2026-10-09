@@ -151,7 +151,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
         name="name"
         render={({ field, fieldState }) => (
           <TextField
-            label="Trip name"
+            label="TRIP NAME"
             placeholder="Antigua & Tikal"
             value={field.value}
             onChangeText={field.onChange}
@@ -187,47 +187,42 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
         )}
       />
 
-      <View>
-        <AppText role="kicker" tone="secondary" style={styles.datesLabel}>
-          DATES
-        </AppText>
-        <View style={styles.dateRow}>
-          <View style={styles.dateCol}>
-            <Controller
-              control={control}
-              name="startDate"
-              render={({ field }) => (
-                <DateTimeField
-                  label="LEAVE"
-                  variant="box"
-                  mode="date"
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Add date"
-                  clearable
-                />
-              )}
-            />
-          </View>
-          <View style={styles.dateCol}>
-            <Controller
-              control={control}
-              name="endDate"
-              render={({ field, fieldState }) => (
-                <DateTimeField
-                  label="RETURN"
-                  variant="box"
-                  mode="date"
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Add date"
-                  clearable
-                  error={fieldState.error?.message}
-                  initialDate={startDate ? new Date(`${startDate}T00:00:00`) : undefined}
-                />
-              )}
-            />
-          </View>
+      <View style={styles.dateRow}>
+        <View style={styles.dateCol}>
+          <Controller
+            control={control}
+            name="startDate"
+            render={({ field }) => (
+              <DateTimeField
+                label="STARTS"
+                variant="box"
+                mode="date"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Add date"
+                clearable
+              />
+            )}
+          />
+        </View>
+        <View style={styles.dateCol}>
+          <Controller
+            control={control}
+            name="endDate"
+            render={({ field, fieldState }) => (
+              <DateTimeField
+                label="ENDS"
+                variant="box"
+                mode="date"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Add date"
+                clearable
+                error={fieldState.error?.message}
+                initialDate={startDate ? new Date(`${startDate}T00:00:00`) : undefined}
+              />
+            )}
+          />
         </View>
       </View>
 
@@ -264,7 +259,6 @@ preview: {
   helperText: { flex: 1 },
   stampReady: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stampReadyText: { fontFamily: fontFamilies.semibold, fontSize: 14, lineHeight: 18 },
-  datesLabel: { marginBottom: spacing.s3 },
-  dateRow: { flexDirection: 'row', gap: spacing.s4 },
+  dateRow: { flexDirection: 'row', gap: spacing.s5 },
   dateCol: { flex: 1 },
 });

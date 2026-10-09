@@ -205,7 +205,8 @@ export function ItineraryItemEditor({
             name="startAt"
             render={({ field }) => (
               <DateTimeField
-                label="Starts"
+                label="STARTS"
+                optionalTag="optional"
                 compact
                 value={field.value}
                 onChange={field.onChange}
@@ -237,15 +238,15 @@ export function ItineraryItemEditor({
       {startAt || endAt ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Clear dates"
+          accessibilityLabel="Clear times"
           hitSlop={8}
           onPress={() => {
             setValue('startAt', null, { shouldDirty: true });
             setValue('endAt', null, { shouldDirty: true });
           }}
-          style={({ pressed }) => [styles.clearDates, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.clearTimes, pressed && { opacity: 0.7 }]}
         >
-          <AppText role="link" tone="muted">Clear</AppText>
+          <AppText role="link" tone="muted">Clear times</AppText>
         </Pressable>
       ) : null}
       <Controller
@@ -328,15 +329,15 @@ export function ItineraryItemEditor({
 const styles = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
-    gap: spacing.s3,
+    gap: spacing.s5,
   },
   dateCol: {
     flex: 1,
     minWidth: 0,
   },
-  clearDates: {
-    alignSelf: 'flex-end',
-    marginTop: spacing.s2,
+  clearTimes: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.s4,
   },
   statusLabel: {
     marginBottom: spacing.s1 + 2,

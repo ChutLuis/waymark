@@ -292,6 +292,7 @@ export default function PlanScreen() {
 
         {items.length === 0 ? (
           <EmptyState
+            placement="top"
             title="Nothing planned yet"
             body="Start with the first thing you know is happening — even if it's just the flight."
             actionLabel="Add an item"

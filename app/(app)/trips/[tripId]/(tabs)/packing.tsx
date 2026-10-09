@@ -129,6 +129,7 @@ export default function PackingScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <TitleRow subtitle={trip.data?.name ?? ''} onAdd={() => openEditor(null)} />
           <EmptyState
+            placement="top"
             title="Nothing on the list yet"
             body="Add the things you'd hate to forget — chargers, documents, that one jacket."
             actionLabel="Add an item"

@@ -268,7 +268,8 @@ const styles = StyleSheet.create({
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   title: { marginTop: spacing.s3 },
   subtitle: { marginTop: spacing.s3 },
-  promiseRow: { flexDirection: 'row', gap: spacing.s5, marginTop: spacing.s9 },
+  // Keep postcard shadows inside the group as it scrolls under the status band.
+  promiseRow: { flexDirection: 'row', gap: spacing.s5, marginTop: spacing.s9, overflow: 'hidden' },
   promise: {
     flex: 1,
     height: 112,
@@ -280,8 +281,7 @@ const styles = StyleSheet.create({
   promiseStamp: { position: 'absolute', right: 12, top: 12 },
   promiseInner: { flex: 1, margin: 2, borderWidth: 1 },
   promiseEnvelope: {
-    // No overflow clipping here: the inner KraftEnvelope supplies its own
-    // rounded clipping, so its shadow is not cut off.
+    // KraftEnvelope clips its rounded surface; promiseRow contains its shadow.
     flex: 1,
     height: 112,
     borderRadius: radius.card,

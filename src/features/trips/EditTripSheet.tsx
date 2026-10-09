@@ -63,7 +63,7 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
         name="name"
         render={({ field, fieldState }) => (
           <TextField
-            label="Name"
+            label="TRIP NAME"
             value={field.value}
             onChangeText={field.onChange}
             onBlur={field.onBlur}

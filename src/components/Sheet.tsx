@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import {
   Animated,
   Easing,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -58,7 +59,18 @@ export function Sheet({
 
   const progress = useLazyAnimatedValue(0);
   const [mounted, setMounted] = useState(visible);
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible());
   if (visible && !mounted) setMounted(true);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const animation = Animated.timing(progress, {
@@ -104,14 +116,15 @@ export function Sheet({
             styles.card,
             {
               backgroundColor: colors.bg,
-              // iOS keeps a home-indicator inset; Android's KeyboardAvoidingView
-              // ("height") already lifts the card, so a large bottom padding there
-              // just left an empty strip above the keyboard (N19).
+              // Keep content above the gesture handle when the keyboard is
+              // closed. When it is open, the card meets the keyboard (N19).
               paddingBottom: isWide
                 ? spacing.s11
                 : Platform.OS === 'ios'
                   ? Math.max(insets.bottom, spacing.s11) + spacing.s7
-                  : 0,
+                  : keyboardVisible
+                    ? 0
+                    : insets.bottom + spacing.s3,
               opacity: progress,
               transform: [{ translateY }],
             },

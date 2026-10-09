@@ -38,8 +38,8 @@ function AlertMark() {
   );
 }
 
-function StateShell({ children }: { children: ReactNode }) {
-  return <View style={styles.shell}>{children}</View>;
+function StateShell({ children, placement = 'center' }: { children: ReactNode; placement?: 'center' | 'top' }) {
+  return <View style={[styles.shell, placement === 'top' && styles.shellTop]}>{children}</View>;
 }
 
 export function LoadingState({ message }: { message?: string }) {
@@ -62,13 +62,15 @@ interface EmptyStateProps {
   actionLabel?: string;
   onAction?: () => void;
   mark?: ReactNode;
+  /** Trip tabs share a fixed top gap instead of filling the remaining space. */
+  placement?: 'center' | 'top';
   /** Extra content under the primary action (e.g. a quiet secondary action). */
   children?: ReactNode;
 }
 
-export function EmptyState({ title, body, actionLabel, onAction, mark, children }: EmptyStateProps) {
+export function EmptyState({ title, body, actionLabel, onAction, mark, children, placement }: EmptyStateProps) {
   return (
-    <StateShell>
+    <StateShell placement={placement}>
       {mark ?? <EmptyStampSlot />}
       <AppText role="cardTitle" style={styles.title}>
         {title}
@@ -121,6 +123,11 @@ const styles = StyleSheet.create({
   title: {
     marginTop: spacing.s7,
     textAlign: 'center',
+  },
+  shellTop: {
+    flex: 0,
+    justifyContent: 'flex-start',
+    paddingTop: spacing.s7,
   },
   titleError: {
     fontSize: 22,

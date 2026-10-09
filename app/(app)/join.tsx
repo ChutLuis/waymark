@@ -67,6 +67,14 @@ export default function JoinScreen() {
   const countdown = preview.data
     ? daysUntilLabelUppercase(preview.data.startDate, toDateOnly(new Date()))
     : null;
+  const previewMeta = preview.data
+    ? [
+        `from ${preview.data.inviterName}`,
+        formatTripRange(preview.data.startDate, preview.data.endDate),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
 
   const leaveInvite = () => {
     takePendingInviteCode();
@@ -165,7 +173,7 @@ export default function JoinScreen() {
                 ) : null}
               </View>
               <AppText role="meta" tone="secondary" style={styles.tripMeta}>
-                from {preview.data.inviterName} · {formatTripRange(preview.data.startDate, preview.data.endDate)}
+                {previewMeta}
               </AppText>
             </View>
 

@@ -118,19 +118,22 @@ export default function NotesScreen() {
               : `Postcards are shared with ${names}. Sealed notes are only for you. No one else can open yours, and you can't open theirs.`}
         </AppText>
 
-        <View style={styles.filterWrap}>
-          <SegmentedControl
-            options={options}
-            value={filter}
-            onChange={setFilter}
-            accessibilityLabel="Filter notes"
-            stretch={false}
-            style={styles.filterControl}
-          />
-        </View>
+        {all.length > 0 ? (
+          <View style={styles.filterWrap}>
+            <SegmentedControl
+              options={options}
+              value={filter}
+              onChange={setFilter}
+              accessibilityLabel="Filter notes"
+              stretch={false}
+              style={styles.filterControl}
+            />
+          </View>
+        ) : null}
 
         {visible.length === 0 ? (
           <EmptyState
+            placement="top"
             title="No notes yet"
             body="Keep anything here — confirmation numbers, ideas, surprises. Notes start private to you."
             actionLabel="Write a note"
