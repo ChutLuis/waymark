@@ -142,7 +142,7 @@ export default function SignUpScreen() {
     <Animated.ScrollView
       ref={scrollRef}
       style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
       automaticallyAdjustKeyboardInsets
@@ -266,7 +266,7 @@ export default function SignUpScreen() {
         </AppText>
       </View>
 
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 34 }]}>
+      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 34) }]}>
         <Button
           label="Create account"
           size="lg"
@@ -291,7 +291,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   // Pinned over the top inset so scrolling content slides beneath it (N18).
   statusBand: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
-  content: { paddingBottom: 0 },
+  // flexGrow lets the bottom block sit at the screen's foot (marginTop auto).
+  content: { flexGrow: 1, paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   pressed: { opacity: 0.7 },
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
   emptyStamp: { width: 20, height: 24, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 2 },
   meterLabel: { marginLeft: 4 },
   privacy: { marginTop: spacing.s7 },
-  bottom: { paddingHorizontal: spacing.gutter, paddingTop: spacing.s7, gap: spacing.s2 },
+  bottom: { marginTop: 'auto', paddingHorizontal: spacing.gutter, paddingTop: spacing.s7, gap: spacing.s2 },
   signInRow: { height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   confirmLink: { marginTop: spacing.s7 },
 });

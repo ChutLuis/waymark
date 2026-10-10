@@ -125,8 +125,6 @@ export default function NotesScreen() {
               value={filter}
               onChange={setFilter}
               accessibilityLabel="Filter notes"
-              stretch={false}
-              style={styles.filterControl}
             />
           </View>
         ) : null}
@@ -242,9 +240,8 @@ const styles = StyleSheet.create({
   actionLabel: { fontSize: 15, lineHeight: 20 },
   pressed: { opacity: 0.7 },
   intro: { paddingTop: spacing.s7, paddingHorizontal: spacing.gutter, fontSize: 16, lineHeight: 23 },
-  filterWrap: { marginTop: spacing.s7, marginHorizontal: spacing.cardGutter },
-  // Content-sized segments so "Only you · 1" never truncates (item 11).
-  filterControl: { alignSelf: 'flex-start' },
+  // Card gutter to card gutter: the track lines up with the notes below.
+  filterWrap: { marginTop: spacing.s5, marginHorizontal: spacing.cardGutter },
   list: { paddingTop: spacing.s7, paddingHorizontal: spacing.cardGutter, gap: spacing.s4 },
   envelope: {},
   envelopeBody: { paddingTop: 14, paddingHorizontal: 16, paddingBottom: 14 },

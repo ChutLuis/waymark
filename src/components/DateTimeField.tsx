@@ -5,12 +5,19 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
-import { hitTargetMin, radius, spacing, typeScale, useTheme } from '@/theme';
+import { hitTargetMin, radius, spacing, useTheme } from '@/theme';
+import {
+  DATE_BOX_GAP,
+  DATE_BOX_HEIGHT,
+  DATE_BOX_INSET,
+  DATE_BOX_LABEL_TRACKING,
+  dateValueType,
+} from './dateBox';
 import { formatDate, formatDateTime, toDateOnly } from '@/lib/format/date';
 
 export interface DateTimeFieldProps {
+  /** Printed inside the box, above the value ("LEAVE", "STARTS"). */
   label: string;
-  optionalTag?: string;
   /** ISO timestamp ('datetime' mode) or 'YYYY-MM-DD' ('date' mode). */
   value: string | null;
   onChange: (iso: string | null) => void;
@@ -20,22 +27,25 @@ export interface DateTimeFieldProps {
   error?: string;
   /** Sensible starting point when the field is empty (e.g. trip start date). */
   initialDate?: Date;
+  /** Value type: 18/24 in the trip sheets (design), 16/20 in the item editor. */
+  size?: 'lg' | 'md';
 }
 
 /**
- * Native date+time field. iOS shows a datetime picker in a bottom sheet;
- * Android runs the two-step date -> time dialog flow. Web uses
- * DateTimeField.web.tsx (a datetime-local input).
+ * Native date+time box: the label and value sit inside one 64 pt box (design
+ * §05, Dates). iOS shows a datetime picker in a bottom sheet; Android runs the
+ * two-step date -> time dialog flow. Web uses DateTimeField.web.tsx (a
+ * datetime-local input).
  */
 export function DateTimeField({
   label,
-  optionalTag,
   value,
   onChange,
   mode = 'datetime',
   placeholder = 'Add',
   error,
   initialDate,
+  size = 'lg',
 }: DateTimeFieldProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -50,6 +60,8 @@ export function DateTimeField({
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
 
   const display = value ? (mode === 'date' ? formatDate(value) : formatDateTime(value)) : null;
+  // The picker being open counts as focus, as a TextField's keyboard does.
+  const open = iosPickerVisible || androidStep !== null;
 
   const commit = (date: Date) => {
     onChange(mode === 'date' ? toDateOnly(date) : date.toISOString());
@@ -90,28 +102,31 @@ export function DateTimeField({
 
   return (
     <View>
-      <View style={styles.labelRow}>
-        <AppText role="kicker" tone="secondary">{label}</AppText>
-        {optionalTag ? (
-          <AppText role="kicker" tone="muted" style={styles.optional}>
-            {optionalTag}
-          </AppText>
-        ) : null}
-      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${display ?? 'not set'}`}
         onPress={openPicker}
-        style={({ pressed }) => [
-          styles.field,
-          {
-            backgroundColor: colors.paper,
-            borderColor: error ? colors.wax : colors.border,
-            opacity: pressed ? 0.7 : 1,
-          },
-        ]}
+        style={({ pressed }) => {
+          // Pressed or open: inset 2 ink, as a focused TextField.
+          const borderWidth = error || pressed || open ? 2 : 1.5;
+          return [
+            styles.box,
+            {
+              backgroundColor: colors.paper,
+              borderWidth,
+              borderColor: error ? colors.wax : pressed || open ? colors.ink : colors.border,
+              paddingHorizontal: DATE_BOX_INSET - borderWidth,
+            },
+          ];
+        }}
       >
-        <AppText numberOfLines={1} style={[styles.value, !value && { color: colors.ink3 }]}>
+        <AppText role="tag" tone="secondary" numberOfLines={1} style={styles.label}>
+          {label}
+        </AppText>
+        <AppText
+          numberOfLines={1}
+          style={[dateValueType[size], { color: value ? colors.ink : colors.ink3 }]}
+        >
           {display ?? placeholder}
         </AppText>
       </Pressable>
@@ -200,31 +215,15 @@ export function DateTimeField({
 }
 
 const styles = StyleSheet.create({
-  // Same label row as TextField, so Destination and the date pair match.
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s2,
-    marginBottom: spacing.s2,
-  },
-  optional: {
-    textTransform: 'lowercase',
-  },
-  field: {
-    minHeight: 52,
+  // Label over value, centred in the box with a 2 pt gap (design §05).
+  box: {
+    height: DATE_BOX_HEIGHT,
     borderRadius: radius.input,
-    borderWidth: 1.5,
-    // TextField's inset, so dates start where Trip name and Destination do.
-    paddingHorizontal: spacing.s7,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: DATE_BOX_GAP,
   },
-  value: {
-    ...typeScale.body,
-    // A long value shrinks on one line in the narrow paired columns (N14).
-    flexShrink: 1,
-    minWidth: 0,
+  label: {
+    letterSpacing: DATE_BOX_LABEL_TRACKING,
   },
   error: {
     marginTop: spacing.s2,

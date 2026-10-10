@@ -10,6 +10,7 @@ import {
   formatNoteTime,
   formatShortDate,
   formatTime,
+  formatTimePadded,
   initials,
 } from '../date';
 
@@ -25,6 +26,18 @@ describe('formatTime', () => {
   });
   it('keeps 24-hour times', () => {
     expect(formatTime('2026-10-12T20:00:00')).toBe('20:00');
+  });
+});
+
+describe('formatTimePadded', () => {
+  it('pads a morning hour', () => {
+    expect(formatTimePadded('2026-10-12T07:00:00')).toBe('07:00');
+  });
+  it('pads hours and minutes', () => {
+    expect(formatTimePadded('2026-10-12T09:05:00')).toBe('09:05');
+  });
+  it('keeps 24-hour times', () => {
+    expect(formatTimePadded('2026-10-12T20:00:00')).toBe('20:00');
   });
 });
 

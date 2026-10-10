@@ -274,7 +274,7 @@ export default function ProfileScreen() {
           <View style={styles.identityText}>
             <AppText role="cardTitleLg">{me.displayName}</AppText>
             {session?.user.email ? (
-              <AppText role="bodySm" tone="secondary" style={styles.email}>
+              <AppText role="tag" tone="secondary" numberOfLines={1} ellipsizeMode="tail" style={styles.email}>
                 {session.user.email}
               </AppText>
             ) : null}
@@ -374,7 +374,8 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   identity: { paddingTop: spacing.s5, paddingHorizontal: spacing.gutter, flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
   identityText: { flex: 1, minWidth: 0 },
-  email: { marginTop: 4 },
+  // Courier Prime 13/16 as typed: no tag uppercase or letter-spacing.
+  email: { marginTop: 4, fontFamily: fontFamilies.mono, fontSize: 13, lineHeight: 16, letterSpacing: 0, textTransform: 'none' },
   editProfile: { height: 32, justifyContent: 'center', marginTop: 4 },
   sectionKicker: { paddingTop: spacing.s10, paddingBottom: spacing.s4, paddingHorizontal: spacing.gutter },
   albumCard: {

@@ -13,12 +13,12 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Users } from 'lucide-react-native';
+import { ChevronLeft, Users } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { AvatarStamp, StampStill } from '@/features/trips/SceneStamp';
-import { useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
+import { useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
 import { pickImage, type PickedImage } from '@/lib/images';
 import { fontFamilies, radius, spacing, useTheme } from '@/theme';
 import { profileSchema, type ProfileForm } from '@/lib/validation/schemas';
@@ -31,6 +31,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const upsertProfile = useUpsertProfile();
   const uploadAvatar = useUploadAvatar();
+  const signOut = useSignOut();
   const [photo, setPhoto] = useState<PickedImage | null>(null);
   const isWide = width >= 720;
 
@@ -45,6 +46,13 @@ export default function OnboardingScreen() {
   const onPickPhoto = async () => {
     const picked = await pickImage([1, 1]);
     if (picked) setPhoto(picked);
+  };
+
+  // Back leaves onboarding. With nothing behind it (the usual first run), sign
+  // out: the account stays, and the auth gate returns to Sign in.
+  const onBack = () => {
+    if (router.canGoBack()) router.back();
+    else signOut.mutate();
   };
 
   const onContinue = handleSubmit(async (form) => {
@@ -74,7 +82,17 @@ export default function OnboardingScreen() {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header} />
+      <View style={styles.header}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={onBack}
+          disabled={signOut.isPending}
+          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+        >
+          <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
+        </Pressable>
+      </View>
 
       <View style={styles.body}>
         <AppText role="display" style={styles.title}>What&apos;s your name?</AppText>
@@ -100,7 +118,7 @@ export default function OnboardingScreen() {
             </Pressable>
           </View>
 
-          <AppText role="kicker" tone="secondary">FROM</AppText>
+          <AppText role="kicker">FROM</AppText>
           <Controller
             control={control}
             name="displayName"
@@ -129,7 +147,7 @@ export default function OnboardingScreen() {
             )}
           />
 
-          <AppText role="kicker" tone="secondary" style={styles.toLabel}>TO</AppText>
+          <AppText role="kicker" style={styles.toLabel}>TO</AppText>
           <View style={[styles.toLine, { borderBottomColor: colors.ruleWarm }]}>
             <AppText role="meta" tone="muted" style={styles.toText}>Whoever you travel with</AppText>
           </View>
@@ -137,14 +155,14 @@ export default function OnboardingScreen() {
 
         <AppText role="kicker" tone="secondary" style={styles.howKicker}>HOW IT SHOWS UP</AppText>
         <View style={[styles.preview, { backgroundColor: colors.paper }]}>
-          <View style={styles.previewRow}>
-            <View style={styles.previewHeader}>
-              <Users size={15} color={colors.ink} strokeWidth={2.2} />
-              <AppText role="kicker" style={{ letterSpacing: 0.6 }}>
-                SHARED · FROM {name.trim() ? name.trim().toUpperCase() : 'YOU'}
-              </AppText>
-            </View>
+          <View style={styles.previewStamp}>
             <StampStill country="japan" />
+          </View>
+          <View style={styles.previewHeader}>
+            <Users size={15} color={colors.ink} strokeWidth={2.2} />
+            <AppText role="kicker" style={styles.previewLabel}>
+              SHARED · FROM {name.trim() ? name.trim().toUpperCase() : 'YOU'}
+            </AppText>
           </View>
           <AppText role="body" style={styles.previewBody}>
             Bring socks for the tea ceremony.
@@ -152,7 +170,7 @@ export default function OnboardingScreen() {
         </View>
       </View>
 
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 40 }]}>
+      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 40) }]}>
         <Button
           label="Continue"
           size="lg"
@@ -166,9 +184,11 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: 0 },
+  // flexGrow lets Continue sit at the screen's foot (marginTop auto).
+  content: { flexGrow: 1, paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
-  header: { height: 48 },
+  header: { height: 48, justifyContent: 'center' },
+  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   pressed: { opacity: 0.7 },
   underlineLink: { textDecorationLine: 'underline' },
   body: { paddingTop: spacing.s7, paddingHorizontal: spacing.gutter },
@@ -198,8 +218,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
   },
-  previewRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  previewHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
-  previewBody: { marginTop: 4 },
-  bottom: { paddingHorizontal: spacing.gutter, paddingTop: spacing.s11 },
+  // The stamp sits in the corner, outside the text flow, so it doesn't set
+  // the header row's height. The header (which carries the typed name) keeps
+  // clear of it; the fixed sample line runs full width on one line, as drawn,
+  // which keeps the card at the design's 74 pt.
+  previewStamp: { position: 'absolute', top: 11, right: 11 },
+  previewHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 30 },
+  previewLabel: { flexShrink: 1, letterSpacing: 0.6 },
+  previewBody: { marginTop: 6 },
+  bottom: { marginTop: 'auto', paddingHorizontal: spacing.gutter, paddingTop: spacing.s11 },
 });

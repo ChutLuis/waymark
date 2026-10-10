@@ -76,7 +76,7 @@ Scenes loop 240 frames (8 s). **Only one scene plays per screen**, and a scene p
 
 ## 6. Iconography
 
-Lucide with stroke 2. Navigation: Plan `Calendar`, Packing `Luggage`, Notes `Mail`; Trip is a custom dashed-rectangle stamp icon. Back chevrons use 2.2 and plus signs 2.4.
+Lucide with stroke 2. Navigation: Plan `Calendar`, Notes `Mail`; Packing is a custom wheel-less suitcase (a 14×13 case with a handle and two straps) and Trip a custom dashed-rectangle stamp icon. Back chevrons use 2.2 and plus signs 2.4.
 
 ## 7. Airmail primitives and components
 
@@ -100,7 +100,7 @@ Interactive controls target at least 44 pt through component dimensions or hit s
 
 ## 11. Cross-platform decisions
 
-Waymark ships from one Expo and React Native codebase to iOS, Android and web. Scenes play through `lottie-react-native`, whose web entry delegates to `@lottiefiles/dotlottie-react` (ThorVG). `ThemeProvider` resolves a persisted light, dark or system preference. `DateTimeField.web.tsx` renders styled `date`/`datetime-local` inputs, including the new-trip box variant. `Sheet` becomes a centred 480 px modal card at ≥720 px, and wide screens keep the centred 680 column. `useLazyAnimatedValue` supplies the `Animated.Value` behaviour `react-native-web` does not export.
+Waymark ships from one Expo and React Native codebase to iOS, Android and web. Scenes play through `lottie-react-native`, whose web entry delegates to `@lottiefiles/dotlottie-react` (ThorVG). `ThemeProvider` resolves a persisted light, dark or system preference. `DateTimeField.web.tsx` renders styled `date`/`datetime-local` inputs drawn as the same 64 pt label-and-value date box as native. `Sheet` becomes a centred 480 px modal card at ≥720 px, and wide screens keep the centred 680 column. `useLazyAnimatedValue` supplies the `Animated.Value` behaviour `react-native-web` does not export.
 
 ## 12. Implementation
 

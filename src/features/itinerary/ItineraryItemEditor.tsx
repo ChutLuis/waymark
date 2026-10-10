@@ -216,7 +216,7 @@ export function ItineraryItemEditor({
             render={({ field }) => (
               <DateTimeField
                 label="STARTS"
-                optionalTag="optional"
+                size="md"
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add date"
@@ -232,7 +232,7 @@ export function ItineraryItemEditor({
             render={({ field, fieldState }) => (
               <DateTimeField
                 label="ENDS"
-                optionalTag="optional"
+                size="md"
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add date"
@@ -248,7 +248,7 @@ export function ItineraryItemEditor({
         name="status"
         render={({ field }) => (
           <View>
-            <AppText role="kicker" tone="secondary" style={styles.statusLabel}>
+            <AppText role="kicker" style={styles.statusLabel}>
               Status
             </AppText>
             <SegmentedControl

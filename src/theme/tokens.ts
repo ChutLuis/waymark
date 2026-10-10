@@ -274,8 +274,8 @@ export const iconStrokeWidth = 2;
 
 export const hitTargetMin = 44;
 
-/** Seven day stamps fit a phone strip; their three-letter labels keep tag type. */
-export const dayStampLayout = { width: 48, minWidth: 38, height: 56, gap: 9, visibleDays: 7 } as const;
+/** Plan's day stamps (48×56, gap 9); the strip scrolls sideways. */
+export const dayStampLayout = { width: 48, height: 56, gap: 9 } as const;
 
 /** The stamp denomination/name text sizes by stamp variant (README table). */
 export const stampText = {

@@ -16,6 +16,7 @@ import { DESTINATION_ART } from '@/features/trips/destinationArt';
 import {
   DESTINATION_INFO,
   denomination,
+  formatTripRange,
   matchDestination,
   stampName,
   tripDays,
@@ -34,16 +35,11 @@ interface CreateTripSheetProps {
   onCreated: (trip: Trip) => void;
 }
 
-const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-
+/** "13–23 NOV · 10 NIGHTS": the trip cards' compact range, in caps. */
 function rangeKicker(start: string | null, end: string | null): string {
   if (!start || !end) return 'ADD DATES';
-  const s = start.split('-').map(Number);
-  const e = end.split('-').map(Number);
   const nights = tripNights(start, end);
-  const left = `${s[2]} ${MONTHS[s[1] - 1]}`;
-  const right = `${e[2]} ${MONTHS[e[1] - 1]}`;
-  return `${left} – ${right} · ${nights} ${nights === 1 ? 'NIGHT' : 'NIGHTS'}`;
+  return `${formatTripRange(start, end).toUpperCase()} · ${nights} ${nights === 1 ? 'NIGHT' : 'NIGHTS'}`;
 }
 
 export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheetProps) {
@@ -163,12 +159,11 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
         render={({ field }) => (
           <TextField
             label="Destination"
-            optionalTag="optional"
             placeholder="City, country"
             value={field.value}
             onChangeText={field.onChange}
             onBlur={field.onBlur}
-            labelAccessory={
+            trailing={
               country ? (
                 <View style={styles.stampReady}>
                   <Check size={16} color={colors.success} strokeWidth={2.6} />
@@ -183,6 +178,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
       />
 
       <DatePair
+        label="DATES"
         clearLabel="Clear dates"
         onClear={
           startDate || endDate
@@ -198,8 +194,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
             name="startDate"
             render={({ field }) => (
               <DateTimeField
-                label="STARTS"
-                optionalTag="optional"
+                label="LEAVE"
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}
@@ -214,8 +209,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
             name="endDate"
             render={({ field, fieldState }) => (
               <DateTimeField
-                label="ENDS"
-                optionalTag="optional"
+                label="RETURN"
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}

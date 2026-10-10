@@ -1,7 +1,15 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
 import { fontFamilies, radius, spacing, useTheme } from '@/theme';
 import { formatDate, formatDateTime } from '@/lib/format/date';
+import {
+  DATE_BOX_GAP,
+  DATE_BOX_HEIGHT,
+  DATE_BOX_INSET,
+  DATE_BOX_LABEL_TRACKING,
+  dateValueType,
+} from './dateBox';
 import type { DateTimeFieldProps } from './DateTimeField';
 
 function toLocalInputValue(iso: string | null): string {
@@ -17,33 +25,28 @@ function displayValue(iso: string | null, isDateOnly: boolean): string {
   return isDateOnly ? formatDate(iso) : formatDateTime(iso);
 }
 
-/** Matches TextField's 1.5 px resting border. */
-const BORDER = 1.5;
-
-/** Web adaptation: a plain datetime-local / date input styled like TextField. */
+/**
+ * Web adaptation: a plain datetime-local / date input drawn as the date box.
+ * The input is the box (so a click anywhere opens it); its own text is hidden
+ * under the label and the design's day-first value.
+ */
 export function DateTimeField({
   label,
-  optionalTag,
   value,
   onChange,
   mode = 'datetime',
   error,
   placeholder = 'Add',
+  size = 'lg',
 }: DateTimeFieldProps) {
   const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
   const isDateOnly = mode === 'date';
+  const valueType = dateValueType[size];
+  // Focused: inset 2 ink, as a focused TextField.
+  const borderWidth = error || focused ? 2 : 1.5;
   return (
     <View>
-      <View style={styles.labelRow}>
-        <AppText role="kicker" tone="secondary">
-          {label}
-        </AppText>
-        {optionalTag ? (
-          <AppText role="kicker" tone="muted" style={styles.optional}>
-            {optionalTag}
-          </AppText>
-        ) : null}
-      </View>
       <div style={{ position: 'relative', width: '100%' }}>
         <input
           aria-label={label}
@@ -54,38 +57,46 @@ export function DateTimeField({
             if (!raw) onChange(null);
             else onChange(isDateOnly ? raw : new Date(raw).toISOString());
           }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           style={{
-            height: 52,
+            display: 'block',
+            height: DATE_BOX_HEIGHT,
             borderRadius: radius.input,
-            border: `${BORDER}px solid ${error ? colors.wax : colors.border}`,
+            border: `${borderWidth}px solid ${error ? colors.wax : focused ? colors.ink : colors.border}`,
+            outline: 'none',
             background: colors.paper,
             color: 'transparent',
-            // TextField's inset, so dates start where Trip name and Destination do.
-            padding: `0 ${spacing.s7}px`,
+            padding: `0 ${DATE_BOX_INSET - borderWidth}px`,
             fontFamily: `${fontFamilies.regular}, system-ui, sans-serif`,
-            fontSize: 17,
+            fontSize: valueType.fontSize,
             width: '100%',
             boxSizing: 'border-box',
           }}
         />
-        <span
+        {/* Positioned from the outer edge, so the border never shifts it. */}
+        <div
           aria-hidden
           style={{
             position: 'absolute',
-            // The overlay sits outside the input's border, so add it back.
-            left: BORDER + spacing.s7,
+            left: DATE_BOX_INSET,
+            right: DATE_BOX_INSET,
             top: 0,
             bottom: 0,
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: DATE_BOX_GAP,
             pointerEvents: 'none',
-            fontFamily: `${fontFamilies.regular}, system-ui, sans-serif`,
-            fontSize: 17,
-            color: value ? colors.ink : colors.ink3,
           }}
         >
-          {displayValue(value, isDateOnly) || placeholder}
-        </span>
+          <AppText role="tag" tone="secondary" numberOfLines={1} style={styles.label}>
+            {label}
+          </AppText>
+          <AppText numberOfLines={1} style={[valueType, { color: value ? colors.ink : colors.ink3 }]}>
+            {displayValue(value, isDateOnly) || placeholder}
+          </AppText>
+        </div>
       </div>
       {error ? (
         <AppText role="bodySm" style={[styles.error, { color: colors.wax }]}>
@@ -97,15 +108,8 @@ export function DateTimeField({
 }
 
 const styles = StyleSheet.create({
-  // Same label row as TextField, so Destination and the date pair match.
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s2,
-    marginBottom: spacing.s2,
-  },
-  optional: {
-    textTransform: 'lowercase',
+  label: {
+    letterSpacing: DATE_BOX_LABEL_TRACKING,
   },
   error: {
     marginTop: spacing.s2,

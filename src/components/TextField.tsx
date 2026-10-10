@@ -21,9 +21,18 @@ interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   revealable?: boolean;
   /** Extra input styling (e.g. the mono invite-code field). */
   inputStyle?: StyleProp<TextStyle>;
-  /** Right-aligned node on the label row (e.g. "Stamp ready"). */
-  labelAccessory?: ReactNode;
+  /** A node inside the field, after the input (e.g. "Stamp ready"). */
+  trailing?: ReactNode;
 }
+
+/**
+ * The design draws field borders as inset shadows, so its 0 16 padding is
+ * measured from the outer edge (0 14 0 16 while a trailing node shows). A
+ * real border takes layout space: pad by the rest, so the text sits where the
+ * design puts it and doesn't move when the border thickens on focus.
+ */
+const INSET = 16;
+const TRAILING_INSET = 14;
 
 /** Labeled form field with inline validation, per the component spec. */
 export function TextField({
@@ -33,7 +42,7 @@ export function TextField({
   multiline = false,
   revealable = false,
   inputStyle,
-  labelAccessory,
+  trailing,
   secureTextEntry,
   ...inputProps
 }: TextFieldProps) {
@@ -47,7 +56,7 @@ export function TextField({
   return (
     <View>
       <View style={styles.labelRow}>
-        <AppText role="kicker" tone="secondary">
+        <AppText role="kicker">
           {label}
         </AppText>
         {optionalTag ? (
@@ -55,7 +64,6 @@ export function TextField({
             {optionalTag}
           </AppText>
         ) : null}
-        {labelAccessory ? <View style={styles.labelAccessory}>{labelAccessory}</View> : null}
       </View>
       <View
         style={[
@@ -64,6 +72,8 @@ export function TextField({
             backgroundColor: colors.paper,
             borderColor,
             borderWidth,
+            paddingLeft: INSET - borderWidth,
+            paddingRight: (trailing ? TRAILING_INSET : INSET) - borderWidth,
           },
           multiline && styles.fieldMultiline,
         ]}
@@ -94,6 +104,7 @@ export function TextField({
             inputStyle,
           ]}
         />
+        {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
         {revealable ? (
           <Pressable
             accessibilityRole="button"
@@ -127,15 +138,15 @@ const styles = StyleSheet.create({
   optional: {
     textTransform: 'lowercase',
   },
-  labelAccessory: {
-    marginLeft: 'auto',
-  },
   field: {
     minHeight: 52,
     borderRadius: radius.input,
-    paddingHorizontal: spacing.s7,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  trailing: {
+    flexShrink: 0,
+    marginLeft: spacing.s3,
   },
   fieldMultiline: {
     minHeight: 160,
@@ -145,7 +156,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     // Android's EditText adds its own padding; zero it so text sits exactly at
-    // the field's 16 pt inset, as on web and iOS (and as the date fields do).
+    // the field's 16 pt inset, as on web and iOS.
     paddingVertical: 0,
     paddingHorizontal: 0,
   },

@@ -339,8 +339,8 @@ All tests run inside a transaction that is rolled back.
 | S11 | B edits A's note | denied |
 | S12 | C reads any note on Trip 1 | 0 rows |
 | S13 | C accepts a valid invite to Trip 1 | C becomes a member; only Trip 1 |
-| S14 | Anyone accepts an expired invite | denied |
-| S15 | Anyone accepts an already-used invite | denied |
+| S14 | A non-member accepts an expired invite | denied |
+| S15 | A non-member accepts an already-used invite | denied |
 | S16 | Non-owner updates Trip 1 details | denied |
 | S17 | Owner deletes Trip 1 | cascades remove items, notes, invites |
 | S18 | C reads or inserts a cover image under trip-covers/Trip 1 | denied |

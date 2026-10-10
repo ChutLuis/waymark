@@ -41,7 +41,9 @@ export function SegmentedControl<T extends string>({
   const narrow = trackWidth > 0 && trackWidth < 360 && size === 'default';
   const labelSize = size === 'compact' ? 14 : narrow ? 14 : 15;
   const labelLine = size === 'compact' ? 18 : narrow ? 18 : 20;
-  const segmentPad = size === 'compact' ? 11 : narrow ? 9 : 14;
+  // Equal columns centre their label in a fixed share of the track, so they
+  // need only a small inset; content-sized segments keep the wider padding.
+  const segmentPad = size === 'compact' ? 11 : stretch ? spacing.s1 : narrow ? 9 : 14;
   return (
     <View
       accessibilityRole="radiogroup"

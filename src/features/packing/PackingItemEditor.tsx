@@ -102,7 +102,7 @@ export function PackingItemEditor({
         name="quantity"
         render={({ field }) => (
           <View>
-            <AppText role="kicker" tone="secondary" style={styles.groupLabel}>
+            <AppText role="kicker" style={styles.groupLabel}>
               Quantity
             </AppText>
             <View style={styles.stepperRow}>
@@ -150,7 +150,7 @@ export function PackingItemEditor({
         name="assignedTo"
         render={({ field }) => (
           <View>
-            <AppText role="kicker" tone="secondary" style={styles.groupLabel}>
+            <AppText role="kicker" style={styles.groupLabel}>
               Who&apos;s bringing it?
             </AppText>
             <View style={styles.assigneeRow}>

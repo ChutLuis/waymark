@@ -59,11 +59,21 @@ function Checkbox({ checked, onPress, label }: { checked: boolean; onPress: () =
   );
 }
 
-function PackingLabel({ item, semibold = false }: { item: PackingItem; semibold?: boolean }) {
+function PackingLabel({
+  item,
+  semibold = false,
+  lines,
+}: {
+  item: PackingItem;
+  semibold?: boolean;
+  lines?: number;
+}) {
   return (
     <AppText
       role={semibold ? 'rowTitle' : 'body'}
       tone={item.isPacked ? 'muted' : 'primary'}
+      numberOfLines={lines}
+      style={semibold ? styles.needsLabelText : undefined}
     >
       {item.label}
       {item.quantity > 1 ? ` ×${item.quantity}` : ''}
@@ -116,6 +126,9 @@ export default function PackingScreen() {
   const firstName = (m: TripMember) => m.profile.displayName.split(' ')[0];
   const me = memberList.find((m) => m.userId === userId);
   const others = memberList.filter((m) => m.userId !== userId);
+  // Me plus one partner fit beside the label (design §07); more pills drop
+  // to their own row, which the design doesn't cover.
+  const inlinePills = (me ? 1 : 0) + others.length <= 2;
 
   const claim = (item: PackingItem, assignedTo: string) =>
     save.mutate({ itemId: item.id, input: { label: item.label, quantity: item.quantity, assignedTo } });
@@ -160,28 +173,10 @@ export default function PackingScreen() {
                 NEEDS SOMEONE · {unassigned.length}
               </AppText>
               <View style={[styles.needsCard, { borderColor: colors.ink3 }]}>
-                {unassigned.map((item) => (
-                  <View key={item.id} style={styles.needsItem}>
-                    <View style={styles.needsHeadRow}>
-                      <Checkbox
-                        checked={item.isPacked}
-                        label={`${item.label}, ${item.isPacked ? 'packed' : 'not packed'}`}
-                        onPress={() => setPacked.mutate({ itemId: item.id, isPacked: !item.isPacked })}
-                      />
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Edit ${item.label}`}
-                        onPress={() => openEditor(item)}
-                        style={styles.needsLabel}
-                      >
-                        <PackingLabel item={item} semibold />
-                      </Pressable>
-                    </View>
-                    {/* Claim pills get their own row so "Me" and "Theo" wrap
-                        together, right-aligned, instead of splitting across
-                        lines at 360 (item N13). */}
-                    {me || others.length > 0 ? (
-                      <View style={styles.claimRow}>
+                {unassigned.map((item) => {
+                  const pills =
+                    me || others.length > 0 ? (
+                      <View style={inlinePills ? styles.claimInline : styles.claimRow}>
                         {me ? (
                           <Button
                             label="Me"
@@ -197,14 +192,38 @@ export default function PackingScreen() {
                             label={firstName(m)}
                             variant="secondary"
                             size="sm"
+                            labelLines={1}
+                            labelStyle={styles.claimName}
                             onPress={() => claim(item, m.userId)}
-                            style={styles.claimButton}
+                            style={[styles.claimButton, styles.claimNameButton]}
                           />
                         ))}
                       </View>
-                    ) : null}
-                  </View>
-                ))}
+                    ) : null;
+                  return (
+                    <View key={item.id} style={inlinePills ? styles.needsRow : styles.needsItem}>
+                      <View style={styles.needsHeadRow}>
+                        <Checkbox
+                          checked={item.isPacked}
+                          label={`${item.label}, ${item.isPacked ? 'packed' : 'not packed'}`}
+                          onPress={() => setPacked.mutate({ itemId: item.id, isPacked: !item.isPacked })}
+                        />
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit ${item.label}`}
+                          onPress={() => openEditor(item)}
+                          style={styles.needsLabel}
+                        >
+                          <PackingLabel item={item} semibold lines={inlinePills ? 2 : undefined} />
+                        </Pressable>
+                        {inlinePills ? pills : null}
+                      </View>
+                      {/* Three or more pills don't fit beside the label: they get
+                          their own right-aligned row and wrap together (item N13). */}
+                      {inlinePills ? null : pills}
+                    </View>
+                  );
+                })}
               </View>
             </>
           ) : null}
@@ -333,10 +352,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingLeft: 15,
   },
+  // One row per item: checkbox, label, then the pills (design §07).
+  needsRow: { minHeight: 64, paddingVertical: 10, justifyContent: 'center' },
   needsItem: {
     paddingVertical: 10,
     gap: 6,
   },
+  needsLabelText: { fontSize: 17, lineHeight: 22 },
   needsHeadRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -350,7 +372,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: spacing.s3,
   },
-  claimButton: { minHeight: 40, paddingHorizontal: 16 },
+  // Pills never split or shrink; the label gives way instead.
+  claimInline: { flexDirection: 'row', gap: spacing.s3, flexShrink: 0 },
+  // Padding 0 16 from the outer edge: the design's 2 pt outline is inset,
+  // the button's border is not.
+  claimButton: { minHeight: 44, height: 44, paddingHorizontal: 14 },
+  claimNameButton: { maxWidth: 120 },
+  claimName: { flexShrink: 1 },
   checkbox: {
     width: 26,
     height: 26,

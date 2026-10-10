@@ -90,7 +90,6 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
         render={({ field }) => (
           <TextField
             label="Destination"
-            optionalTag="optional"
             placeholder="City, country"
             value={field.value}
             onChangeText={field.onChange}
@@ -100,6 +99,7 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
       />
       {/* One "Clear dates" link below the pair clears both (item N14). */}
       <DatePair
+        label="DATES"
         clearLabel="Clear dates"
         onClear={
           startDate || endDate
@@ -115,8 +115,7 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
             name="startDate"
             render={({ field }) => (
               <DateTimeField
-                label="STARTS"
-                optionalTag="optional"
+                label="LEAVE"
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}
@@ -131,8 +130,7 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
             name="endDate"
             render={({ field, fieldState }) => (
               <DateTimeField
-                label="ENDS"
-                optionalTag="optional"
+                label="RETURN"
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}

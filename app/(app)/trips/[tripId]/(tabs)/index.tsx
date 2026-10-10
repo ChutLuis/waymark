@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
@@ -30,7 +30,7 @@ import {
 import { useTrip, useTripMembers } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
 import { dayStampLayout, fontFamilies, hairlineWidth, shadows, spacing, useTheme } from '@/theme';
-import { formatTime, toDateOnly } from '@/lib/format/date';
+import { formatTime, formatTimePadded, toDateOnly } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
 
 const NEXT_STATUS: Record<ItineraryItem['status'], ItineraryItem['status'] | null> = {
@@ -74,14 +74,12 @@ function DayStamp({
   day,
   selected,
   label,
-  width,
   onPress,
 }: {
   weekday: string;
   day: number | string;
   selected: boolean;
   label: string;
-  width: number;
   onPress: () => void;
 }) {
   const { colors } = useTheme();
@@ -93,10 +91,10 @@ function DayStamp({
       onPress={onPress}
       style={({ pressed }) => pressed && styles.pressed}
     >
-      <PerforatedStamp width={width} height={dayStampLayout.height} size="sm" tone={selected ? 'ink' : 'paper'}>
+      <PerforatedStamp width={dayStampLayout.width} height={dayStampLayout.height} size="sm" tone={selected ? 'ink' : 'paper'}>
         <View style={styles.dayStampContent}>
           {/* Always three letters (SAT, SUN, MON): the word never shrinks or
-              wraps; the stamp is what gives way on a narrow strip (N26). */}
+              wraps (N26). */}
           <AppText
             role="tag"
             numberOfLines={1}
@@ -147,17 +145,9 @@ function StopStampCell({
 
 export default function PlanScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
-  const { width } = useWindowDimensions();
   const { colors } = useTheme();
   const { userId } = useAuth();
-  const dayStampWidth = Math.min(
-    dayStampLayout.width,
-    Math.max(
-      dayStampLayout.minWidth,
-      (Math.min(width, 680) - spacing.s7 * 2 - dayStampLayout.gap * (dayStampLayout.visibleDays - 1)) /
-        dayStampLayout.visibleDays,
-    ),
-  );
+  const dayStripRef = useRef<ScrollView>(null);
   const trip = useTrip(tripId);
   const members = useTripMembers(tripId);
   const itinerary = useItinerary(tripId);
@@ -231,6 +221,18 @@ export default function PlanScreen() {
 
   const nowIndex = selectedDay === todayKey ? nowRowIndex(rows, now) : null;
 
+  // Fixed 48 pt stamps scroll sideways (the cut-off one says so). When the tab
+  // opens on a day past the edge, scroll just far enough to show that day's
+  // stamp with the strip's end padding after it.
+  const onDayStripLayout = (visibleWidth: number) => {
+    const index = strip.findIndex((d) => d.key === selectedDay);
+    if (index < 0) return;
+    const pitch = dayStampLayout.width + dayStampLayout.gap;
+    const stampRight = spacing.s7 + index * pitch + dayStampLayout.width;
+    if (stampRight <= visibleWidth) return;
+    dayStripRef.current?.scrollTo({ x: stampRight + spacing.s7 - visibleWidth, animated: false });
+  };
+
   return (
     <View style={styles.screen}>
       {/* flex:1 + minHeight:0 bounds this scroller to the pane on web, so the
@@ -271,8 +273,10 @@ export default function PlanScreen() {
 
         {strip.length > 0 ? (
           <ScrollView
+            ref={dayStripRef}
             horizontal
             showsHorizontalScrollIndicator={false}
+            onLayout={(event) => onDayStripLayout(event.nativeEvent.layout.width)}
             style={styles.dayStripScroll}
             contentContainerStyle={styles.dayStrip}
           >
@@ -282,7 +286,6 @@ export default function PlanScreen() {
                 weekday={d.weekday}
                 day={d.day}
                 label={d.label}
-                width={dayStampWidth}
                 selected={selectedDay === d.key}
                 onPress={() => setSelectedDayChoice(d.key)}
               />
@@ -419,7 +422,7 @@ function NowLine({ trailing = false }: { trailing?: boolean }) {
 }
 
 function formattedTime(item: ItineraryItem): string {
-  return item.startAt ? formatTime(item.startAt) : '';
+  return item.startAt ? formatTimePadded(item.startAt) : '';
 }
 
 const styles = StyleSheet.create({

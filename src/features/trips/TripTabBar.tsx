@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Calendar, Luggage, Mail } from 'lucide-react-native';
-import Svg, { Line, Rect } from 'react-native-svg';
+import { Calendar, Mail } from 'lucide-react-native';
+import Svg, { Line, Path, Rect } from 'react-native-svg';
 import { AppText } from '@/components/AppText';
 import { AirmailStripes } from '@/components/airmail/AirmailBorder';
 import { fontFamilies, iconStrokeWidth, spacing, useTheme } from '@/theme';
@@ -44,12 +44,30 @@ function StampIcon({ color }: { color: string }) {
   );
 }
 
+/** The design's suitcase for the Packing tab: no wheels, unlike Lucide's Luggage. */
+function SuitcaseIcon({ color }: { color: string }) {
+  const stroke = {
+    fill: 'none',
+    stroke: color,
+    strokeWidth: iconStrokeWidth,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  } as const;
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Rect x={5} y={7} width={14} height={13} rx={2} {...stroke} />
+      <Path d="M9 7V4h6v3" {...stroke} />
+      <Path d="M9 11v5M15 11v5" {...stroke} />
+    </Svg>
+  );
+}
+
 function tabIcon(key: TripTab, color: string) {
   switch (key) {
     case 'plan':
       return <Calendar size={22} color={color} strokeWidth={iconStrokeWidth} />;
     case 'packing':
-      return <Luggage size={22} color={color} strokeWidth={iconStrokeWidth} />;
+      return <SuitcaseIcon color={color} />;
     case 'notes':
       return <Mail size={22} color={color} strokeWidth={iconStrokeWidth} />;
     case 'trip':

@@ -185,7 +185,7 @@ export default function SignInScreen() {
         </View>
       </View>
 
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 34 }]}>
+      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 34) }]}>
         <Button
           label="I have an invite code"
           variant="quiet"
@@ -200,7 +200,9 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: 0 },
+  // flexGrow lets the bottom block sit at the screen's foot (marginTop auto);
+  // when the content is taller than the screen it simply follows it.
+  content: { flexGrow: 1, paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 6, paddingHorizontal: spacing.gutter },
   wordmark: { fontSize: 22, lineHeight: 26 },
@@ -217,5 +219,5 @@ const styles = StyleSheet.create({
   submit: { marginTop: spacing.s7 },
   linkRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   linkTarget: { height: 44, justifyContent: 'center' },
-  bottom: { paddingHorizontal: spacing.gutter, paddingTop: spacing.s3 },
+  bottom: { marginTop: 'auto', paddingHorizontal: spacing.gutter, paddingTop: spacing.s3 },
 });

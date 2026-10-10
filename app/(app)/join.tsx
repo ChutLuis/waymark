@@ -218,7 +218,7 @@ export default function JoinScreen() {
         ) : null}
       </View>
 
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 34 }]}>
+      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 34) }]}>
         {isMember ? (
           <Button label="Open trip" size="lg" onPress={openTrip} />
         ) : (

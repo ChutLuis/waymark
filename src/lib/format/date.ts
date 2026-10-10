@@ -55,6 +55,12 @@ export function formatTime(iso: string): string {
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+/** "09:05": two-digit hours, for Plan's row times and Next card. */
+export function formatTimePadded(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 /** "13 Nov, 10:40" (day-first, per the design). */
 export function formatDateTime(iso: string): string {
   return formatDateTimeDayFirst(iso);
