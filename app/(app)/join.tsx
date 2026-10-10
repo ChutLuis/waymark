@@ -250,7 +250,9 @@ const styles = StyleSheet.create({
   title: { marginTop: spacing.s3 },
   foundRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.s4 },
   foundCircle: { width: 22, height: 22, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  foundText: { flexShrink: 1 },
+  // A definite width: with flexShrink, Android measured the cached preview's
+  // line short on remount and clipped "You’re already on {trip}".
+  foundText: { flex: 1 },
   error: { marginTop: spacing.s4 },
   previewBlock: { marginTop: spacing.s10 },
   sentKicker: { marginTop: 0 },

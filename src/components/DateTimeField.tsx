@@ -17,8 +17,6 @@ export interface DateTimeFieldProps {
   /** 'datetime' (default) or a date-only picker (trip dates). */
   mode?: 'datetime' | 'date';
   placeholder?: string;
-  /** Reduced side padding for paired fields in a narrow editor. */
-  compact?: boolean;
   error?: string;
   /** Sensible starting point when the field is empty (e.g. trip start date). */
   initialDate?: Date;
@@ -36,7 +34,6 @@ export function DateTimeField({
   onChange,
   mode = 'datetime',
   placeholder = 'Add',
-  compact = false,
   error,
   initialDate,
 }: DateTimeFieldProps) {
@@ -107,7 +104,6 @@ export function DateTimeField({
         onPress={openPicker}
         style={({ pressed }) => [
           styles.field,
-          compact && styles.fieldCompact,
           {
             backgroundColor: colors.paper,
             borderColor: error ? colors.wax : colors.border,
@@ -218,7 +214,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: radius.input,
     borderWidth: 1.5,
-    paddingHorizontal: spacing.s5,
+    // TextField's inset, so dates start where Trip name and Destination do.
+    paddingHorizontal: spacing.s7,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -229,7 +226,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
-  fieldCompact: { paddingHorizontal: spacing.s3 },
   error: {
     marginTop: spacing.s2,
   },

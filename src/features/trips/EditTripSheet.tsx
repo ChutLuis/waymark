@@ -117,7 +117,6 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
               <DateTimeField
                 label="STARTS"
                 optionalTag="optional"
-                compact
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}
@@ -134,7 +133,6 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
               <DateTimeField
                 label="ENDS"
                 optionalTag="optional"
-                compact
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}

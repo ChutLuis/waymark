@@ -225,6 +225,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.sheet,
   },
   cardWide: {
+    // Room above the header row; the phone sheet has its grabber there.
+    paddingTop: spacing.s7,
     width: 480,
     maxWidth: '92%',
     borderRadius: radius.sheet,

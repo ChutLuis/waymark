@@ -217,7 +217,6 @@ export function ItineraryItemEditor({
               <DateTimeField
                 label="STARTS"
                 optionalTag="optional"
-                compact
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add date"
@@ -234,7 +233,6 @@ export function ItineraryItemEditor({
               <DateTimeField
                 label="ENDS"
                 optionalTag="optional"
-                compact
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add date"

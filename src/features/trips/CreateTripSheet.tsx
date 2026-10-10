@@ -64,6 +64,9 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
   const country = matchDestination(destination);
   const info = country ? DESTINATION_INFO[country] : null;
   const days = tripDays(startDate, endDate);
+  // Same letter the trip card, Trip tab, Profile and Join card show: the
+  // name's, or the destination's while the name is still empty.
+  const stampInitial = (name.trim()[0] ?? destination.trim()[0] ?? '?').toUpperCase();
 
   const onPickPhoto = async () => {
     const picked = await pickImage([16, 9]);
@@ -107,7 +110,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
           ) : country ? (
             <SceneStamp band="md" image={DESTINATION_ART[country].sceneStampStill} denomination={null} name={info?.stampName ?? ''} />
           ) : destination ? (
-            <SceneStamp band="md" image={null} initial={(destination[0] ?? '?').toUpperCase()} name={stampName(destination)} />
+            <SceneStamp band="md" image={null} initial={stampInitial} name={stampName(destination)} />
           ) : (
             <EmptyStampSlot width={88} height={104} />
           )
@@ -197,7 +200,6 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
               <DateTimeField
                 label="STARTS"
                 optionalTag="optional"
-                compact
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}
@@ -214,7 +216,6 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
               <DateTimeField
                 label="ENDS"
                 optionalTag="optional"
-                compact
                 mode="date"
                 value={field.value}
                 onChange={field.onChange}

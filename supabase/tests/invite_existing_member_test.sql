@@ -1,5 +1,5 @@
 begin;
-select plan(11);
+select plan(19);
 
 -- Setup runs as postgres, before any authenticated role is selected.
 select tests.create_supabase_user('owner@test.com');
@@ -112,22 +112,83 @@ select throws_ok(
   'M9: an already-used code is still rejected'
 );
 
--- M10: the used code is rejected for a member too.
+-- M10-M12: a member with the used code still gets their trip, and the
+-- invite is left exactly as the newcomer's accept left it.
 select tests.authenticate_as('member@test.com');
-select throws_ok(
+select results_eq(
+  $$select name, is_member from preview_trip_invite('MEMBER23')$$,
+  $$values ('Berlin weekend'::text, true)$$,
+  'M10: a member previewing a used code is told they are already on the trip'
+);
+select results_eq(
   $$select accept_trip_invite('MEMBER23')$$,
-  'P0001',
-  'invite already used',
-  'M10: an already-used code is rejected for a member as well'
+  $$values ('33333333-3333-3333-3333-333333333333'::uuid)$$,
+  'M11: a member accepting a used code gets the trip id'
+);
+reset role;
+select results_eq(
+  $$select accepted_by from trip_invites where code = 'MEMBER23'$$,
+  $$values (tests.get_supabase_uid('newcomer@test.com'))$$,
+  'M12: a member accepting a used code leaves the invite unchanged'
 );
 
--- M11: the rejected accept did not join the latecomer.
-reset role;
+-- M13: the rejected accept did not join the latecomer.
 select results_eq(
   $$select count(*) from trip_members where user_id = tests.get_supabase_uid('latecomer@test.com')$$,
   array[0::bigint],
-  'M11: a rejected accept does not join the caller'
+  'M13: a rejected accept does not join the caller'
 );
 
+-- M14: a non-member previewing the used code gets the same error as before.
+select tests.authenticate_as('latecomer@test.com');
+select throws_ok(
+  $$select preview_trip_invite('MEMBER23')$$,
+  'P0001',
+  'invite already used',
+  'M14: a non-member previewing a used code is still rejected'
+);
+
+-- M15-M19: an expired code opens the trip for a member and stays rejected
+-- for a non-member.
+reset role;
+insert into trip_invites (trip_id, code, created_by, expires_at)
+values (
+  '33333333-3333-3333-3333-333333333333',
+  'EXPIRD23',
+  tests.get_supabase_uid('owner@test.com'),
+  now() - interval '1 second'
+);
+select tests.authenticate_as('member@test.com');
+select results_eq(
+  $$select is_member from preview_trip_invite('EXPIRD23')$$,
+  $$values (true)$$,
+  'M15: a member previewing an expired code is told they are already on the trip'
+);
+select results_eq(
+  $$select accept_trip_invite('EXPIRD23')$$,
+  $$values ('33333333-3333-3333-3333-333333333333'::uuid)$$,
+  'M16: a member accepting an expired code gets the trip id'
+);
+reset role;
+select results_eq(
+  $$select accepted_at is null, accepted_by is null from trip_invites where code = 'EXPIRD23'$$,
+  $$values (true, true)$$,
+  'M17: a member accepting an expired code leaves it unused'
+);
+select tests.authenticate_as('latecomer@test.com');
+select throws_ok(
+  $$select preview_trip_invite('EXPIRD23')$$,
+  'P0001',
+  'invite expired',
+  'M18: a non-member previewing an expired code is still rejected'
+);
+select throws_ok(
+  $$select accept_trip_invite('EXPIRD23')$$,
+  'P0001',
+  'invite expired',
+  'M19: a non-member accepting an expired code is still rejected'
+);
+
+reset role;
 select * from finish();
 rollback;

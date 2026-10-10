@@ -27,7 +27,9 @@ export function DatePair({ start, end, clearLabel, onClear }: DatePairProps) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={clearLabel}
-          hitSlop={8}
+          // Starts exactly at the fields' bottom edge (the 4 pt margin) so a tap
+          // on a field never lands on Clear; 4 + 20 + 20 makes a 44 pt target.
+          hitSlop={{ top: spacing.s1, bottom: 20, left: spacing.s3, right: spacing.s3 }}
           onPress={onClear}
           style={({ pressed }) => [styles.clear, pressed && styles.pressed]}
         >

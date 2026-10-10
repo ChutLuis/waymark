@@ -198,19 +198,20 @@ begin
   if not found then
     raise exception 'invalid invite';
   end if;
-  if v_invite.accepted_at is not null then
-    raise exception 'invite already used';
-  end if;
-  if v_invite.expires_at < now() then
-    raise exception 'invite expired';
-  end if;
 
-  -- Already on the trip: nothing to join, and the code is left unused.
+  -- Already on the trip: nothing to join, and the code is left as it is.
   if exists (
     select 1 from trip_members
     where trip_id = v_invite.trip_id and user_id = auth.uid()
   ) then
     return v_invite.trip_id;
+  end if;
+
+  if v_invite.accepted_at is not null then
+    raise exception 'invite already used';
+  end if;
+  if v_invite.expires_at < now() then
+    raise exception 'invite expired';
   end if;
 
   insert into trip_members (trip_id, user_id, role)
@@ -227,10 +228,11 @@ $$;
 ```
 
 This guarantees INV-4: acceptance can only ever add the caller to the single
-trip the code belongs to. A caller who is already a member gets the trip id
-back without spending the single-use code; `preview_trip_invite` reports the
-same membership as `is_member`, so the Join screen offers Open trip instead of
-Join.
+trip the code belongs to. Membership is checked before the invite's state: a
+caller who is already a member gets the trip id back for any known code (unused,
+used or expired) and the invite is not touched. `preview_trip_invite` reports
+the same membership as `is_member`, so the Join screen offers Open trip instead
+of Join. Non-members still get the invalid, already-used and expired errors.
 
 ### 5.5 itinerary_items and packing_items (shared content)
 

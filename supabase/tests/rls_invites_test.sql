@@ -44,8 +44,10 @@ select results_eq(
   'S13: C is a member of exactly one trip'
 );
 
--- S14: expiry is enforced by the security-definer acceptance RPC.
+-- S14: expiry is enforced by the security-definer acceptance RPC. The caller
+-- is not on Trip 1 (a member gets the trip back whatever the invite's state).
 reset role;
+select tests.create_supabase_user('f@test.com');
 insert into trip_invites (trip_id, code, created_by, expires_at)
 values (
   '11111111-1111-1111-1111-111111111111',
@@ -53,7 +55,7 @@ values (
   tests.get_supabase_uid('a@test.com'),
   now() - interval '1 second'
 );
-select tests.authenticate_as('c@test.com');
+select tests.authenticate_as('f@test.com');
 select throws_ok(
   $$select accept_trip_invite('expired-trip-1-invite')$$,
   'P0001',

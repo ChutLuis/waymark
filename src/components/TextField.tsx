@@ -144,7 +144,10 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    // Android's EditText adds its own padding; zero it so text sits exactly at
+    // the field's 16 pt inset, as on web and iOS (and as the date fields do).
     paddingVertical: 0,
+    paddingHorizontal: 0,
   },
   inputMultiline: {
     minHeight: 130,
