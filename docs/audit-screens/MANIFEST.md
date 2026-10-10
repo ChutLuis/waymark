@@ -1,48 +1,50 @@
-# Airmail audit — seventh-pass release capture
+# Airmail audit — eighth-pass release capture
 
-**Code commits:** `7a4f60c` (UI, migration `20260725000000_invite_existing_member.sql`
-and pgTAP) and `4ed9ffb` (Edit trip form reset). Every frame was captured from
-`4ed9ffb`, which contains both.
-**Capture window (local, UTC−6):** 2026-10-09 17:05:52 → 17:18:16.
-**87 fresh PNGs:** 78 Android release frames and 9 headful Chrome frames.
-Every frame was visually reviewed. There are no runtime error screens, LogBox
-or toasts; `join-invalid-390-light` is the requested invalid-code validation state.
+**Code commit:** `9645fb1` (date pairs, field insets, wide-sheet padding,
+New trip stamp letter, migration `20260726000000_invite_member_first.sql` and pgTAP).
+It builds on the pass-seven code commits `7a4f60c` and `4ed9ffb`.
+**Capture window (local, UTC−6):** 2026-10-09 20:29:07 → 20:43:11.
+**90 fresh PNGs:** 81 Android release frames and 9 headful Chrome frames, all
+from `9645fb1`. Every frame was visually reviewed. There are no runtime error
+screens, LogBox or toasts; `join-invalid-390-light` is the requested
+invalid-code validation state.
 
 ## Proof per fix
 
 Screenshot names below have the `.png` extension. Original bounds, conversions
 and pixel checks are in [UI_MEASUREMENTS.json](UI_MEASUREMENTS.json).
-"Glyph" gaps are measured from the date field's bottom border to the first or
-last row of text ink.
 
 | Fix | Screenshots | Result and measurements |
 |-----|-------------|-------------------------|
-| N36 · Member opens own invite | `join-member-390-light`; pgTAP `invite_existing_member_test.sql` | Joiner, already on Mia's Berlin weekend, enters Mia's current Berlin code: **“You’re already on Berlin weekend”** with **Open trip** and no Join button (checked in the native accessibility tree; Open trip was not tapped). `preview_trip_invite` returns `is_member`; `accept_trip_invite` returns the trip id without marking the invite used for a member. pgTAP **11/11**: member accept → invite row `accepted_at=null accepted_by=null` before **and** after; non-member accept → `accepted=t`, accepted by the newcomer; a used code is rejected for a non-member and for a member. Full suite **63/63**. |
-| N35 · Sign-up shadow | `signup-from-code-390-light` (not scrolled), `signup-keyboard-{360,390}-light` | The clip is gone. Not scrolled, the shadow reaches **18.4dp** below both cards (pixels differing from the page colour by ≥2; pass five: about 16dp). The shadow lives on a layer behind each card whose opacity follows scroll on the native driver: 1 at rest, 0 by 8dp before the cards reach `insets.top`. Keyboard frames, 6dp strip directly under the status band: 390 — **19,080 / 19,080** page-colour pixels, **0 shadow**; 360 — **2,232** page-colour pixels, **16,848** inside the scrolled EMAIL field, **0 shadow**. |
-| N37 · One date-pair style | `trip-edit-390-light`, `trip-edit-cleared-390-light`, `newtrip-empty-390-light`, `item-editor-open-390-light`, `item-editor-{360,390}-light`, `item-editor-cleared-390-light`, `web-newtrip-{680,1280}-light` | Every STARTS / ENDS label sits **above** its field like TRIP NAME and DESTINATION: label bottom → field top **6.1dp** at 390 (6.0dp at 360), left edges aligned (0dp), never inside the field. Both pairs read **STARTS optional / ENDS optional** with the same **Add date** placeholder. Web: label → input **6px** at both viewports, `optional` on the label row. New trip gains the same Clear dates link as Edit trip. |
-| N38 · Clear link spacing | `item-editor-open-390-light`, `item-editor-{360,390}-light`, `trip-edit-390-light` | Pair → link glyph: **8.3dp** (Clear times, 390), **8.7dp** (360), **8.3dp** (Clear dates). Link → STATUS glyph: **21.3dp** (390), **21.0dp** (360), the full 14dp section gap. Pass six: 28dp / 22dp. |
-| N39 · Sheet header edge | `item-editor-open-390-light` (top), `item-editor-{360,390}-light` (scrolled to the end) | At the top no full-width line exists under the header. Scrolled, a full-width divider-coloured hairline (`#C9D3DB`) appears at y=392–393px (390) and 408–410px (360). The 1dp edge is reserved in both states, so content does not shift. |
-| Edit trip reset | `trip-edit-390-light` → `trip-edit-cleared-390-light` → Cancel → `trip-edit-keyboard-390-light` | Reopened on the same mounted Trip screen straight after the cancelled Clear dates, the fields read **STARTS: Tue 13 Oct / ENDS: Fri 16 Oct** (native accessibility labels). The sheet now resets to the saved trip and clears any failed-save state on every open, like the item, packing and note editors. |
-| N40 · No-art join card | `join-preview-dated-390-light`, `join-member-390-light`; `join-preview-390-light` keeps its scene | Berlin weekend now shows New trip's preview card: cream fill **#FFFCF5**, destination on ruled address lines, the stamp on the right half at the top, airmail band along the bottom, **23.8dp** clear of the stamp. New trip and Join share one `TripPreviewCard` component. |
+| N41 · Clear link touch area | `item-editor-{360,390}-light`, `trip-edit-390-light`, `newtrip-dates-390-light` | `hitSlop={{ top: 4, bottom: 20, left: 8, right: 8 }}`. From the bounds, the touch area's top equals the STARTS field's bottom: **0.0dp** at 360, **−0.03dp** at 390 (whole-pixel rounding). The touch target is **44.0 / 44.2dp** tall. The visual gap is unchanged (link bounds 4dp, text 8.3dp below the fields). |
+| N42 · Date text inset | `trip-edit-390-light`, `newtrip-dates-390-light`, `web-newtrip-{680,1280}-light`, `item-editor-longdate-360-light` | The compact variant is gone; date fields use TextField's 16dp inset on Android and web. TextField also no longer keeps Android's own EditText padding, which had put its text 2dp further in. First text pixel, Destination vs STARTS: **0.0dp** apart in `trip-edit-390` (both 18.1dp in from the box edge), **0.4dp** in `newtrip-dates-390`; web **1px** apart at 680 and 1280 (18px vs 17px, glyph side bearing). Item editor at 360: "28 Nov, 10:40" (set in the form only, then cancelled) stays on one line with **6.8dp** to spare; the widest possible value, "20 May, 20:00", measures 114dp in 115dp of room. |
+| N43 · Wide sheet top edge | `web-newtrip-1280-light` | Wide sheets get `paddingTop: 16`. Modal top → Create pill: **19.5px** (pass seven: 3px). Last field → modal bottom: **34px**. |
+| N44 · New trip stamp letter | `newtrip-dates-390-light` | Name "Weekend away", destination "Berlin", dates 13–16 Oct: the preview stamp shows **W** with the BERLIN caption, matching the trip card, Trip tab, Profile and join card. It uses the destination's letter only while the name is empty. The frame also records New trip's **Clear dates** link. The form was cancelled. |
+| N45 · Member with a used or expired code | `join-member-used-390-light`; pgTAP `invite_existing_member_test.sql` | Both functions check membership before the invite's state. Joiner opening Mia's **used** Berlin code sees **“You’re already on Berlin weekend”** and Open trip, with no error. pgTAP **19/19**: a member with a used code (M10–M12) or an expired code (M15–M17) gets the trip and the invite is untouched; non-members still get **invite already used** (M9, M14) and **invite expired** (M18, M19). S14 in `rls_invites_test.sql` now checks expiry with a caller who is not on the trip. Full suite **71/71**. |
+| Join line on revisit | `join-member-390-light`, `join-member-used-390-light` | Found while capturing N45: on Android, revisiting the join screen in one session drew “You’re already on Berlin” with the trip name clipped. The line now has `flex: 1`; both frames (second and third join visit of the session) draw the full line. |
 
-Retained from pass six (re-measured from these frames): Privacy / Delete
-account Back rows at **30.0dp** (N28); sheet bottom gaps **36.0–36.1dp** for all
-seven closed sheets (N29); empty-state gaps **16.3 / 15.9 / 15.5dp** with the
-**56×72dp** stamp (N34); join metadata **“from Mia”** and **“from Mia · 13–16 Oct”**
-(N30); Notes filters (N33). Web Plan shell and tab-bar bottoms equal
+Retained from pass seven, re-measured from these frames: N35 shadow reach
+**18.4dp** at rest, **0** shadow pixels under the clock in both keyboard frames;
+N36 member-case invite row `accepted_at=null accepted_by=null` before and after;
+N37 labels **6.1dp** above every date field (6px on web); N38 pair → link
+**8.3dp**, link → STATUS **21.3dp**; N39 hairline only when scrolled; N40 cream
+card, stamp **23.8dp** above the airmail band; Edit trip reopens with the saved
+dates after a cancelled Clear dates. Older fixes: Back rows **30.0dp** (N28),
+sheet bottom gaps **36.0–36.1dp** (N29), empty-state gaps
+**16.3 / 15.9 / 15.5dp** (N34), web Plan shell and tab bar ending at
 **1100px / 900px** ([WEB_MEASUREMENTS.json](WEB_MEASUREMENTS.json), N16).
 
 ## Build and capture provenance
 
-- Android: `./gradlew assembleRelease -q` from `4ed9ffb`, then a fresh
+- Android: `./gradlew assembleRelease -q` from `9645fb1`, then a fresh
   `adb uninstall app.waymark` / `adb install app-release.apk` and sign-in.
   Local and installed APK SHA-256 both equal
-  `c8d139fcb5409062548473296ffa5977f72acd7a1943ea47fdf8dab393da748b`.
+  `30714b84e772998fd7b86d145a0a5477b13ecdce3a7b045fd07e0aa69c3c5392`.
 - Android `emulator-5554`: physical 1080×2400, font scale **1.0**.
   Densities **480 / 443 / 402** supply nominal **360 / 390 / 430dp** widths.
   The app was force-stopped and relaunched after every density and theme change.
 - Web: production static export from the same commit, bundle
-  `entry-118dd1e08e7671551836178648fa86a2.js`, verified as the loaded script on
+  `entry-93aa427e05cd9a620a2b258313e84857.js`, verified as the loaded script on
   every navigation. Headful Chrome via the Chrome DevTools MCP CLI, viewports
   **680×1100** and **1280×900**, DPR **1**, light colour scheme forced.
 - Per-file timestamps, actor, theme, density/viewport, dimensions, SHA-256,
@@ -59,7 +61,7 @@ frames used an emulator clock set to **2026-10-08 19:00 UTC−6** with
 fixture's 20:30 cutoff. Each row records its `captureClock`. Automatic time was
 restored afterward.
 
-## Matrix — 87 PNGs
+## Matrix — 90 PNGs
 
 - `{trips,plan,plan-today,packing,notes,trip}-{360,390,430}-{light,dark}` (36).
 - `trips-bottom-390-light` (1).
@@ -70,12 +72,14 @@ restored afterward.
   `signup-keyboard-{360,390}-light`, `signup-from-code-390-light`,
   `onboarding-390-light` (8).
 - `invite-code-390-light`, `invite-code-filled-390-light`,
-  `join-member-390-light`, `join-preview-390-light`,
-  `join-preview-dated-390-light`, `join-invalid-390-light` (6).
+  `join-member-390-light`, `join-member-used-390-light`,
+  `join-preview-390-light`, `join-preview-dated-390-light`,
+  `join-invalid-390-light` (7).
 - `newtrip-empty-390-light`, `newtrip-typed-390-light`,
-  `trip-edit-390-light`, `trip-edit-cleared-390-light`,
-  `trip-edit-keyboard-390-light`, `item-editor-open-390-light`,
-  `item-editor-{360,390}-light`, `item-editor-cleared-390-light` (9).
+  `newtrip-dates-390-light`, `trip-edit-390-light`,
+  `trip-edit-cleared-390-light`, `trip-edit-keyboard-390-light`,
+  `item-editor-open-390-light`, `item-editor-{360,390}-light`,
+  `item-editor-longdate-360-light`, `item-editor-cleared-390-light` (11).
 - `{trips,plan,packing,notes,trip}-theo-390-light`,
   `trip-member-390-dark` (6).
 - `privacy-390-light`, `privacy-bottom-390-light`,
@@ -83,23 +87,27 @@ restored afterward.
 - `web-{trips,plan,signin,newtrip}-{680,1280}-light`,
   `web-delete-account-680-light` (9).
 
+New this pass: `newtrip-dates-390-light` (N44), `join-member-used-390-light`
+(N45) and `item-editor-longdate-360-light` (the N42 fit check).
+
 Actors: Mia (`tester@waymark.test`) for her trips, editors and profile;
-Joiner (`joiner@waymark.test`, on Mia's Berlin weekend) for the member and
-invalid-code states; Theo (`theo@waymark.test`, on neither invite's trip) for
-both join previews and his Kyoto views; Fresh for onboarding.
+Joiner (`joiner@waymark.test`, on Mia's Berlin weekend) for the member,
+used-code and invalid-code states; Theo (`theo@waymark.test`, on neither
+invite's trip) for both join previews and his Kyoto views; Fresh for onboarding.
 
 ## Fixture integrity and final state
 
 Before/after row hashes are identical for trips, itinerary items, packing
 items, trip notes, trip members and trip invites. No invite was accepted
-outside pgTAP: the join screens were previewed only, and no new invite code was
-minted. Every edit, clear and new-trip form was cancelled; Delete account was
-only previewed. Fresh's onboarding name was a local draft, followed by clearing
-local app data and signing back in as Mia; no profile was created. Account
-passwords are not stored in the audit artifacts.
+outside pgTAP: join screens were previewed only, Open trip and Join were never
+tapped, and no new invite code was created. Every edit, clear, date and
+new-trip form was cancelled; Delete account was only previewed. Fresh's
+onboarding name was a local draft, followed by clearing local app data and
+signing back in as Mia; no profile was created. Account passwords are not
+stored in the audit artifacts.
 
 Quality gates: **typecheck**, **lint with 0 errors and 0 warnings**,
-**73 Vitest tests**, **63 pgTAP assertions** in 10 files.
+**73 Vitest tests**, **71 pgTAP assertions** in 10 files.
 
 Emulator restored to **physical density 420 with no override**, **font scale
 1.0**, **automatic time enabled**, light mode, `America/Guatemala`, signed in as

@@ -1,15 +1,11 @@
 {
-  "codeCommit": "4ed9ffb6ce4e342194b90cb6fbf40de10cddea1b",
-  "codeCommitsThisPass": [
-    "7a4f60c",
-    "4ed9ffb"
-  ],
+  "codeCommit": "9645fb1fbc968f37093304ffb9083aaa94c5b98a",
   "android": {
     "buildType": "release",
     "freshInstall": true,
     "installMethod": "adb uninstall app.waymark; adb install app-release.apk",
-    "apkSha256": "c8d139fcb5409062548473296ffa5977f72acd7a1943ea47fdf8dab393da748b",
-    "installedApkSha256": "c8d139fcb5409062548473296ffa5977f72acd7a1943ea47fdf8dab393da748b",
+    "apkSha256": "30714b84e772998fd7b86d145a0a5477b13ecdce3a7b045fd07e0aa69c3c5392",
+    "installedApkSha256": "30714b84e772998fd7b86d145a0a5477b13ecdce3a7b045fd07e0aa69c3c5392",
     "physicalPixels": [
       1080,
       2400
@@ -24,8 +20,8 @@
   },
   "web": {
     "buildType": "production static export",
-    "bundle": "entry-118dd1e08e7671551836178648fa86a2.js",
-    "bundleSha256": "db28467b3509de34c696f9b3a9b0f0f38421f0244aef6031ce195f0109cb77cf",
+    "bundle": "entry-93aa427e05cd9a620a2b258313e84857.js",
+    "bundleSha256": "28d878c16b096f4d0df5f8492b36dabc417445104bd48a299ff6e4874d9d6181",
     "browser": "Headful Chrome via Chrome DevTools MCP CLI",
     "devicePixelRatio": 1,
     "colorScheme": "light",
@@ -103,18 +99,18 @@
     "lintErrors": 0,
     "lintWarnings": 0,
     "vitestTestsPassed": 73,
-    "pgTapAssertionsPassed": 63,
+    "pgTapAssertionsPassed": 71,
     "pgTapFiles": 10,
-    "finalChecksCompletedAt": "2026-10-09T17:22:22.036250-06:00"
+    "finalChecksCompletedAt": "2026-10-09T20:47:30.736200-06:00"
   },
   "finalEmulatorState": {
-    "restoredAt": "2026-10-09T17:21:47.378673-06:00",
+    "restoredAt": "2026-10-09T20:47:24.326965-06:00",
     "actor": "Mia",
     "signedInAccount": "tester@waymark.test",
     "density": "Physical density: 420",
     "fontScale": "1.0",
     "automaticTime": "1",
-    "deviceTime": "Fri Oct  9 17:21:47 CST 2026",
+    "deviceTime": "Fri Oct  9 20:47:24 CST 2026",
     "timezone": "America/Guatemala",
     "nightMode": "Night mode: no",
     "screen": "Your trips"

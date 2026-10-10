@@ -1,7 +1,316 @@
 {
-  "codeCommit": "4ed9ffb6ce4e342194b90cb6fbf40de10cddea1b",
-  "measuredAt": "2026-10-09T17:20:39.640901-06:00",
+  "codeCommit": "9645fb1fbc968f37093304ffb9083aaa94c5b98a",
+  "measuredAt": "2026-10-09T20:43:44.018727-06:00",
   "method": "Android UIAutomator bounds from the capture moment for controls and text nodes; original PNG pixels for glyph ink, gesture pill, shadows and hairlines. px × 160 / density converts to dp. \"Glyph\" gaps run from the date field's bottom border edge to the first/last row of text ink.",
+  "N41": [
+    {
+      "screenshot": "item-editor-390-light.png",
+      "density": 443,
+      "link": "Clear times",
+      "fieldBoundsPx": [
+        66,
+        1469,
+        523,
+        1613
+      ],
+      "linkBoundsPx": [
+        66,
+        1624,
+        317,
+        1680
+      ],
+      "hitSlopDp": {
+        "top": 4,
+        "bottom": 20,
+        "left": 8,
+        "right": 8
+      },
+      "touchAreaPx": [
+        43.9,
+        1612.9,
+        339.1,
+        1735.4
+      ],
+      "touchTopMinusFieldBottomDp": -0.03,
+      "touchHeightDp": 44.23,
+      "visualGapLinkBoundsDp": 3.97
+    },
+    {
+      "screenshot": "item-editor-360-light.png",
+      "density": 480,
+      "link": "Clear times",
+      "fieldBoundsPx": [
+        72,
+        1392,
+        522,
+        1548
+      ],
+      "linkBoundsPx": [
+        72,
+        1560,
+        341,
+        1620
+      ],
+      "hitSlopDp": {
+        "top": 4,
+        "bottom": 20,
+        "left": 8,
+        "right": 8
+      },
+      "touchAreaPx": [
+        48.0,
+        1548.0,
+        365.0,
+        1680.0
+      ],
+      "touchTopMinusFieldBottomDp": 0.0,
+      "touchHeightDp": 44.0,
+      "visualGapLinkBoundsDp": 4.0
+    },
+    {
+      "screenshot": "trip-edit-390-light.png",
+      "density": 443,
+      "link": "Clear dates",
+      "fieldBoundsPx": [
+        66,
+        2051,
+        523,
+        2195
+      ],
+      "linkBoundsPx": [
+        66,
+        2206,
+        314,
+        2262
+      ],
+      "hitSlopDp": {
+        "top": 4,
+        "bottom": 20,
+        "left": 8,
+        "right": 8
+      },
+      "touchAreaPx": [
+        43.9,
+        2194.9,
+        336.1,
+        2317.4
+      ],
+      "touchTopMinusFieldBottomDp": -0.03,
+      "touchHeightDp": 44.23,
+      "visualGapLinkBoundsDp": 3.97
+    },
+    {
+      "screenshot": "newtrip-dates-390-light.png",
+      "density": 443,
+      "link": "Clear dates",
+      "fieldBoundsPx": [
+        66,
+        2051,
+        523,
+        2195
+      ],
+      "linkBoundsPx": [
+        66,
+        2206,
+        314,
+        2262
+      ],
+      "hitSlopDp": {
+        "top": 4,
+        "bottom": 20,
+        "left": 8,
+        "right": 8
+      },
+      "touchAreaPx": [
+        43.9,
+        2194.9,
+        336.1,
+        2317.4
+      ],
+      "touchTopMinusFieldBottomDp": -0.03,
+      "touchHeightDp": 44.23,
+      "visualGapLinkBoundsDp": 3.97
+    }
+  ],
+  "N42": [
+    {
+      "screenshot": "trip-edit-390-light.png",
+      "density": 443,
+      "destinationFirstTextPx": 116,
+      "startsFirstTextPx": 116,
+      "destinationInsetFromBoxDp": 18.06,
+      "startsInsetFromBoxDp": 18.06,
+      "differenceDp": 0.0
+    },
+    {
+      "screenshot": "newtrip-dates-390-light.png",
+      "density": 443,
+      "destinationFirstTextPx": 117,
+      "startsFirstTextPx": 116,
+      "destinationInsetFromBoxDp": 18.42,
+      "startsInsetFromBoxDp": 18.06,
+      "differenceDp": 0.36
+    },
+    {
+      "screenshot": "newtrip-empty-390-light.png",
+      "density": 443,
+      "destinationFirstTextPx": 117,
+      "startsFirstTextPx": 114,
+      "destinationInsetFromBoxDp": 18.42,
+      "startsInsetFromBoxDp": 17.34,
+      "differenceDp": 1.08
+    }
+  ],
+  "N42itemEditor360": {
+    "screenshot": "item-editor-longdate-360-light.png",
+    "density": 480,
+    "fieldAccessibility": "STARTS: 28 Nov, 10:40",
+    "fieldBoundsPx": [
+      72,
+      1392,
+      522,
+      1548
+    ],
+    "valueBoundsPx": [
+      124,
+      1434,
+      449,
+      1506
+    ],
+    "singleLine": true,
+    "roomRightOfTextDp": 6.83,
+    "widestPossibleValueDp": {
+      "text": "20 May, 20:00",
+      "widthDp": 114.0,
+      "roomDp": 115.0
+    }
+  },
+  "N42web": [
+    {
+      "screenshot": "web-newtrip-680-light.png",
+      "viewport": [
+        680,
+        1100
+      ],
+      "destinationFieldPx": [
+        24,
+        934,
+        656,
+        986
+      ],
+      "startsFieldPx": [
+        24,
+        1022,
+        334,
+        1074
+      ],
+      "destinationFirstTextPx": 42,
+      "startsFirstTextPx": 41,
+      "destinationInsetPx": 18,
+      "startsInsetPx": 17,
+      "differencePx": 1
+    },
+    {
+      "screenshot": "web-newtrip-1280-light.png",
+      "viewport": [
+        1280,
+        900
+      ],
+      "destinationFieldPx": [
+        424,
+        580,
+        856,
+        632
+      ],
+      "startsFieldPx": [
+        424,
+        668,
+        634,
+        720
+      ],
+      "destinationFirstTextPx": 442,
+      "startsFirstTextPx": 441,
+      "destinationInsetPx": 18,
+      "startsInsetPx": 17,
+      "differencePx": 1
+    }
+  ],
+  "N43": {
+    "screenshot": "web-newtrip-1280-light.png",
+    "viewport": [
+      1280,
+      900
+    ],
+    "cardPx": [
+      400,
+      146,
+      880,
+      754
+    ],
+    "createPillPx": [
+      758,
+      165,
+      856,
+      209
+    ],
+    "cardPaddingTop": "16px",
+    "cardTopToCreatePillPx": 19.5,
+    "lastFieldToCardBottomPx": 34,
+    "passSevenCardTopToCreatePillPx": 3,
+    "lastField": "STARTS / ENDS"
+  },
+  "N44": {
+    "screenshot": "newtrip-dates-390-light.png",
+    "tripName": "Weekend away",
+    "destination": "Berlin",
+    "stampLetter": "W",
+    "stampCaption": "BERLIN",
+    "stampBoundsPx": [
+      806,
+      868,
+      941,
+      996
+    ],
+    "datesSet": [
+      "STARTS: Tue 13 Oct",
+      "ENDS: Fri 16 Oct"
+    ],
+    "clearDatesShown": true
+  },
+  "N45": {
+    "migration": "supabase/migrations/20260726000000_invite_member_first.sql",
+    "pgTap": [
+      "ok 10 - M10: a member previewing a used code is told they are already on the trip",
+      "ok 11 - M11: a member accepting a used code gets the trip id",
+      "ok 12 - M12: a member accepting a used code leaves the invite unchanged",
+      "ok 13 - M13: a rejected accept does not join the caller",
+      "ok 14 - M14: a non-member previewing a used code is still rejected",
+      "ok 15 - M15: a member previewing an expired code is told they are already on the trip",
+      "ok 16 - M16: a member accepting an expired code gets the trip id",
+      "ok 17 - M17: a member accepting an expired code leaves it unused",
+      "ok 18 - M18: a non-member previewing an expired code is still rejected",
+      "ok 19 - M19: a non-member accepting an expired code is still rejected"
+    ],
+    "changedExistingTests": {
+      "M10": "a member with a used code now gets the trip (was: rejected)",
+      "S14": "expiry checked with a caller who is not on the trip"
+    },
+    "appState": {
+      "screenshot": "join-member-used-390-light.png",
+      "actor": "Joiner",
+      "code": "Mia's used Berlin weekend code (accepted in an earlier pass)",
+      "shown": [
+        "You’re already on Berlin weekend",
+        "Open trip"
+      ],
+      "usedCodeErrorShown": false
+    }
+  },
+  "JoinLineRevisit": {
+    "issue": "On Android, revisiting the join screen in one session drew 'You’re already on Berlin' with the trip name clipped.",
+    "fix": "foundText uses flex: 1 instead of flexShrink: 1.",
+    "evidence": "join-member-390-light (second join visit of the session) and join-member-used-390-light (third) both draw the full line; verified visually."
+  },
   "N35": {
     "notScrolled": {
       "screenshot": "signup-from-code-390-light.png",
@@ -68,10 +377,13 @@
     ]
   },
   "N36": {
-    "migration": "supabase/migrations/20260725000000_invite_existing_member.sql",
+    "migrations": [
+      "supabase/migrations/20260725000000_invite_existing_member.sql",
+      "supabase/migrations/20260726000000_invite_member_first.sql"
+    ],
     "test": "supabase/tests/invite_existing_member_test.sql",
     "tapOutput": [
-      "1..11",
+      "1..19",
       "# before member accept: code=MEMBER23 accepted_at=null accepted_by=null",
       "ok 1 - M1: a member previewing the code is told they are already on the trip",
       "ok 2 - M2: a member accepting gets the trip id",
@@ -84,8 +396,16 @@
       "ok 7 - M7: the non-member becomes a member",
       "ok 8 - M8: a non-member accepting uses the invite",
       "ok 9 - M9: an already-used code is still rejected",
-      "ok 10 - M10: an already-used code is rejected for a member as well",
-      "ok 11 - M11: a rejected accept does not join the caller"
+      "ok 10 - M10: a member previewing a used code is told they are already on the trip",
+      "ok 11 - M11: a member accepting a used code gets the trip id",
+      "ok 12 - M12: a member accepting a used code leaves the invite unchanged",
+      "ok 13 - M13: a rejected accept does not join the caller",
+      "ok 14 - M14: a non-member previewing a used code is still rejected",
+      "ok 15 - M15: a member previewing an expired code is told they are already on the trip",
+      "ok 16 - M16: a member accepting an expired code gets the trip id",
+      "ok 17 - M17: a member accepting an expired code leaves it unused",
+      "ok 18 - M18: a non-member previewing an expired code is still rejected",
+      "ok 19 - M19: a non-member accepting an expired code is still rejected"
     ],
     "tripInvitesRowMemberCase": {
       "before": "code=MEMBER23 accepted_at=null accepted_by=null",
@@ -94,7 +414,7 @@
     },
     "fullSuite": [
       "All tests successful.",
-      "Files=10, Tests=63,  0 wallclock secs ( 0.02 usr  0.01 sys +  0.04 cusr  0.01 csys =  0.08 CPU)",
+      "Files=10, Tests=71,  0 wallclock secs ( 0.03 usr  0.01 sys +  0.05 cusr  0.02 csys =  0.11 CPU)",
       "Result: PASS"
     ],
     "appState": {
@@ -506,24 +826,24 @@
       "STARTS": {
         "input": {
           "x": 424,
-          "y": 660.5,
+          "y": 668.5,
           "width": 210,
           "height": 52,
-          "bottom": 712.5
+          "bottom": 720.5
         },
         "label": {
           "x": 424,
-          "y": 638.5,
+          "y": 646.5,
           "width": 47.984375,
           "height": 16,
-          "bottom": 654.5
+          "bottom": 662.5
         },
         "optional": {
           "x": 477.984375,
-          "y": 638.5,
+          "y": 646.5,
           "width": 63.96875,
           "height": 16,
-          "bottom": 654.5
+          "bottom": 662.5
         },
         "labelAboveInput": true,
         "labelBottomToInputTopPx": 6,
@@ -534,24 +854,24 @@
       "ENDS": {
         "input": {
           "x": 646,
-          "y": 660.5,
+          "y": 668.5,
           "width": 210,
           "height": 52,
-          "bottom": 712.5
+          "bottom": 720.5
         },
         "label": {
           "x": 646,
-          "y": 638.5,
+          "y": 646.5,
           "width": 31.984375,
           "height": 16,
-          "bottom": 654.5
+          "bottom": 662.5
         },
         "optional": {
           "x": 683.984375,
-          "y": 638.5,
+          "y": 646.5,
           "width": 63.96875,
           "height": 16,
-          "bottom": 654.5
+          "bottom": 662.5
         },
         "labelAboveInput": true,
         "labelBottomToInputTopPx": 6,
@@ -797,9 +1117,9 @@
   "EditTripReset": {
     "sequence": [
       "trip-edit-390-light.png (saved dates)",
-      "Clear dates → trip-edit-cleared-390-light.png",
+      "Clear dates -> trip-edit-cleared-390-light.png",
       "Cancel",
-      "reopen Edit trip on the same mounted Trip screen → trip-edit-keyboard-390-light.png"
+      "reopen Edit trip on the same mounted Trip screen -> trip-edit-keyboard-390-light.png"
     ],
     "reopenedFieldValues": [
       "STARTS: Tue 13 Oct",
