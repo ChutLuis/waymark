@@ -133,7 +133,7 @@ function YearDivider({ label }: { label: string | null }) {
       <Svg width={2} height={RAIL.stampHeight}>
         <Line x1={1} y1={0} x2={1} y2={RAIL.stampHeight} stroke={colors.railDivider} strokeWidth={1.5} strokeDasharray="4 3" />
       </Svg>
-      <AppText role="tagSm" tone="secondary" style={styles.caption}>
+      <AppText role="tagSm" tone="secondary" style={[styles.caption, styles.noRule]}>
         {label ?? ' '}
       </AppText>
     </View>
@@ -256,5 +256,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: RULE,
     paddingBottom: RULE,
   },
+  // Keeps the caption's height so the labels line up, without its rule.
+  noRule: { borderBottomWidth: 0, paddingBottom: 2 * RULE },
   divider: { width: RAIL.divider, alignItems: 'center', gap: CAPTION_GAP },
 });
