@@ -11,12 +11,12 @@ export function isBagPacked(items: Pick<PackingItem, 'isPacked'>[]): boolean {
 }
 
 /**
- * Bags that went from not-all-checked to all-checked between two snapshots.
- * A bag missing from `previous` (first render, a new member) never slams.
+ * PACKED slams only when a bag goes from not-all-checked to all-checked. A
+ * bag seen for the first time (`previous` null: mount, a refetch of a new
+ * bag) never slams, and nothing happens when a bag stops being full.
  */
-export function newlyPacked(previous: Record<string, boolean> | null, next: Record<string, boolean>): string[] {
-  if (!previous) return [];
-  return Object.keys(next).filter((bag) => next[bag] && previous[bag] === false);
+export function becamePacked(previous: boolean | null, next: boolean): boolean {
+  return previous === false && next;
 }
 
 export interface BagRect {

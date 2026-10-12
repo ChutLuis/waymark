@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bagAt, isBagPacked, newlyPacked, tagTilt } from '../bags';
+import { bagAt, becamePacked, isBagPacked, tagTilt } from '../bags';
 
 describe('isBagPacked', () => {
   it('needs at least one item, all ticked', () => {
@@ -9,21 +9,21 @@ describe('isBagPacked', () => {
   });
 });
 
-describe('newlyPacked', () => {
+describe('becamePacked', () => {
   it('slams on the transition to all-checked', () => {
-    expect(newlyPacked({ me: false, theo: true }, { me: true, theo: true })).toEqual(['me']);
+    expect(becamePacked(false, true)).toBe(true);
   });
 
   it('never slams on mount', () => {
-    expect(newlyPacked(null, { me: true })).toEqual([]);
+    expect(becamePacked(null, true)).toBe(false);
   });
 
-  it('ignores a bag it has not seen before', () => {
-    expect(newlyPacked({ me: false }, { me: false, ana: true })).toEqual([]);
+  it('stays still when a full bag stays full (a refetch)', () => {
+    expect(becamePacked(true, true)).toBe(false);
   });
 
   it('does nothing when a bag stops being full', () => {
-    expect(newlyPacked({ me: true }, { me: false })).toEqual([]);
+    expect(becamePacked(true, false)).toBe(false);
   });
 });
 

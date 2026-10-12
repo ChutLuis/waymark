@@ -11,7 +11,7 @@ import { rise } from '@/components/motion/keyframes';
 import { Bag } from '@/features/packing/Bag';
 import { LooseTag, type ClaimTarget } from '@/features/packing/LooseTag';
 import { PackingItemEditor } from '@/features/packing/PackingItemEditor';
-import { isBagPacked, newlyPacked, tagTilt, type BagRect } from '@/features/packing/bags';
+import { isBagPacked, tagTilt, type BagRect } from '@/features/packing/bags';
 import { usePackingList, useSavePackingItem, useSetPacked } from '@/features/packing/hooks';
 import { SHELL } from '@/features/trips/shellLayout';
 import { tabEntranceBase } from '@/features/trips/shellMotion';
@@ -93,11 +93,9 @@ export default function PackingScreen() {
   const [hiddenId, setHiddenId] = useState<string | null>(null);
   const [claimedIds, setClaimedIds] = useState<Set<string>>(() => new Set());
   const [claimKeys, setClaimKeys] = useState<Record<string, number>>({});
-  const [slamKeys, setSlamKeys] = useState<Record<string, number>>({});
   const rects = useSharedValue<BagRect[]>([]);
   const bagRefs = useRef(new Map<string, View>());
   const tossed = useRef(new Set<string>());
-  const packedBefore = useRef<Record<string, boolean> | null>(null);
 
   const openEditor = (item: PackingItem | null) => {
     setEditingItem(item);
@@ -122,23 +120,10 @@ export default function PackingScreen() {
     return map;
   }, [items]);
 
-  // PACKED slams on the transition to all-checked only, never on mount.
   const packedNow = useMemo(
     () => Object.fromEntries(bagOwners.map((m) => [m.userId, isBagPacked(byBag.get(m.userId) ?? [])])),
     [bagOwners, byBag],
   );
-  useEffect(() => {
-    if (packing.isPending || members.isPending) return;
-    const slammed = newlyPacked(packedBefore.current, packedNow);
-    packedBefore.current = packedNow;
-    if (slammed.length > 0) {
-      setSlamKeys((prev) => {
-        const next = { ...prev };
-        slammed.forEach((bag) => (next[bag] = (next[bag] ?? 0) + 1));
-        return next;
-      });
-    }
-  }, [packedNow, packing.isPending, members.isPending]);
 
   useEffect(() => {
     loose.forEach((i) => tossed.current.add(i.id));
@@ -259,7 +244,6 @@ export default function PackingScreen() {
                       hovered={hovered === m.userId}
                       claimedIds={claimedIds}
                       claimKey={claimKeys[m.userId] ?? 0}
-                      slamKey={slamKeys[m.userId] ?? 0}
                       onToggle={(item) => setPacked.mutate({ itemId: item.id, isPacked: !item.isPacked })}
                       onEdit={openEditor}
                     />

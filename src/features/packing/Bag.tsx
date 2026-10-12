@@ -1,6 +1,6 @@
-import { forwardRef, useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useLayoutEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Check } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { sampleTrack, useEntrance, useMotion, useTimeline } from '@/components/motion';
@@ -8,6 +8,7 @@ import { bagClaimSquash, bagSlamSquash, checkboxPop, claimRow, packedSlam } from
 import { haptic, hapticAfter } from '@/lib/haptics';
 import { motion, radius, shadows, useTheme } from '@/theme';
 import type { PackingItem } from '@/lib/types';
+import { becamePacked } from './bags';
 
 const GEO = {
   handle: { width: 46, height: 14, top: -12, stroke: 2 },
@@ -95,8 +96,6 @@ interface BagProps {
   claimedIds: Set<string>;
   /** Bumped when a tag lands in this bag. */
   claimKey: number;
-  /** Bumped when the bag goes from not-all-checked to all-checked. */
-  slamKey: number;
   onToggle: (item: PackingItem) => void;
   onEdit: (item: PackingItem) => void;
 }
@@ -107,7 +106,7 @@ interface BagProps {
  * stamp, which slams only when the bag becomes fully checked.
  */
 export const Bag = forwardRef<View, BagProps>(function Bag(
-  { title, items, packed, dragging, hovered, claimedIds, claimKey, slamKey, onToggle, onEdit },
+  { title, items, packed, dragging, hovered, claimedIds, claimKey, onToggle, onEdit },
   ref,
 ) {
   const { colors } = useTheme();
@@ -115,8 +114,11 @@ export const Bag = forwardRef<View, BagProps>(function Bag(
   const claimSquash = useTimeline(1);
   const slamSquash = useTimeline(1);
   const slam = useTimeline(1);
+  // The stamp is always mounted and hidden while the bag isn't full, so it
+  // can never paint at rest before it slams.
+  const stampShown = useSharedValue(packed ? 1 : 0);
+  const wasPacked = useRef<boolean | null>(null);
   const firstClaim = useRef(true);
-  const firstSlam = useRef(true);
 
   useEffect(() => {
     if (firstClaim.current) {
@@ -128,16 +130,22 @@ export const Bag = forwardRef<View, BagProps>(function Bag(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claimKey]);
 
-  useEffect(() => {
-    if (firstSlam.current) {
-      firstSlam.current = false;
+  // PACKED slams on the false → true change only, detected here before the
+  // frame paints: the slam drops to 0 and the stamp shows in the same tick.
+  // Mount and refetch stay still; a bag that stops being full loses it at once.
+  useLayoutEffect(() => {
+    const slams = becamePacked(wasPacked.current, packed);
+    wasPacked.current = packed;
+    if (!slams) {
+      stampShown.value = packed ? 1 : 0;
       return;
     }
     slam.run(motion.duration.slam);
+    stampShown.value = 1;
     slamSquash.run(motion.choreo.packing.slamSquash, motion.choreo.packing.slamSquashAt);
     return hapticAfter('medium', ms(motion.choreo.packing.slamContact));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slamKey]);
+  }, [packed]);
 
   const bagStyle = useAnimatedStyle(() => {
     const c = claimSquash.p.value;
@@ -158,7 +166,7 @@ export const Bag = forwardRef<View, BagProps>(function Bag(
     };
   });
   const stampStyle = useAnimatedStyle(() => ({
-    opacity: sampleTrack(packedSlam.opacity, slam.p.value, motion.easing.slam),
+    opacity: stampShown.value * sampleTrack(packedSlam.opacity, slam.p.value, motion.easing.slam),
     transform: [
       { rotate: `${sampleTrack(packedSlam.rotate, slam.p.value, motion.easing.slam)}deg` },
       { scale: sampleTrack(packedSlam.scale, slam.p.value, motion.easing.slam) },
@@ -213,13 +221,16 @@ export const Bag = forwardRef<View, BagProps>(function Bag(
             ]}
           />
         ) : null}
-        {packed ? (
-          <Animated.View style={[styles.packed, { borderColor: colors.success }, stampStyle]}>
-            <AppText role="packedStamp" tone="success">
-              PACKED
-            </AppText>
-          </Animated.View>
-        ) : null}
+        <Animated.View
+          pointerEvents="none"
+          accessibilityElementsHidden={!packed}
+          importantForAccessibility={packed ? 'auto' : 'no-hide-descendants'}
+          style={[styles.packed, { borderColor: colors.success }, stampStyle]}
+        >
+          <AppText role="packedStamp" tone="success">
+            PACKED
+          </AppText>
+        </Animated.View>
       </Animated.View>
     </View>
   );
