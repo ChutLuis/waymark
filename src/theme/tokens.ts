@@ -435,14 +435,14 @@ export const motion = {
     linear: [0, 0, 1, 1],
   },
   choreo: {
-    /** 01 · Home: deal, selection, bump and idle loops. */
+    /** 01 · Home: deal, the raised stack, bump and idle loops. */
     home: {
       dealBase: 150,
       dealContact: 450,
       shoeboxAt: 820,
       shoebox: 560,
-      /** Selecting a card: the pile drops in after it, card by card. */
-      pileStagger: 20,
+      /** The stack rises out of the Home card, the card above each 30 ms later. */
+      riseStagger: 30,
       bump: 320,
       press: 180,
       stripeCrawl: 3500,

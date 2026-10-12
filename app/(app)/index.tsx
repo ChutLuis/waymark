@@ -1,14 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useIsFocused, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  useAnimatedRef,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -16,13 +10,12 @@ import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { BrandMark } from '@/components/BrandMark';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { EmptyState, ErrorState } from '@/components/StateViews';
-import { easing, sampleTrack, useEntrance, useMotion } from '@/components/motion';
+import { sampleTrack, useEntrance } from '@/components/motion';
 import { greetingRise } from '@/components/motion/keyframes';
 import { haptic } from '@/lib/haptics';
 import { AvatarStamp } from '@/features/trips/SceneStamp';
-import { MailStack, shouldDeal, type CardActions } from '@/features/trips/MailStack';
+import { HomeCard, TripStack, shouldDeal, type CardActions, type HomeCardHandle } from '@/features/trips/TripWallet';
 import { Shoebox } from '@/features/trips/Shoebox';
-import { WALLET } from '@/features/trips/stack';
 import { TripCardSkeleton } from '@/features/trips/TripCardSkeleton';
 import { homeCovered, isCollapsing, onCollapsingChange, setExpandOrigin } from '@/features/trips/expandStore';
 import { markShellOpening } from '@/features/trips/shellMotion';
@@ -92,7 +85,8 @@ export default function TripsListScreen() {
   // Deal once per session, when the stack first shows with data.
   const [dealing] = useState(shouldDeal);
 
-  const openOnNow = (trip: TripListItem, actions: CardActions) => {
+  // Opening a trip from a card: it expands out of that card.
+  const openFromCard = (trip: TripListItem, actions: CardActions) => {
     haptic('selection');
     actions.press();
     actions.measure((rects) => {
@@ -107,33 +101,26 @@ export default function TripsListScreen() {
     router.push(`/trips/${trip.id}` as never);
   };
 
-  // The wallet: the stack follows the scroll, and a selected card locks it,
-  // with the stack's top just under the top of the screen and the rest of
-  // Home faded behind the pile.
-  const { ms } = useMotion();
-  const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  const scrollY = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
-  });
-  const [viewport, setViewport] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
-  const [stackY, setStackY] = useState(0);
-  const [selecting, setSelecting] = useState(false);
-  const below = useSharedValue(1);
-  // Scroll as far as the content allows towards the stack's top; the pile
-  // goes in whatever room that leaves below it.
-  const selectScroll = Math.max(0, Math.min(stackY - WALLET.selectedMargin, contentHeight - viewport));
-  const room = viewport - (stackY - selectScroll);
-  const onSelectedChange = useCallback(
-    (on: boolean) => {
-      setSelecting(on);
-      below.value = withTiming(on ? 0 : 1, { duration: ms(motion.duration.base), easing: easing('standard') });
-      if (on) scrollRef.current?.scrollTo({ y: selectScroll, animated: true });
-    },
-    [below, ms, scrollRef, selectScroll],
-  );
-  const belowStyle = useAnimatedStyle(() => ({ opacity: below.value }));
+  // Wallet style: Home shows one card; with more trips, tapping it raises
+  // all of them into a stack, and tapping one there opens it.
+  const homeCard = useRef<HomeCardHandle>(null);
+  const [stackFrom, setStackFrom] = useState<number | null>(null);
+  const front = stack[0];
+  const onHomeCard = (actions: CardActions) => {
+    if (!front) return;
+    if (stack.length < 2) {
+      openFromCard(front, actions);
+      return;
+    }
+    actions.press();
+    homeCard.current?.measureTop((y) => setStackFrom(y ?? insets.top));
+  };
+
+  // Envelope papers follow each trip's place in the default order.
+  const paperIndex = useMemo(() => {
+    const envelopes = stack.filter((t) => !onNowIds.has(t.id)).map((t) => t.id);
+    return (id: string) => Math.max(0, envelopes.indexOf(id));
+  }, [stack, onNowIds]);
 
   const coveredStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 - HOME_COVERED_SCALE * homeCovered.value }],
@@ -211,35 +198,27 @@ export default function TripsListScreen() {
             />
           </EmptyState>
         ) : (
-          <Animated.ScrollView
-            ref={scrollRef}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            scrollEnabled={!selecting}
-            onLayout={(e) => setViewport(e.nativeEvent.layout.height)}
-            onContentSizeChange={(_, h) => setContentHeight(h)}
+          <ScrollView
             contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + spacing.s12 }]}
             showsVerticalScrollIndicator={false}
           >
-            {stack.length > 0 ? (
-              <View style={styles.stackWrap} onLayout={(e) => setStackY(e.nativeEvent.layout.y)}>
-                <MailStack
-                  trips={stack}
-                  onNowIds={onNowIds}
+            {front ? (
+              <View style={styles.stackWrap}>
+                <HomeCard
+                  ref={homeCard}
+                  trip={front}
+                  onNow={onNowIds.has(front.id)}
                   viewerId={userId}
-                  focused={isFocused}
+                  paperIndex={paperIndex(front.id)}
+                  focused={isFocused && stackFrom === null}
                   collapsing={collapsing}
+                  count={stack.length}
+                  hidden={stackFrom !== null}
                   dealing={dealing}
-                  scrollY={scrollY}
-                  stackY={stackY}
-                  room={room}
-                  onSelectedChange={onSelectedChange}
-                  onOpenOnNow={openOnNow}
-                  onOpenTrip={openTrip}
+                  onPress={onHomeCard}
                 />
               </View>
             ) : null}
-            <Animated.View style={belowStyle} pointerEvents={selecting ? 'none' : 'auto'}>
             <Shoebox past={past} dealing={dealing} onOpen={openTrip} />
             <View style={styles.inviteRow}>
               <AppText role="bodySm" tone="secondary">
@@ -256,10 +235,23 @@ export default function TripsListScreen() {
                 </AppText>
               </Pressable>
             </View>
-            </Animated.View>
-          </Animated.ScrollView>
+          </ScrollView>
         )}
       </View>
+      {stackFrom !== null ? (
+        <TripStack
+          trips={stack}
+          onNowIds={onNowIds}
+          viewerId={userId}
+          paperIndex={paperIndex}
+          focused={isFocused}
+          collapsing={collapsing}
+          fromY={stackFrom}
+          onOpen={openFromCard}
+          onNewTrip={() => router.push('/trips/new')}
+          onClosed={() => setStackFrom(null)}
+        />
+      ) : null}
       <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.ink }, dimStyle]} />
     </Animated.View>
   );
@@ -295,8 +287,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: spacing.cardGutter, paddingTop: spacing.s7 },
   skeletonGap: { height: spacing.s5 },
   listContent: { paddingTop: spacing.s10 },
-  // Above the shoebox, so the pile can sit over it while a card is selected.
-  stackWrap: { marginHorizontal: spacing.cardGutter, zIndex: 1 },
+  stackWrap: { marginHorizontal: spacing.cardGutter },
   emptySecondary: { marginTop: spacing.s3 },
   inviteRow: {
     flexDirection: 'row',

@@ -1,82 +1,39 @@
 /**
- * The Home mail stack (Airmail v4 · 01), as pure functions: card positions
- * by depth, reordering, and the envelope faces' address wording.
+ * The Home trips (Airmail v4 · 01), as pure functions: the raised stack's
+ * card positions, reordering, and the envelope faces' address wording.
  */
 
-/** Every card is this tall; a card behind shows only its 38 pt header row. */
+/** Every trip card is this tall; an envelope's header row is 38 pt. */
 export const STACK_CARD_HEIGHT = 340;
 export const STACK_PEEK = 38;
-/** Horizontal inset (each side) of a card in the pile, by its place in it. */
-const PILE_INSETS = [5, 11, 18] as const;
-
-/** Wallet geometry: the pile under a selected card, and the scroll effects. */
+/**
+ * The all-trips stack, Wallet style: Home shows one card; tapping it raises
+ * every current trip into a vertical stack where each card peeks this much of
+ * itself above the next, the front card fully shown at the bottom.
+ */
 export const WALLET = {
-  /** Selected card sits this far below the top of the viewport. */
-  selectedMargin: 16,
-  /** How much of the pile's first card shows at the bottom of the screen. */
-  pileReveal: 64,
-  /** Each card behind it in the pile peeks this much lower. */
-  pileStep: 8,
-  /** Cards stuck at the top while scrolling peek this much under each other. */
-  stickStep: 3,
-  /** Pulling down past the top fans the cards apart by this much per card. */
-  spread: 0.22,
+  peek: 60,
+  /** Room above the first card under the close button. */
+  topPad: 8,
 } as const;
 
-/** Top of card `index` (0 = the top of the stack) in the resting stack. */
+/** Top of card `index` (0 = the top of the stack) in the raised stack. */
 export function walletTop(index: number): number {
-  return index * STACK_PEEK;
+  return WALLET.topPad + index * WALLET.peek;
 }
 
-/** Container height for `count` cards. */
-export function stackHeight(count: number): number {
-  return count === 0 ? 0 : (count - 1) * STACK_PEEK + STACK_CARD_HEIGHT;
-}
-
-export interface CardSlot {
-  top: number;
-  inset: number;
+/** Height of the raised stack holding `count` cards. */
+export function walletHeight(count: number): number {
+  return count === 0 ? 0 : walletTop(count - 1) + STACK_CARD_HEIGHT;
 }
 
 /**
- * Selected mode, Wallet style: the selected card at the stack's top, fully
- * shown; every other card in a pile at the bottom of the screen, in stack
- * order. `room` is the viewport height left below the stack's top once Home
- * has scrolled as far as it can towards it; tops are relative to the stack.
+ * Where the cards rise from: every card starts where the Home card sits and
+ * travels to its own slot, the front card at the bottom first, the ones above
+ * it after, `stagger` ms apart. Returns the delay for card `index`.
  */
-export function selectedLayout(count: number, selected: number, room: number): CardSlot[] {
-  const pileCount = count - 1;
-  const floor = STACK_CARD_HEIGHT + WALLET.selectedMargin;
-  const pileTop = Math.max(
-    floor,
-    room - WALLET.pileReveal - Math.max(0, pileCount - 1) * WALLET.pileStep,
-  );
-  let place = 0;
-  return Array.from({ length: count }, (_, i) => {
-    if (i === selected) return { top: 0, inset: 0 };
-    const slot = {
-      top: pileTop + place * WALLET.pileStep,
-      inset: PILE_INSETS[Math.min(pileCount - 1 - place, PILE_INSETS.length - 1)],
-    };
-    place += 1;
-    return slot;
-  });
-}
-
-/**
- * The scroll offset for a resting card (Wallet's sticky pile): once the stack
- * scrolls past the top of the viewport, each card sticks there, a few points
- * under the one before, until the front card itself would scroll; and pulling
- * down past the top fans the cards apart.
- *
- * `scrolled` is how far the stack's top is above the viewport's top (negative
- * while pulling down); `frontTop` is the front card's resting top.
- */
-export function walletScrollOffset(index: number, top: number, scrolled: number, frontTop: number): number {
-  'worklet';
-  if (scrolled < 0) return -scrolled * index * WALLET.spread;
-  const stick = Math.min(scrolled, frontTop) + index * WALLET.stickStep;
-  return Math.max(0, stick - top);
+export function riseDelay(index: number, count: number, stagger: number): number {
+  return Math.max(0, count - 1 - index) * stagger;
 }
 
 /**

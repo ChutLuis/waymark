@@ -7,59 +7,23 @@ import {
   isDaysAway,
   miniRouteX,
   reconcileOrder,
-  selectedLayout,
-  stackHeight,
-  walletScrollOffset,
+  riseDelay,
+  walletHeight,
   walletTop,
 } from '../stack';
 
-describe('wallet stack', () => {
-  it('peeks each card 38 pt below the one above', () => {
-    expect([0, 1, 2, 3].map(walletTop)).toEqual([0, 38, 76, 114]);
+describe('raised stack', () => {
+  it('peeks each card above the next', () => {
+    expect([0, 1, 2].map(walletTop)).toEqual([WALLET.topPad, WALLET.topPad + 60, WALLET.topPad + 120]);
   });
 
-  it('sizes the container to the cards', () => {
-    expect(stackHeight(4)).toBe(454);
-    expect(stackHeight(8)).toBe(606);
-    expect(stackHeight(1)).toBe(340);
-    expect(stackHeight(0)).toBe(0);
-  });
-});
-
-describe('selectedLayout', () => {
-  it('puts the selected card on top and the rest in a pile at the bottom', () => {
-    const slots = selectedLayout(4, 2, 784);
-    expect(slots[2]).toEqual({ top: 0, inset: 0 });
-    const pile = [slots[0], slots[1], slots[3]];
-    expect(pile.map((p) => p.top)).toEqual([704, 712, 720]);
-    // The nearest card in the pile is the widest.
-    expect(pile[2].inset).toBeLessThan(pile[0].inset);
+  it('shows the front card in full at the bottom', () => {
+    expect(walletHeight(4)).toBe(walletTop(3) + STACK_CARD_HEIGHT);
+    expect(walletHeight(0)).toBe(0);
   });
 
-  it('never lets the pile cover the selected card', () => {
-    const slots = selectedLayout(8, 0, 400);
-    for (const slot of slots.slice(1)) expect(slot.top).toBeGreaterThanOrEqual(STACK_CARD_HEIGHT + WALLET.selectedMargin);
-  });
-});
-
-describe('walletScrollOffset', () => {
-  it('rests while the stack is in view', () => {
-    expect(walletScrollOffset(2, 76, 0, 114)).toBe(0);
-  });
-
-  it('sticks scrolled cards at the top, each a few points under the last', () => {
-    expect(walletScrollOffset(0, 0, 50, 114)).toBe(50);
-    expect(walletScrollOffset(1, 38, 50, 114)).toBe(50 + WALLET.stickStep - 38);
-    expect(walletScrollOffset(3, 114, 50, 114)).toBe(0);
-  });
-
-  it('stops sticking once the front card itself scrolls', () => {
-    expect(walletScrollOffset(0, 0, 400, 114)).toBe(114);
-  });
-
-  it('fans the cards apart when pulled down', () => {
-    expect(walletScrollOffset(0, 0, -100, 114)).toBe(0);
-    expect(walletScrollOffset(3, 114, -100, 114)).toBeCloseTo(100 * 3 * WALLET.spread, 6);
+  it('raises the front card first and the top card last', () => {
+    expect([0, 1, 2, 3].map((i) => riseDelay(i, 4, 30))).toEqual([90, 60, 30, 0]);
   });
 });
 
