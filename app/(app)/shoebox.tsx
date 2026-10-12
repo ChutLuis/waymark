@@ -13,7 +13,7 @@ import { easing, sampleTrack, useEntrance, useMotion } from '@/components/motion
 import { sheetStampPrint } from '@/components/motion/keyframes';
 import { DESTINATION_ART } from '@/features/trips/destinationArt';
 import { matchDestination } from '@/features/trips/destinations';
-import { albumSheet } from '@/features/trips/expandStore';
+import { albumSheet, primeShell } from '@/features/trips/expandStore';
 import { markShellOpening } from '@/features/trips/shellMotion';
 import { albumSummary, postmarkMonth, sheetHeading, sheetsByYear } from '@/features/trips/shoebox';
 import { splitTrips } from '@/features/trips/sort';
@@ -163,6 +163,7 @@ export default function ShoeboxScreen() {
     else router.replace('/');
   };
   const openTrip = (trip: TripListItem) => {
+    primeShell(false);
     markShellOpening();
     router.push(`/trips/${trip.id}` as never);
   };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Slot, useIsFocused, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
@@ -140,7 +140,13 @@ export default function TripTabsLayout() {
   const bandIn = useTimeline(origin ? 0 : 1);
   const tabBarIn = useTimeline(origin ? 0 : 1);
 
-  useEffect(() => {
+  // The transition starts on the shell's first layout rather than on mount,
+  // so a slow first paint can't eat the expand: Home primed its first frame
+  // at the card (or off-screen right).
+  const started = useRef(false);
+  const startOpening = () => {
+    if (started.current) return;
+    started.current = true;
     const { expand } = motion.choreo;
     if (origin) {
       const config = { duration: ms(motion.duration.expand), easing: easing('standard') };
@@ -159,9 +165,7 @@ export default function TripTabsLayout() {
       shellPush.value = 0;
       shellPush.value = withTiming(1, { duration: ms(motion.duration.push), easing: easing('standard') });
     }
-    // Mount only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
   // ——— Closing: collapse back onto the card, or pop. ———
   useEffect(
@@ -277,7 +281,7 @@ export default function TripTabsLayout() {
 
   return (
     <View testID="trip-shell" style={styles.screen}>
-      <Animated.View style={[styles.clip, clipStyle]}>
+      <Animated.View style={[styles.clip, clipStyle]} onLayout={startOpening}>
         <Animated.View
           style={[
             styles.stage,

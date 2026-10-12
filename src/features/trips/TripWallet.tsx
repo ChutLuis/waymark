@@ -7,6 +7,8 @@ import { hapticAfter } from '@/lib/haptics';
 import { motion } from '@/theme';
 import { EnvelopeFace } from './EnvelopeFace';
 import { OnNowPostcard, type OnNowPostcardHandle } from './OnNowPostcard';
+import { ScenePreload } from './TripScene';
+import { matchDestination } from './destinations';
 import type { Rect } from './expandStore';
 import type { TripListItem } from './hooks';
 
@@ -61,6 +63,7 @@ const TripFace = forwardRef<TripFaceHandle, TripFaceProps>(function TripFace(
 ) {
   const postcard = useRef<OnNowPostcardHandle>(null);
   const envelope = useRef<View>(null);
+  const country = matchDestination(trip.destination);
   useImperativeHandle(ref, () => ({
     measure: (done) => {
       if (onNow) {
@@ -83,6 +86,7 @@ const TripFace = forwardRef<TripFaceHandle, TripFaceProps>(function TripFace(
     <OnNowPostcard ref={postcard} trip={trip} viewerId={viewerId} front={live} collapsing={collapsing} />
   ) : (
     <View ref={envelope} collapsable={false}>
+      {live && country ? <ScenePreload country={country} /> : null}
       <EnvelopeFace
         trip={trip}
         others={trip.memberProfiles.filter((m) => m.id !== viewerId).map((m) => m.displayName)}

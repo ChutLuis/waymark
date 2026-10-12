@@ -22,6 +22,7 @@ import {
 import { iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
 import { takePendingInviteCode } from '@/features/invites/pendingInvite';
+import { primeShell } from '@/features/trips/expandStore';
 
 const LENGTH = INVITE_CODE_LENGTH;
 
@@ -59,13 +60,17 @@ export default function JoinScreen() {
   const artWidth = Math.min(width, 440) - spacing.gutter * 2 - 14;
 
   const openTrip = () => {
-    if (preview.data) router.replace(`/trips/${preview.data.tripId}` as never);
+    if (preview.data) {
+      primeShell(false);
+      router.replace(`/trips/${preview.data.tripId}` as never);
+    }
   };
 
   const onJoin = async () => {
     setBanner(null);
     try {
       const tripId = await acceptInvite.mutateAsync(code);
+      primeShell(false);
       router.replace(`/trips/${tripId}` as never);
     } catch (error) {
       setBanner(friendlyMessage(error as Error));

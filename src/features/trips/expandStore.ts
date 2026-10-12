@@ -49,6 +49,17 @@ export function setExpandOrigin(next: ExpandOrigin): void {
   origin = next;
 }
 
+/**
+ * Called just before navigating to a trip: puts the shell's first frame at
+ * the card (an expand) or off-screen right (a push), so a slow first paint
+ * never shows the shell full-screen before its transition starts.
+ */
+export function primeShell(expanding: boolean): void {
+  reveal.value = expanding ? 0 : 1;
+  shellContent.value = expanding ? 0 : 1;
+  shellPush.value = expanding ? 1 : 0;
+}
+
 /** The origin for `tripId` if Home just measured it, else null. */
 export function takeFreshOrigin(tripId: string): ExpandOrigin | null {
   if (!origin || origin.tripId !== tripId || Date.now() - origin.at > ORIGIN_TTL_MS) return null;

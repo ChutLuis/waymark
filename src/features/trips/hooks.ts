@@ -68,8 +68,19 @@ export function useTrips() {
 }
 
 export function useTrip(tripId: string) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: tripKeys.trip(tripId),
+    // Opened from Home, the trip is already in the list: start from that row
+    // so the shell has its header on the first frame of the expand, and
+    // refetch on the list's schedule.
+    initialData: () => {
+      const listed = queryClient.getQueryData<TripListItem[]>(tripKeys.list())?.find((t) => t.id === tripId);
+      if (!listed) return undefined;
+      const { memberProfiles: _members, ...trip } = listed;
+      return trip;
+    },
+    initialDataUpdatedAt: () => queryClient.getQueryState(tripKeys.list())?.dataUpdatedAt,
     queryFn: async (): Promise<Trip> => {
       const { data, error } = await supabase
         .from('trips')

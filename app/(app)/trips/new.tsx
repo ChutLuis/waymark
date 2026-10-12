@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { CreateTripSheet } from '@/features/trips/CreateTripSheet';
+import { primeShell } from '@/features/trips/expandStore';
 
 /**
  * Route wrapper so "start a trip" is deep-linkable; presented as a
@@ -11,7 +12,10 @@ export default function NewTripScreen() {
     <CreateTripSheet
       visible
       onClose={() => router.back()}
-      onCreated={(trip) => router.replace(`/trips/${trip.id}` as never)}
+      onCreated={(trip) => {
+        primeShell(false);
+        router.replace(`/trips/${trip.id}` as never);
+      }}
     />
   );
 }

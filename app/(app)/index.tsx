@@ -25,7 +25,14 @@ import {
 import { TripRail } from '@/features/trips/TripRail';
 import { Shoebox } from '@/features/trips/Shoebox';
 import { TripCardSkeleton } from '@/features/trips/TripCardSkeleton';
-import { albumSheet, homeCovered, isCollapsing, onCollapsingChange, setExpandOrigin } from '@/features/trips/expandStore';
+import {
+  albumSheet,
+  homeCovered,
+  isCollapsing,
+  onCollapsingChange,
+  primeShell,
+  setExpandOrigin,
+} from '@/features/trips/expandStore';
 import { markShellOpening } from '@/features/trips/shellMotion';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { splitTrips } from '@/features/trips/sort';
@@ -102,6 +109,7 @@ export default function TripsListScreen() {
     actions.press();
     actions.measure((rects) => {
       if (rects) setExpandOrigin({ tripId: trip.id, ...rects, at: Date.now() });
+      primeShell(rects !== null);
       markShellOpening();
       router.push(`/trips/${trip.id}` as never);
     });

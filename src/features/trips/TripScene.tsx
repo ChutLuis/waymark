@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
   window: {
     overflow: 'hidden',
   },
+  preload: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   fill: {
     position: 'absolute',
     left: 0,
@@ -177,3 +178,18 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 });
+
+/**
+ * Loads a destination's scene, hidden and paused, so the trip header that
+ * opens next finds it already parsed: Android caches a scene's composition by
+ * its JSON, so the header's own view starts on the live frame instead of the
+ * still (README 02). Home mounts it behind an envelope card, which has no
+ * live scene of its own, while Home is focused.
+ */
+export function ScenePreload({ country }: { country: CountryKey }) {
+  return (
+    <View style={styles.preload} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <LottieView source={DESTINATION_ART[country].scene} autoPlay={false} loop={false} style={styles.fill} />
+    </View>
+  );
+}

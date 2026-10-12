@@ -22,6 +22,7 @@ import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { useMyProfile } from '@/features/auth/hooks';
 import { setPendingInviteCode, takePendingInviteCode } from '@/features/invites/pendingInvite';
 import { ThemeProvider, useTheme } from '@/theme';
+import { primeShell } from '@/features/trips/expandStore';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -101,6 +102,7 @@ function RootStack() {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const tripId = response.notification.request.content.data?.tripId;
       if (typeof tripId === 'string') {
+        primeShell(false);
         router.push(`/trips/${tripId}` as never);
       }
     });
