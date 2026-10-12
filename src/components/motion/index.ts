@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   Easing,
   cancelAnimation,
@@ -72,4 +72,19 @@ export function useTimeline(initial = 1): Timeline {
     [p],
   );
   return { p, run, set };
+}
+
+/**
+ * An entrance that plays once on mount: starts hidden at progress 0 and runs
+ * after `delay`. When `enabled` is false (the element mounted after the tab's
+ * entrance, e.g. a different day), it simply sits at rest.
+ */
+export function useEntrance(duration: number, delay: number, enabled = true): SharedValue<number> {
+  const timeline = useTimeline(enabled ? 0 : 1);
+  useEffect(() => {
+    if (enabled) timeline.run(duration, delay);
+    // Mount only: an entrance never replays on re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return timeline.p;
 }

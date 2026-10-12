@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
-import * as Haptics from 'expo-haptics';
-import { useReducedMotion } from '@/components/useReducedMotion';
+import { useMotion, useTimeline, sampleTrack } from '@/components/motion';
+import { postmarkSquash } from '@/components/motion/keyframes';
+import { haptic } from '@/lib/haptics';
+import { motion } from '@/theme';
 import type { ItineraryStatus } from '@/lib/types';
 import { DESTINATION_ART, NEUTRAL_STOP_STAMP } from './destinationArt';
 import type { CountryKey } from './destinations';
@@ -20,12 +23,10 @@ const STATUS_FRAME: Record<ItineraryStatus, number> = {
   confirmed: 17,
   done: 35,
 };
-/** Haptic accents: the stamp lands ~frame 10, the postmark ~5 frames into done. */
-const HAPTIC_FRAMES = { stamp: 10, postmark: 23 };
 
-/** Display width/height in a list row. */
-export const STOP_STAMP_WIDTH = 30;
-export const STOP_STAMP_HEIGHT = 35;
+/** Display width/height on the Plan route (README 03: 36 × 42). */
+export const STOP_STAMP_WIDTH = 36;
+export const STOP_STAMP_HEIGHT = 42;
 
 interface StopStampProps {
   status: ItineraryStatus;
@@ -34,6 +35,11 @@ interface StopStampProps {
   /** Size override; the Lottie keeps its 96x112 aspect (6/7). */
   width?: number;
   height?: number;
+  /**
+   * Called on the contact frame of a forward change (the stamp landing, the
+   * postmark hitting), so the row's status tag can stamp in on the same frame.
+   */
+  onContact?: (status: ItineraryStatus) => void;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -41,7 +47,8 @@ interface StopStampProps {
  * Marker-driven stop stamp (LottieView, loop={false}). Seeks to the frame for
  * the current status without playing on mount; plays the transition when the
  * status changes forward; seeks instantly when it moves backwards. Haptics fire
- * as the stamp and postmark land. All seeking details live here.
+ * on contact (README 03/04): the stamp lands 300 ms into `confirm` (light),
+ * the postmark hits 330 ms into `done` (medium) and the stamp squashes.
  *
  * Seeking uses the imperative `play(start, end)`; `play(f, f)` jumps to a frame.
  */
@@ -50,11 +57,15 @@ export function StopStamp({
   country,
   width = STOP_STAMP_WIDTH,
   height = STOP_STAMP_HEIGHT,
+  onContact,
   style,
 }: StopStampProps) {
-  const reducedMotion = useReducedMotion();
+  const { reduced, ms } = useMotion();
   const ref = useRef<LottieView>(null);
   const prevFrame = useRef<number | null>(null);
+  const squash = useTimeline(1);
+  const contactRef = useRef(onContact);
+  contactRef.current = onContact;
 
   const source = country ? DESTINATION_ART[country].stopStamp : NEUTRAL_STOP_STAMP;
   const targetFrame = STATUS_FRAME[status];
@@ -69,46 +80,42 @@ export function StopStamp({
       ref.current?.pause();
     };
 
-    if (reducedMotion) {
+    if (from === null) {
       seek(targetFrame);
-      // Haptics still fire under Reduce Motion.
-      if (from !== null && targetFrame > from) {
-        if (targetFrame >= HAPTIC_FRAMES.postmark) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-        } else if (targetFrame >= HAPTIC_FRAMES.stamp) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        }
-      }
       return;
     }
-    if (from === null || targetFrame <= from) {
-      // Mount, or a backwards move (e.g. done → planned): seek, don't animate.
+    if (targetFrame < from) {
+      // Going backwards never animates.
       seek(targetFrame);
+      haptic('selection');
       return;
+    }
+    if (targetFrame === from) return;
+
+    // Contact times run from the start of each marker segment.
+    const frameMs = (frame: number) => ((frame - from) / FPS) * 1000;
+    const contacts: { status: ItineraryStatus; at: number }[] = [];
+    if (from < STATUS_FRAME.confirmed && targetFrame >= STATUS_FRAME.confirmed) {
+      contacts.push({ status: 'confirmed', at: frameMs(STATUS_FRAME.planned) + motion.choreo.stamp.confirmContact });
+    }
+    if (targetFrame === STATUS_FRAME.done) {
+      contacts.push({ status: 'done', at: frameMs(STATUS_FRAME.confirmed) + motion.choreo.stamp.doneContact });
     }
 
-    const startFrame = from;
-    ref.current?.play(startFrame, targetFrame);
-    const frameAt = (frame: number) => ((frame - startFrame) / FPS) * 1000;
-    const timersForRun: ReturnType<typeof setTimeout>[] = [];
-    if (startFrame < HAPTIC_FRAMES.stamp && HAPTIC_FRAMES.stamp <= targetFrame) {
-      timersForRun.push(
-        setTimeout(
-          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
-          frameAt(HAPTIC_FRAMES.stamp),
-        ),
-      );
-    }
-    if (startFrame < HAPTIC_FRAMES.postmark && HAPTIC_FRAMES.postmark <= targetFrame) {
-      timersForRun.push(
-        setTimeout(
-          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}),
-          frameAt(HAPTIC_FRAMES.postmark),
-        ),
-      );
-    }
-    return () => timersForRun.forEach(clearTimeout);
-  }, [targetFrame, reducedMotion, source]);
+    if (reduced) seek(targetFrame);
+    else ref.current?.play(from, targetFrame);
+
+    const timers = contacts.map(({ status: landed, at }) =>
+      setTimeout(() => {
+        // Haptics still fire under Reduce Motion; the frame jumps to the end.
+        haptic(landed === 'done' ? 'medium' : 'light');
+        if (landed === 'done') squash.run(motion.choreo.stamp.squash);
+        contactRef.current?.(landed);
+      }, ms(Math.max(0, at))),
+    );
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetFrame, source]);
 
   // A freshly loaded animation starts at frame 0 (mount, or a destination
   // change). Seek it to the right frame without playing — this is also the web
@@ -129,8 +136,17 @@ export function StopStamp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, source]);
 
+  const squashStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: sampleTrack(postmarkSquash.scale, squash.p.value, motion.easing.standard) }],
+  }));
+
   return (
-    <View style={[{ width, height }, style]} pointerEvents="none" accessibilityElementsHidden>
+    <Animated.View
+      style={[{ width, height }, squashStyle, style]}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       <LottieView
         ref={ref}
         source={source}
@@ -139,7 +155,7 @@ export function StopStamp({
         onAnimationLoaded={apply}
         style={styles.lottie}
       />
-    </View>
+    </Animated.View>
   );
 }
 

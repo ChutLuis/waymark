@@ -1,36 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateViews';
-import { PerforatedStamp, STAMP_SHADOW_MARGIN } from '@/components/airmail/PerforatedStamp';
-import { AirmailBorder } from '@/components/airmail/AirmailBorder';
+import { sampleTrack, useEntrance } from '@/components/motion';
+import { rise } from '@/components/motion/keyframes';
 import { ItineraryItemEditor } from '@/features/itinerary/ItineraryItemEditor';
+import { DayStrip, DAY_STRIP_HEIGHT } from '@/features/itinerary/DayStrip';
+import { PlanRoute, ROUTE_TOP_ROOM, type RouteDay } from '@/features/itinerary/PlanRoute';
 import {
   buildDayRows,
   defaultSelectedDay,
-  minutesUntil,
   nextStop as findNextStop,
-  nowRowIndex,
-  statusLabel,
   tripDaysList,
   type DayRow,
 } from '@/features/itinerary/group';
+import { stopsSummary } from '@/features/itinerary/route';
 import { useItinerary, useSetItineraryStatus } from '@/features/itinerary/hooks';
-import { StopStamp } from '@/features/trips/StopStamp';
-import { StampStill } from '@/features/trips/SceneStamp';
-import {
-  matchDestination,
-  countdownLabel,
-  formatTripRange,
-  memberNamesWording,
-  freeTimeLabel,
-} from '@/features/trips/destinations';
-import { useTrip, useTripMembers } from '@/features/trips/hooks';
-import { useAuth } from '@/features/auth/AuthContext';
-import { dayStampLayout, fontFamilies, hairlineWidth, shadows, spacing, useTheme } from '@/theme';
-import { formatTime, formatTimePadded, toDateOnly } from '@/lib/format/date';
+import { matchDestination } from '@/features/trips/destinations';
+import { SHELL } from '@/features/trips/shellLayout';
+import { tabEntranceBase } from '@/features/trips/shellMotion';
+import { useTrip } from '@/features/trips/hooks';
+import { motion, radius, spacing, useTheme } from '@/theme';
+import { toDateOnly } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
 
 const NEXT_STATUS: Record<ItineraryItem['status'], ItineraryItem['status'] | null> = {
@@ -39,117 +33,69 @@ const NEXT_STATUS: Record<ItineraryItem['status'], ItineraryItem['status'] | nul
   done: null,
 };
 
-/** The per-tab title row: trip name, "with … · dates", and the Add action. */
-function TitleRow({ title, subtitle, onAdd }: { title: string; subtitle: string; onAdd: () => void }) {
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** How long the tab's entrance is "due": rows mounting after it sit still. */
+const ENTRANCE_WINDOW =
+  motion.choreo.expand.tabBase + motion.choreo.plan.plane + motion.duration.flight + motion.choreo.plan.nowTag;
+
+function weekdayName(key: string): string {
+  const [y, m, d] = key.split('-').map(Number);
+  return WEEKDAYS[new Date(y, m - 1, d).getDay()];
+}
+
+/** The day title block: "DAY 6 OF 10", the weekday, the day's summary, and Add. */
+function TitleBlock({
+  kicker,
+  title,
+  summary,
+  base,
+  onAdd,
+}: {
+  kicker: string;
+  title: string;
+  summary: string;
+  base: number;
+  onAdd: () => void;
+}) {
   const { colors } = useTheme();
+  const keys = rise(16);
+  const p = useEntrance(motion.duration.rise, base + motion.choreo.plan.title);
+  const style = useAnimatedStyle(() => ({
+    opacity: sampleTrack(keys.opacity, p.value, motion.easing.standard),
+    transform: [{ translateY: sampleTrack(keys.translateY, p.value, motion.easing.standard) }],
+  }));
   return (
-    <View style={styles.titleRow}>
+    <Animated.View style={[styles.titleRow, style]}>
       <View style={styles.titleBlock}>
-        <AppText role="tripTitle" numberOfLines={2}>
+        <AppText role="kicker" tone="secondary">
+          {kicker}
+        </AppText>
+        <AppText role="tripTitle" numberOfLines={1} style={styles.dayTitle}>
           {title}
         </AppText>
-        {subtitle ? <AppText role="meta" tone="secondary" style={styles.subtitle}>{subtitle}</AppText> : null}
+        <AppText role="meta" tone="secondary" style={styles.summary}>
+          {summary}
+        </AppText>
       </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Add an itinerary item"
         onPress={onAdd}
-        style={({ pressed }) => [
-          styles.actionPill,
-          { backgroundColor: colors.ink },
-          pressed && styles.pressed,
-        ]}
+        style={({ pressed }) => [styles.addButton, { backgroundColor: colors.ink }, pressed && styles.pressed]}
       >
         <Plus size={18} color={colors.paper} strokeWidth={2.4} />
-        <AppText role="button" style={[styles.actionLabel, { color: colors.paper }]}>
+        <AppText role="pillLabel" style={{ color: colors.paper }}>
           Add
         </AppText>
       </Pressable>
-    </View>
-  );
-}
-
-function DayStamp({
-  weekday,
-  day,
-  selected,
-  label,
-  onPress,
-}: {
-  weekday: string;
-  day: number | string;
-  selected: boolean;
-  label: string;
-  onPress: () => void;
-}) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => pressed && styles.pressed}
-    >
-      <PerforatedStamp width={dayStampLayout.width} height={dayStampLayout.height} size="sm" tone={selected ? 'ink' : 'paper'}>
-        <View style={styles.dayStampContent}>
-          {/* Always three letters (SAT, SUN, MON): the word never shrinks or
-              wraps (N26). */}
-          <AppText
-            role="tag"
-            numberOfLines={1}
-            style={{
-              flexShrink: 0,
-              color: selected ? colors.paper : colors.ink2,
-            }}
-          >
-            {weekday}
-          </AppText>
-          <AppText
-            style={{ fontFamily: fontFamilies.extrabold, fontSize: 19, lineHeight: 22, color: selected ? colors.paper : colors.ink }}
-          >
-            {day}
-          </AppText>
-        </View>
-      </PerforatedStamp>
-    </Pressable>
-  );
-}
-
-function StopStampCell({
-  item,
-  country,
-  onPress,
-  onOpen,
-}: {
-  item: ItineraryItem;
-  country: ReturnType<typeof matchDestination>;
-  onPress: () => void;
-  onOpen: () => void;
-}) {
-  const nextStatus = NEXT_STATUS[item.status];
-  const accessibilityLabel = nextStatus
-    ? `Mark ${item.title} ${statusLabel(nextStatus).toLowerCase()}`
-    : `Edit ${item.title}`;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      onPress={item.status === 'done' ? onOpen : onPress}
-      style={({ pressed }) => [styles.stampCell, pressed && styles.pressed]}
-    >
-      <StopStamp status={item.status} country={country} />
-    </Pressable>
+    </Animated.View>
   );
 }
 
 export default function PlanScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
-  const { colors } = useTheme();
-  const { userId } = useAuth();
-  const dayStripRef = useRef<ScrollView>(null);
   const trip = useTrip(tripId);
-  const members = useTripMembers(tripId);
   const itinerary = useItinerary(tripId);
   const setStatus = useSetItineraryStatus(tripId);
 
@@ -157,12 +103,24 @@ export default function PlanScreen() {
   const [editingItem, setEditingItem] = useState<ItineraryItem | null>(null);
   const [selectedDayChoice, setSelectedDayChoice] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [base] = useState(tabEntranceBase);
+  const [entering, setEntering] = useState(true);
+  const entranceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Keep the NOW line roughly current while the screen is open.
+  // Keep the plane and NOW roughly current while the screen is open.
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
+
+  // The entrance plays once per tab visit; rows that mount later (another
+  // day) sit still.
+  useEffect(() => {
+    entranceTimer.current = setTimeout(() => setEntering(false), base + ENTRANCE_WINDOW);
+    return () => {
+      if (entranceTimer.current) clearTimeout(entranceTimer.current);
+    };
+  }, [base]);
 
   const country = matchDestination(trip.data?.destination ?? null);
   const todayKey = toDateOnly(now);
@@ -202,13 +160,6 @@ export default function PlanScreen() {
   }, [hasDates, items, selectedDay, untimed]);
   const next = useMemo(() => findNextStop(items, now), [items, now]);
 
-  const others = (members.data ?? [])
-    .filter((m) => m.userId !== userId)
-    .map((m) => m.profile.displayName);
-  const wording = memberNamesWording(others);
-  const range = formatTripRange(trip.data?.startDate ?? null, trip.data?.endDate ?? null);
-  const subtitle = [wording, range].filter(Boolean).join(' · ');
-
   const openEditor = (item: ItineraryItem | null) => {
     setEditingItem(item);
     setEditorVisible(true);
@@ -219,22 +170,52 @@ export default function PlanScreen() {
     return <ErrorState title="Couldn't load the itinerary" onRetry={() => itinerary.refetch()} />;
   }
 
-  const nowIndex = selectedDay === todayKey ? nowRowIndex(rows, now) : null;
+  const dayItems = rows.flatMap((r) => (r.type === 'item' ? [r.item] : []));
+  const routeDay: RouteDay =
+    !hasDates || selectedDay === 'ANY' || !selectedDay
+      ? 'untimed'
+      : selectedDay < todayKey
+        ? 'past'
+        : selectedDay > todayKey
+          ? 'future'
+          : 'today';
+  const toGo =
+    routeDay === 'past'
+      ? 0
+      : routeDay === 'today'
+        ? dayItems.filter((i) => (i.startAt ? new Date(i.startAt) > now : i.status !== 'done')).length
+        : dayItems.filter((i) => i.status !== 'done').length;
 
-  // Fixed 48 pt stamps scroll sideways (the cut-off one says so). When the tab
-  // opens on a day past the edge, scroll just far enough to show that day's
-  // stamp with the strip's end padding after it.
-  const onDayStripLayout = (visibleWidth: number) => {
-    const index = strip.findIndex((d) => d.key === selectedDay);
-    if (index < 0) return;
-    const pitch = dayStampLayout.width + dayStampLayout.gap;
-    const stampRight = spacing.s7 + index * pitch + dayStampLayout.width;
-    if (stampRight <= visibleWidth) return;
-    dayStripRef.current?.scrollTo({ x: stampRight + spacing.s7 - visibleWidth, animated: false });
-  };
+  const dayIndex = days.findIndex((d) => d.key === selectedDay);
+  const kicker = !hasDates
+    ? 'NO DATES YET'
+    : selectedDay === 'ANY'
+      ? 'ANYTIME'
+      : dayIndex >= 0
+        ? `DAY ${dayIndex + 1} OF ${days.length}`
+        : '';
+  const title = !hasDates
+    ? 'All stops'
+    : selectedDay === 'ANY'
+      ? 'Unscheduled'
+      : selectedDay
+        ? weekdayName(selectedDay)
+        : '';
 
   return (
     <View style={styles.screen}>
+      {strip.length > 0 ? (
+        <DayStrip
+          days={strip}
+          selectedKey={selectedDay}
+          todayKey={todayKey}
+          base={base}
+          entering={entering}
+          onSelect={setSelectedDayChoice}
+        />
+      ) : (
+        <View style={styles.stripSpacer} />
+      )}
       {/* flex:1 + minHeight:0 bounds this scroller to the pane on web, so the
           page no longer grows past the window and pushes the tab bar's bottom
           edge below it (N16). */}
@@ -244,54 +225,13 @@ export default function PlanScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <TitleRow
-          title={trip.data?.name ?? ''}
-          subtitle={subtitle}
+        <TitleBlock
+          kicker={kicker}
+          title={title}
+          summary={stopsSummary(dayItems.length, toGo)}
+          base={base}
           onAdd={() => openEditor(null)}
         />
-
-        {next ? (
-          <View style={styles.nextCardWrap}>
-            <AirmailBorder padding={6}>
-              <View style={styles.nextInner}>
-                <View style={styles.nextTop}>
-                  <AppText role="kickerLg">
-                    NEXT · {countdownLabel(minutesUntil(next.startAt as string, now))}
-                  </AppText>
-                  <StampStill country={country} />
-                </View>
-                <AppText role="cardTitleLg" style={styles.nextTitle}>
-                  {next.title}
-                </AppText>
-                <AppText role="body" tone="secondary" style={styles.nextLine}>
-                  {[formattedTime(next), next.location ?? next.description].filter(Boolean).join(' · ')}
-                </AppText>
-              </View>
-            </AirmailBorder>
-          </View>
-        ) : null}
-
-        {strip.length > 0 ? (
-          <ScrollView
-            ref={dayStripRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            onLayout={(event) => onDayStripLayout(event.nativeEvent.layout.width)}
-            style={styles.dayStripScroll}
-            contentContainerStyle={styles.dayStrip}
-          >
-            {strip.map((d) => (
-              <DayStamp
-                key={d.key}
-                weekday={d.weekday}
-                day={d.day}
-                label={d.label}
-                selected={selectedDay === d.key}
-                onPress={() => setSelectedDayChoice(d.key)}
-              />
-            ))}
-          </ScrollView>
-        ) : null}
 
         {items.length === 0 ? (
           <EmptyState
@@ -301,96 +241,29 @@ export default function PlanScreen() {
             actionLabel="Add an item"
             onAction={() => openEditor(null)}
           />
+        ) : rows.length === 0 ? (
+          <View style={styles.emptyDay}>
+            <AppText tone="muted" role="bodySm">
+              Nothing planned for this day yet.
+            </AppText>
+          </View>
         ) : (
-          <View style={[styles.sheet, { backgroundColor: colors.paper }]}>
-            <View style={[styles.marginRule, { backgroundColor: colors.marginRule }]} />
-            {rows.length === 0 ? (
-              <View style={styles.emptyDay}>
-                <AppText tone="muted" role="bodySm">
-                  Nothing planned for this day yet.
-                </AppText>
-              </View>
-            ) : (
-              rows.map((row, index) => {
-                const nowBefore = nowIndex === index;
-                if (row.type === 'free') {
-                  return (
-                    <View
-                      key={row.key}
-                      style={[
-                        styles.timelineRow,
-                        styles.freeTimelineRow,
-                        { borderBottomColor: colors.hairline, borderBottomWidth: hairlineWidth },
-                      ]}
-                    >
-                      {nowBefore ? <NowLine /> : null}
-                      <View style={[styles.cellTime]} />
-                      <View style={[styles.cellBody, styles.freeRow]}>
-                        <AppText role="metaSm" tone="muted" style={styles.freeText}>
-                          {freeTimeLabel(row.minutes)}
-                        </AppText>
-                      </View>
-                      <View style={styles.cellStamp} />
-                    </View>
-                  );
-                }
-                const item = row.item;
-                const done = item.status === 'done';
-                const isNext = next?.id === item.id;
-                return (
-                  <View key={row.key} style={[styles.timelineRow, { borderBottomColor: colors.hairline, borderBottomWidth: hairlineWidth }]}>
-                    {nowBefore ? <NowLine /> : null}
-                    <View style={styles.cellTime}>
-                      <AppText role="time" tone={done ? 'muted' : 'primary'} style={styles.timeText}>
-                        {item.startAt ? formattedTime(item) : '—'}
-                      </AppText>
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Edit ${item.title}`}
-                      onPress={() => openEditor(item)}
-                      style={({ pressed }) => [styles.cellBody, pressed && styles.pressed]}
-                    >
-                      <AppText role="rowTitle" tone={done ? 'muted' : 'primary'}>
-                        {item.title}
-                      </AppText>
-                      {item.location ?? item.description ? (
-                        <AppText role="bodySm" tone={done ? 'muted' : 'secondary'} style={styles.itemSub}>
-                          {item.location ?? item.description}
-                        </AppText>
-                      ) : null}
-                      <View style={styles.tagRow}>
-                        {isNext ? (
-                          <View style={[styles.nextTag, { backgroundColor: colors.ink }]}>
-                            <AppText role="tag" style={{ color: colors.paper }}>NEXT</AppText>
-                          </View>
-                        ) : null}
-                        <AppText
-                          role="tag"
-                          style={{
-                            color: done ? colors.ink3 : item.status === 'confirmed' ? colors.ink : colors.ink2,
-                          }}
-                        >
-                          {statusLabel(item.status)}
-                        </AppText>
-                      </View>
-                    </Pressable>
-                    <View style={styles.cellStamp}>
-                      <StopStampCell
-                        item={item}
-                        country={country}
-                        onPress={() => {
-                          const target = NEXT_STATUS[item.status];
-                          if (target) setStatus.mutate({ itemId: item.id, status: target });
-                        }}
-                        onOpen={() => openEditor(item)}
-                      />
-                    </View>
-                  </View>
-                );
-              })
-            )}
-            {nowIndex === rows.length && selectedDay === todayKey ? <NowLine trailing /> : null}
+          <View style={styles.routeWrap}>
+            <PlanRoute
+              key={selectedDay ?? 'all'}
+              rows={rows}
+              country={country}
+              nextId={next?.id ?? null}
+              now={now}
+              day={routeDay}
+              base={base}
+              entering={entering}
+              onAdvance={(item) => {
+                const target = NEXT_STATUS[item.status];
+                if (target) setStatus.mutate({ itemId: item.id, status: target });
+              }}
+              onEdit={openEditor}
+            />
           </View>
         )}
       </ScrollView>
@@ -406,95 +279,34 @@ export default function PlanScreen() {
   );
 }
 
-function NowLine({ trailing = false }: { trailing?: boolean }) {
-  const { colors } = useTheme();
-  const now = new Date();
-  return (
-    <View style={trailing ? styles.nowRowTrailing : styles.nowRow}>
-      <View style={[styles.nowLine, { backgroundColor: colors.airmailBlue }]} />
-      <View style={[styles.nowChip, { backgroundColor: colors.airmailBlue }]}>
-        <AppText role="tag" style={{ color: colors.paper }}>
-          NOW {formatTime(now.toISOString())}
-        </AppText>
-      </View>
-    </View>
-  );
-}
-
-function formattedTime(item: ItineraryItem): string {
-  return item.startAt ? formatTimePadded(item.startAt) : '';
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, minHeight: 0 },
+  stripSpacer: { height: DAY_STRIP_HEIGHT },
   scroller: { flex: 1, minHeight: 0 },
-  content: { flexGrow: 1, gap: 0 },
+  content: { flexGrow: 1, paddingBottom: SHELL.tabContentClearance },
   titleRow: {
-    paddingTop: spacing.s6,
-    paddingHorizontal: 20,
+    paddingTop: spacing.s9 - 4,
     paddingLeft: spacing.gutter,
+    paddingRight: spacing.s7,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.s5,
   },
   titleBlock: { flex: 1, minWidth: 0 },
-  subtitle: { marginTop: 2 },
-  actionPill: {
-    height: 44,
-    paddingLeft: spacing.s5,
-    paddingRight: spacing.s7,
-    borderRadius: 999,
+  dayTitle: { marginTop: 4 },
+  summary: { marginTop: 2, fontSize: 15, lineHeight: 20 },
+  addButton: {
+    height: 40,
+    marginTop: 8,
+    paddingLeft: 10,
+    paddingRight: 14,
+    borderRadius: radius.codeBox,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  actionLabel: { fontSize: 15, lineHeight: 20 },
   pressed: { opacity: 0.7 },
-  nextCardWrap: { marginTop: spacing.s6, marginHorizontal: spacing.cardGutter, boxShadow: shadows.card },
-  nextInner: { paddingTop: 12, paddingBottom: 14, paddingLeft: 16, paddingRight: 14 },
-  nextTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  nextTitle: { marginTop: 4 },
-  nextLine: { marginTop: 4, fontSize: 16, lineHeight: 22 },
-  dayStrip: {
-    paddingTop: spacing.s7,
-    paddingBottom: STAMP_SHADOW_MARGIN,
-    paddingHorizontal: spacing.s7,
-    gap: dayStampLayout.gap,
-  },
-  // The Plan scroll content grows (item 14); without this the horizontal strip
-  // would absorb half the free space, leaving a band above the sheet. The
-  // ScrollView clips, so its padding keeps room for the stamps' shadow and the
-  // matching negative margin keeps the sheet where it was.
-  dayStripScroll: { flexGrow: 0, marginBottom: -STAMP_SHADOW_MARGIN },
-  dayStampContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 1 },
-  sheet: {
-    flexGrow: 1,
-    marginTop: spacing.s7,
-    marginHorizontal: spacing.cardGutter,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    overflow: 'hidden',
-    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
-  },
-  marginRule: { position: 'absolute', left: 66, top: 0, bottom: 0, width: 1.5 },
-  timelineRow: { flexDirection: 'row', minHeight: 50 },
-  freeTimelineRow: { minHeight: 32 },
-  cellTime: { width: 66, paddingTop: 14, paddingLeft: 12 },
-  timeText: { fontSize: 15 },
-  cellBody: { flex: 1, paddingTop: 12, paddingBottom: 12, paddingLeft: 14, paddingRight: 4 },
-  cellStamp: { width: 44, marginTop: 6, alignItems: 'center' },
-  stampCell: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
-  itemSub: { marginTop: 2 },
-  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  nextTag: { paddingVertical: 3, paddingHorizontal: 6, borderRadius: 3 },
-  freeRow: { height: 32, justifyContent: 'center', paddingTop: 0, paddingBottom: 0 },
-  freeText: { fontSize: 15, lineHeight: 20 },
-  // Start at the body column (past the margin rule at x=66) so the rule
-// doesn't cut through the sentence (item 8).
-  emptyDay: { minHeight: 50, paddingVertical: 14, paddingLeft: 80, paddingRight: 20, justifyContent: 'center' },
-  nowRow: { position: 'absolute', left: 0, right: 0, top: -15, height: 30, justifyContent: 'center' },
-  nowRowTrailing: { height: 30, justifyContent: 'center' },
-  nowLine: { position: 'absolute', left: 0, right: 0, top: 14, height: 2 },
-  nowChip: { marginLeft: 10, alignSelf: 'flex-start', paddingVertical: 3, paddingHorizontal: 6, borderRadius: 3 },
+  routeWrap: { marginTop: spacing.s3, paddingTop: ROUTE_TOP_ROOM },
+  emptyDay: { minHeight: 50, paddingVertical: 14, paddingHorizontal: spacing.gutter, justifyContent: 'center' },
 });

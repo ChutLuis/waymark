@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Trash2 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronLeft, Trash2 } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { EmptyStampSlot, ErrorState, LoadingState } from '@/components/StateViews';
@@ -12,14 +13,26 @@ import { InviteCard } from '@/features/invites/InviteCard';
 import { useLeaveTrip, useTrip, useTripMembers } from '@/features/trips/hooks';
 import { DESTINATION_INFO, matchDestination, stampName, tripDatesKicker } from '@/features/trips/destinations';
 import { useAuth } from '@/features/auth/AuthContext';
-import { hairlineWidth, iconStrokeWidth, spacing, useTheme } from '@/theme';
+import { fontFamilies, hairlineWidth, iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { confirmDestructive } from '@/lib/confirm';
+import { haptic } from '@/lib/haptics';
+import { getLastTab } from '@/features/trips/shellMotion';
+
+const TAB_LABEL = { plan: 'Plan', packing: 'Packing', notes: 'Notes' } as const;
 
 export default function TripTabScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { userId } = useAuth();
+  const [backLabel] = useState(() => TAB_LABEL[getLastTab()]);
+
+  const goBack = () => {
+    haptic('selection');
+    if (router.canGoBack()) router.back();
+    else router.replace(`/trips/${tripId}` as never);
+  };
   const trip = useTrip(tripId);
   const members = useTripMembers(tripId);
   const leaveTrip = useLeaveTrip();
@@ -52,7 +65,20 @@ export default function TripTabScreen() {
   );
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <View style={styles.topBar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Back to ${backLabel}`}
+          onPress={goBack}
+          style={({ pressed }) => [styles.backPill, { backgroundColor: colors.paper, borderColor: colors.divider }, pressed && styles.pressed]}
+        >
+          <ChevronLeft size={20} color={colors.ink} strokeWidth={iconStrokeWidth} />
+          <AppText role="pillLabel" style={styles.backLabel}>
+            {backLabel}
+          </AppText>
+        </Pressable>
+      </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.titleRow}>
           <View style={styles.titleBlock}>
@@ -206,6 +232,18 @@ function formatJoined(iso: string | null): string {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingBottom: 100 },
+  topBar: { height: 52, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' },
+  backPill: {
+    height: 40,
+    paddingLeft: 8,
+    paddingRight: 12,
+    borderRadius: 4,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  backLabel: { fontFamily: fontFamilies.semibold },
   titleRow: {
     paddingTop: spacing.s6,
     paddingHorizontal: 20,

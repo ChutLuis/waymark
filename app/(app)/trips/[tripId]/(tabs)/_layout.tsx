@@ -1,32 +1,29 @@
 import { useEffect, useMemo } from 'react';
-import { Animated, Easing, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Slot, useIsFocused, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
-import { AppText } from '@/components/AppText';
-import { AvatarStack } from '@/components/Avatar';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ErrorState, LoadingState } from '@/components/StateViews';
 import { PatternBand } from '@/components/airmail/PatternBand';
-import { useReducedMotion } from '@/components/useReducedMotion';
-import { useLazyAnimatedValue } from '@/components/useLazyAnimatedValue';
+import { easing, useMotion } from '@/components/motion';
+import { haptic } from '@/lib/haptics';
+import { ShellTopBar } from '@/features/trips/ShellTopBar';
 import { TripScene } from '@/features/trips/TripScene';
 import { TripTabBar, type TripTab } from '@/features/trips/TripTabBar';
+import { SHELL } from '@/features/trips/shellLayout';
+import { setLastTab } from '@/features/trips/shellMotion';
 import { useTrip, useTripMembers } from '@/features/trips/hooks';
 import { DESTINATION_ART } from '@/features/trips/destinationArt';
-import {
-  DESTINATION_INFO,
-  matchDestination,
-  type CountryKey,
-} from '@/features/trips/destinations';
-import { fontFamilies, radius, useTheme } from '@/theme';
+import { DESTINATION_INFO, matchDestination, type CountryKey } from '@/features/trips/destinations';
+import { motion, useTheme } from '@/theme';
 
 /**
- * Trip detail shell: one shared header scene and the bottom tab bar stay
- * mounted while the tab panes swap underneath, so a failing pane never takes
- * the header down and the Lottie never remounts between tabs. On wide (web)
- * layouts the whole shell becomes a centered column.
+ * Trip detail shell: one shared header scene, the top bar and the floating
+ * tab stub stay mounted while the tab panes swap underneath, so a failing pane
+ * never takes the header down and the Lottie never remounts between tabs. On
+ * wide (web) layouts the whole shell becomes a centered column.
  */
 export default function TripTabsLayout() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -36,7 +33,7 @@ export default function TripTabsLayout() {
   const pathname = usePathname();
   const isFocused = useIsFocused();
   const { width, height } = useWindowDimensions();
-  const reducedMotion = useReducedMotion();
+  const { ms } = useMotion();
 
   const trip = useTrip(tripId);
   const members = useTripMembers(tripId);
@@ -45,9 +42,8 @@ export default function TripTabsLayout() {
     ? 'packing'
     : pathname.endsWith('/notes')
       ? 'notes'
-      : pathname.endsWith('/settings')
-        ? 'trip'
-        : 'plan';
+      : 'plan';
+  useEffect(() => setLastTab(activeTab), [activeTab]);
 
   const isPlan = activeTab === 'plan';
   const country = useMemo(
@@ -59,42 +55,56 @@ export default function TripTabsLayout() {
   // 680 (a tablet/desktop window) the full-bleed layout pushed the tab labels
   // to the window edges (N16). `screenWidth` is the column width the content
   // and hero must fit into.
-  const columnWidth = Math.min(680, width);
-  const screenWidth = columnWidth;
+  const screenWidth = Math.min(680, width);
 
   // No art for this trip: show the README fallback banner on every tab.
   const hasArt = country !== null || Boolean(trip.data?.coverImagePath);
 
-  // Scale the design's 196/104 hero heights by the column width so wide (web)
-  // layouts don't show mostly sky; the safe-area floor keeps the header row
+  // Scale the design's 196/104 header heights by the column width so wide
+  // (web) layouts don't show mostly sky; the safe-area floor keeps the top bar
   // clear of the notch on native.
-  const heroHeight = Math.max((196 / 390) * screenWidth, insets.top + 149);
+  const heroHeight = Math.max((SHELL.heroHeight / 390) * screenWidth, insets.top + 149);
   // The 104 banner already includes the status bar. Without art every tab uses
   // this collapsed height (no 196 hero, no animation) so a Berlin/Narnia trip
   // doesn't open on a blank block.
-  const collapsedHeight = Math.max((104 / 390) * screenWidth, insets.top + 57);
+  const collapsedHeight = Math.max((SHELL.bannerHeight / 390) * screenWidth, insets.top + 57);
   const targetHeight = hasArt && isPlan ? heroHeight : collapsedHeight;
 
-  // Animate the header height without remounting the Lottie: it is a pure clip
-  // over one mounted hero scene. The fallback banner never animates.
-  const headerHeight = useLazyAnimatedValue(targetHeight);
+  // On Plan the pane rides up over the header so the day stamps hang across
+  // its bottom edge (y 156 of 196), but never over the top bar's buttons: the
+  // short paper banner (no art) only lends the stamps' drop-in room, if that.
+  const topBarBottom = insets.top + SHELL.topBarHeight;
+  const planOverlap = !isPlan
+    ? 0
+    : [SHELL.dayStripOverhang + SHELL.dayStripDropRoom, SHELL.dayStripDropRoom].find(
+        (overlap) => targetHeight - overlap >= topBarBottom,
+      ) ?? 0;
+
+  // Animate the header height on the UI thread without remounting the Lottie:
+  // it is a pure clip over one mounted hero scene. The fallback banner never
+  // animates.
+  const headerHeight = useSharedValue(targetHeight);
   useEffect(() => {
-    Animated.timing(headerHeight, {
-      toValue: targetHeight,
-      duration: reducedMotion || !hasArt ? 0 : 300,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [targetHeight, headerHeight, reducedMotion, hasArt]);
+    headerHeight.value = withTiming(targetHeight, {
+      duration: hasArt ? ms(motion.duration.header) : 0,
+      easing: easing('standard'),
+    });
+  }, [targetHeight, headerHeight, hasArt, ms]);
+  const headerStyle = useAnimatedStyle(() => ({ height: headerHeight.value }));
 
   // Over art, follow the scene. Without art, follow the theme (dark icons in
-// light mode, light icons in dark) — the paper banner is light in light mode
-// and navy in dark mode (item 08, correction 2).
+  // light mode, light icons in dark) — the paper banner is light in light mode
+  // and navy in dark mode (item 08, correction 2).
   const statusBarStyle: 'light' | 'dark' = country
     ? DESTINATION_INFO[country].statusBar
     : scheme === 'dark'
       ? 'light'
       : 'dark';
+
+  const openTrip = () => {
+    haptic('selection');
+    router.push(`/trips/${tripId}/settings` as never);
+  };
 
   return (
     <View
@@ -121,12 +131,12 @@ export default function TripTabsLayout() {
             {/* Only while focused, so the style doesn't outlive the screen. */}
             {isFocused ? <StatusBar style={statusBarStyle} /> : null}
             <Animated.View
-              style={[styles.header, { height: headerHeight, backgroundColor: hasArt ? undefined : colors.paper }]}
+              style={[styles.header, headerStyle, { backgroundColor: hasArt ? undefined : colors.paper }]}
             >
               {/* One hero scene, mounted once; the animated container clips it to
-                  the collapsed height on the non-Plan tabs so the Lottie never
-                  remounts. Positioned absolutely so the back row and avatars sit
-                  over it. Unknown destinations show the README paper fallback. */}
+                  the collapsed height on Packing and Notes so the Lottie never
+                  remounts. Unknown destinations show the README paper fallback.
+                  It pauses while the Trip page covers the shell (unfocused). */}
               {hasArt ? (
                 <TripScene
                   country={country}
@@ -139,55 +149,21 @@ export default function TripTabsLayout() {
                 />
               ) : null}
               <View style={{ height: insets.top }} />
-              <View style={styles.headerRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to your trips"
-                  onPress={() => router.replace('/')}
-                  style={({ pressed }) => [
-                    styles.backPill,
-                    { backgroundColor: hasArt ? colors.glass : colors.bg },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <ChevronLeft size={22} color={colors.ink} strokeWidth={2.2} />
-                  <AppText role="body" style={{ fontFamily: fontFamilies.semibold, fontSize: 16, lineHeight: 20 }}>
-                    Trips
-                  </AppText>
-                </Pressable>
-                <AvatarStack
-                  profiles={(members.data ?? []).map((m) => m.profile)}
-                  size={36}
-                  surfaceColor={hasArt ? colors.glass : colors.paper}
-                />
-              </View>
-              {hasArt && country ? (
-                <Animated.View
-                  pointerEvents="none"
-                  style={[
-                    styles.captionChip,
-                    {
-                      backgroundColor: colors.paper,
-                      opacity: headerHeight.interpolate({
-                        inputRange: [collapsedHeight, heroHeight],
-                        outputRange: [0, 1],
-                        extrapolate: 'clamp',
-                      }),
-                    },
-                  ]}
-                >
-                  <AppText role="tag" style={{ letterSpacing: 0.8 }}>
-                    {DESTINATION_INFO[country].chip}
-                  </AppText>
-                </Animated.View>
-              ) : null}
+              <ShellTopBar
+                tripName={trip.data.name}
+                members={(members.data ?? []).map((m) => m.profile)}
+                overArt={hasArt}
+                onBack={() => router.replace('/')}
+                onOpenTrip={openTrip}
+              />
+              <PatternBand
+                pattern={country ? DESTINATION_INFO[country].pattern : 'airmail'}
+                height={SHELL.bandHeight}
+                style={styles.band}
+              />
             </Animated.View>
-            <PatternBand
-              pattern={country ? DESTINATION_INFO[country].pattern : 'airmail'}
-              height={isPlan ? 12 : 10}
-            />
             <OfflineBanner />
-            <View testID="trip-scroll-area" style={styles.pane}>
+            <View testID="trip-scroll-area" style={[styles.pane, { marginTop: -planOverlap }]}>
               <Slot />
             </View>
             <TripTabBar tripId={tripId} active={activeTab} />
@@ -213,32 +189,8 @@ const styles = StyleSheet.create({
   // and content never run past the window (N16).
   columnClamped: { width: '100%', maxWidth: 680, alignSelf: 'center' },
   header: { overflow: 'hidden' },
-  headerRow: {
-    height: 52,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backPill: {
-    height: 40,
-    paddingLeft: 8,
-    paddingRight: 14,
-    borderRadius: radius.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  captionChip: {
-    position: 'absolute',
-    left: 16,
-    bottom: 12,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: radius.chip,
-  },
+  band: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   // minHeight 0 lets the tab's scroller shrink below its content on web, so the
   // tab bar stays on the window's bottom edge (N16).
-  pane: { flex: 1, minHeight: 0, overflow: 'hidden' },
-  pressed: { opacity: 0.7 },
+  pane: { flex: 1, minHeight: 0 },
 });

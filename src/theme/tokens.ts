@@ -460,6 +460,11 @@ export const motion = {
       /** Collapse: the shell content fades before the clip shrinks. */
       collapseContent: 160,
     },
+    /** Shared · trip shell. */
+    shell: {
+      /** The tab indicator's slide (indicator easing overshoots). */
+      indicator: 440,
+    },
     /** Plan entrance offsets from b, and the route's idle march. */
     plan: {
       title: 60,
