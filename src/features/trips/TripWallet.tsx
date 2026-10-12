@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type RefObject } from 'react';
-import { BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { Layers, Plus, X } from 'lucide-react-native';
@@ -311,12 +311,19 @@ export function TripStack({
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { ms } = useMotion();
+  const { height: windowHeight } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
   const [closing, setClosing] = useState(false);
   const shade = useSharedValue(0);
   // Top to bottom: the front card (on now, else the soonest) is last.
   const cards = useMemo(() => [...trips].reverse(), [trips]);
   const count = cards.length;
   const contentTop = insets.top + CLOSE_SIZE + spacing.s3;
+  const contentBottom = insets.bottom + spacing.s7;
+  // A tall stack opens scrolled to its end, so the card that was tapped lands
+  // in full at the bottom and the rest reach up behind it, as in Wallet.
+  const startScroll = Math.max(0, contentTop + walletHeight(count) + contentBottom - windowHeight);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     haptic('selection');
@@ -351,7 +358,7 @@ export function TripStack({
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={closing ? 'none' : 'auto'}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, shadeStyle]} />
-      <Animated.View style={[styles.topBar, { paddingTop: insets.top }, shadeStyle]}>
+      <Animated.View style={[styles.topBar, { paddingTop: insets.top, backgroundColor: colors.bg }, shadeStyle]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close all trips"
@@ -363,11 +370,25 @@ export function TripStack({
         <AppText role="kicker" tone="secondary">
           ALL TRIPS · {count}
         </AppText>
-        <View style={styles.close} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="New trip"
+          onPress={onNewTrip}
+          style={({ pressed }) => [styles.close, { backgroundColor: colors.paper, boxShadow: shadows.pill }, pressed && styles.pressed]}
+        >
+          <Plus size={22} color={colors.ink} strokeWidth={2.4} />
+        </Pressable>
       </Animated.View>
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={{ paddingTop: contentTop, paddingBottom: insets.bottom + spacing.s12 }}
+        contentOffset={{ x: 0, y: startScroll }}
+        onContentSizeChange={() => {
+          if (scrolled) return;
+          setScrolled(true);
+          scrollRef.current?.scrollTo({ y: startScroll, animated: false });
+        }}
+        contentContainerStyle={{ paddingTop: contentTop, paddingBottom: contentBottom }}
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.stack, { height: walletHeight(count) }]}>
@@ -377,7 +398,7 @@ export function TripStack({
               trip={trip}
               index={index}
               count={count}
-              fromTop={fromY - contentTop}
+              fromTop={fromY - contentTop + startScroll}
               closing={closing}
               onNow={onNowIds.has(trip.id)}
               viewerId={viewerId}
@@ -388,17 +409,6 @@ export function TripStack({
             />
           ))}
         </View>
-        <Animated.View style={shadeStyle}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="New trip"
-            onPress={onNewTrip}
-            style={({ pressed }) => [styles.newTrip, pressed && styles.pressed]}
-          >
-            <Plus size={16} color={colors.ink} strokeWidth={2.4} />
-            <AppText role="link">New trip</AppText>
-          </Pressable>
-        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -434,13 +444,5 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   stack: { marginHorizontal: spacing.cardGutter },
   card: { position: 'absolute', left: 0, right: 0, height: STACK_CARD_HEIGHT },
-  newTrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    minHeight: 44,
-    marginTop: spacing.s7,
-  },
   pressed: { opacity: 0.7 },
 });
