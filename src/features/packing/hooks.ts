@@ -69,7 +69,25 @@ export function useSavePackingItem(tripId: string) {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.list(tripId) }),
+    // An edit (a tag dropped into a bag, a rename) shows at once and rolls back
+    // if the write fails; a new item waits for its row.
+    onMutate: async ({ itemId, input }) => {
+      if (!itemId) return { previous: undefined };
+      await queryClient.cancelQueries({ queryKey: keys.list(tripId) });
+      const previous = queryClient.getQueryData<PackingItem[]>(keys.list(tripId));
+      queryClient.setQueryData<PackingItem[]>(keys.list(tripId), (items) =>
+        items?.map((item) =>
+          item.id === itemId
+            ? { ...item, label: input.label, quantity: input.quantity, assignedTo: input.assignedTo ?? null }
+            : item,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(keys.list(tripId), context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.list(tripId) }),
   });
 }
 
