@@ -110,7 +110,7 @@ export function PostcardNote({ body, kicker, from, country, tripName, tilt, onEd
             <View style={styles.side}>
               {art ? (
                 <PerforatedStamp width={GEO.stamp.width} height={GEO.stamp.height} size="xs">
-                  <Image source={art.sceneStampStill} style={styles.fill} contentFit="cover" />
+                  <Image source={art.sceneStampStill} style={styles.stampArt} contentFit="cover" />
                 </PerforatedStamp>
               ) : (
                 <View />
@@ -169,5 +169,7 @@ const styles = StyleSheet.create({
   scene: { padding: GEO.border, transform: [{ rotateY: '180deg' }] },
   sceneWindow: { flex: 1, borderRadius: 1, overflow: 'hidden' },
   fill: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
+  // Absolute children are inset from the stamp's edge (README: inset 5).
+  stampArt: { position: 'absolute', left: 5, top: 5, right: 5, bottom: 5 },
   caption: { position: 'absolute', left: 8, bottom: 8, paddingVertical: 3, paddingHorizontal: 8, borderRadius: radius.chip },
 });

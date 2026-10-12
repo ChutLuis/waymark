@@ -78,6 +78,8 @@ export interface Palette {
   /** Packing drop slot fill, and its hovered fill. */
   slotFill: string;
   slotHover: string;
+  /** The PAR AVION label: printed airmail blue, fixed in both themes. */
+  parAvion: string;
   /** Postmark ring and cancel lines printed over stamp paper. */
   postmarkRing: string;
   postmarkText: string;
@@ -128,6 +130,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     waxText: '#F3E7D2',
     slotFill: 'rgba(226,233,238,0.6)',
     slotHover: 'rgba(36,71,154,0.12)',
+    parAvion: '#24479A',
     postmarkRing: 'rgba(21,34,59,0.72)',
     postmarkText: 'rgba(21,34,59,0.85)',
     cancelInk: 'rgba(21,34,59,0.62)',
@@ -174,6 +177,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     waxText: '#F3E7D2',
     slotFill: 'rgba(15,23,41,0.6)',
     slotHover: 'rgba(126,156,240,0.16)',
+    parAvion: '#24479A',
     postmarkRing: 'rgba(21,34,59,0.72)',
     postmarkText: 'rgba(21,34,59,0.85)',
     cancelInk: 'rgba(21,34,59,0.62)',

@@ -28,8 +28,8 @@ import type { SheetDay } from './sheet';
 const CELL = { width: 64, height: 72 } as const;
 const COLUMNS = 5;
 const ART = { side: 6, top: 6, bottom: 17 } as const;
-/** PerforatedStamp pads its content 5 pt inside the edge. */
-const STAMP_PAD = 5;
+/** Absolute children are inset from the stamp's edge, not its padding. */
+const LABEL_BLEED = 5;
 const RING = { size: 50, left: 8, top: 12, rule: 28 } as const;
 const LINES = { firstRowLeft: 60, left: 4, top: 20, count: 4, pitch: 8, half: 8, amp: 3, stroke: 1.6 } as const;
 /** Used stamps' art is washed back to read as desaturated (80%). */
@@ -104,12 +104,7 @@ function SheetStamp({
   });
   const washStyle = useAnimatedStyle(() => ({ opacity: day.used ? USED_WASH * wash.value : 0 }));
   const art = country ? DESTINATION_ART[country] : null;
-  const artBox = {
-    left: ART.side * k - STAMP_PAD,
-    right: ART.side * k - STAMP_PAD,
-    top: ART.top * k - STAMP_PAD,
-    bottom: ART.bottom * k - STAMP_PAD,
-  };
+  const artBox = { left: ART.side * k, right: ART.side * k, top: ART.top * k, bottom: ART.bottom * k };
 
   return (
     <Animated.View style={[{ width, height, zIndex: day.today ? 2 : 1 }, day.today ? { boxShadow: shadows.todayStamp } : null, style]}>
@@ -129,7 +124,7 @@ function SheetStamp({
         <AppText
           role="stampLabel"
           numberOfLines={1}
-          style={[styles.label, { bottom: ART.top * k - STAMP_PAD, color: day.today ? colors.airmailBlue : colors.stampInk }]}
+          style={[styles.label, { bottom: ART.top * k, color: day.today ? colors.airmailBlue : colors.stampInk }]}
         >
           {day.label}
         </AppText>
@@ -305,7 +300,7 @@ const styles = StyleSheet.create({
   grid: { marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', alignSelf: 'center' },
   art: { position: 'absolute', overflow: 'hidden' },
   initial: { alignItems: 'center', justifyContent: 'center' },
-  label: { position: 'absolute', left: -STAMP_PAD, right: -STAMP_PAD, textAlign: 'center' },
+  label: { position: 'absolute', left: -LABEL_BLEED, right: -LABEL_BLEED, textAlign: 'center' },
   ring: { position: 'absolute', borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', gap: 2, zIndex: 3 },
   ringRule: { height: 1 },
   band: { position: 'absolute', overflow: 'hidden', zIndex: 3 },

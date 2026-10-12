@@ -31,12 +31,12 @@ interface EnvelopeFaceProps {
 function ParAvion() {
   const { colors } = useTheme();
   return (
-    <View style={[styles.parAvion, { backgroundColor: colors.airmailBlue }]}>
-      <View pointerEvents="none" style={[styles.parAvionRule, { borderColor: colors.paper }]} />
-      <AppText role="parAvion" style={{ color: colors.paper }}>
+    <View style={[styles.parAvion, { backgroundColor: colors.parAvion }]}>
+      <View pointerEvents="none" style={[styles.parAvionRule, { borderColor: colors.stampPaper }]} />
+      <AppText role="parAvion" style={{ color: colors.stampPaper }}>
         PAR AVION
       </AppText>
-      <AppText role="parAvionSub" style={{ color: colors.paper }}>
+      <AppText role="parAvionSub" style={{ color: colors.stampPaper }}>
         by air mail
       </AppText>
     </View>
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   parAvionRule: { position: 'absolute', left: 2, top: 2, right: 2, bottom: 2, borderWidth: 1, borderRadius: 1 },
   stamp: { position: 'absolute', right: 18, top: 50, transform: [{ rotate: '2.2deg' }] },
-  stampArt: { position: 'absolute', left: 1, top: 1, right: 1, bottom: 1 },
+  stampArt: { position: 'absolute', left: STAMP.inset, top: STAMP.inset, right: STAMP.inset, bottom: STAMP.inset },
   initialPanel: { alignItems: 'center', justifyContent: 'center', gap: 2 },
   waymark: { fontSize: 6, lineHeight: 7, letterSpacing: 0.8 },
   address: { position: 'absolute', left: 40, right: 24, top: 148 },
