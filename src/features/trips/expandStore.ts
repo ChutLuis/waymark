@@ -30,6 +30,8 @@ export const reveal = makeMutable(1);
 export const shellContent = makeMutable(1);
 /** Standard push for a trip opened without a card: 0 = off-screen right. */
 export const shellPush = makeMutable(1);
+/** The shoebox album over Home: 0 = off-screen right. */
+export const albumSheet = makeMutable(0);
 /** The Trip page (sheet of stamps) over the shell: 0 = off-screen right. */
 export const tripSheet = makeMutable(0);
 /** 1 while the shell covers Home (drives Home's scale and dim). */

@@ -56,6 +56,16 @@ export default function AppLayout() {
             contentStyle: { backgroundColor: 'transparent' },
           }}
         />
+        {/* The shoebox album pushes and pops itself over Home, like the Trip page. */}
+        <Stack.Screen
+          name="shoebox"
+          options={{
+            presentation: 'transparentModal',
+            animation: 'none',
+            gestureEnabled: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
         {/* The create-trip sheet draws its own scrim over the list. */}
         <Stack.Screen
           name="trips/new"

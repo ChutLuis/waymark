@@ -25,7 +25,7 @@ import {
 import { TripRail } from '@/features/trips/TripRail';
 import { Shoebox } from '@/features/trips/Shoebox';
 import { TripCardSkeleton } from '@/features/trips/TripCardSkeleton';
-import { homeCovered, isCollapsing, onCollapsingChange, setExpandOrigin } from '@/features/trips/expandStore';
+import { albumSheet, homeCovered, isCollapsing, onCollapsingChange, setExpandOrigin } from '@/features/trips/expandStore';
 import { markShellOpening } from '@/features/trips/shellMotion';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { splitTrips } from '@/features/trips/sort';
@@ -38,6 +38,9 @@ import { toDateOnly } from '@/lib/format/date';
 /** Home underneath an open trip: scaled to .93 about (50%, 45%), dimmed 12%. */
 const HOME_COVERED_SCALE = 0.07;
 const HOME_COVERED_DIM = 0.12;
+/** Under the shoebox album Home slides 80 pt left and dims to 86%. */
+const ALBUM_SHIFT = 80;
+const ALBUM_DIM = 0.14;
 
 function isOnNow(trip: TripListItem, today: string): boolean {
   if (!trip.startDate || !trip.endDate) return false;
@@ -104,11 +107,6 @@ export default function TripsListScreen() {
     });
   };
 
-  const openTrip = (trip: TripListItem) => {
-    markShellOpening();
-    router.push(`/trips/${trip.id}` as never);
-  };
-
   // Home shows one trip; the rail picks another. The pick lasts while the app
   // runs; each launch starts on the on-now (else the soonest) trip.
   const { ms } = useMotion();
@@ -143,9 +141,19 @@ export default function TripsListScreen() {
   }, [stack, onNowIds]);
 
   const coveredStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 - HOME_COVERED_SCALE * homeCovered.value }],
+    transform: [
+      { translateX: -ALBUM_SHIFT * albumSheet.value },
+      { scale: 1 - HOME_COVERED_SCALE * homeCovered.value },
+    ],
   }));
-  const dimStyle = useAnimatedStyle(() => ({ opacity: homeCovered.value * HOME_COVERED_DIM }));
+  const dimStyle = useAnimatedStyle(() => ({
+    opacity: Math.max(homeCovered.value * HOME_COVERED_DIM, albumSheet.value * ALBUM_DIM),
+  }));
+
+  const openAlbum = () => {
+    haptic('selection');
+    router.push('/shoebox' as never);
+  };
 
   return (
     <Animated.View style={[styles.screen, { backgroundColor: colors.bg, paddingTop: insets.top }, coveredStyle]}>
@@ -257,7 +265,7 @@ export default function TripsListScreen() {
                 <TripRail trips={stack} onNowIds={onNowIds} pickedId={front.id} dealing={dealing} onPick={pick} />
               </View>
             ) : null}
-            <Shoebox past={past} dealing={dealing} onOpen={openTrip} />
+            <Shoebox past={past} dealing={dealing} onOpen={openAlbum} />
             <View style={styles.inviteRow}>
               <AppText role="bodySm" tone="secondary">
                 Have an invite code?

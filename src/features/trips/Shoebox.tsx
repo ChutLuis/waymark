@@ -1,18 +1,24 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { ChevronRight } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Postmark } from '@/components/airmail/Postmark';
 import { sampleTrack, useEntrance } from '@/components/motion';
 import { shoeboxStamp } from '@/components/motion/keyframes';
-import { motion, spacing } from '@/theme';
-import { toDateOnly } from '@/lib/format/date';
+import { iconStrokeWidth, motion, spacing, useTheme } from '@/theme';
 import { SceneStamp } from './SceneStamp';
 import { DESTINATION_ART } from './destinationArt';
-import { DESTINATION_INFO, formatTripRange, matchDestination } from './destinations';
-import { daysUntilLabel } from './sort';
+import { DESTINATION_INFO, matchDestination } from './destinations';
+import { moreLine } from './shoebox';
 import type { TripListItem } from './hooks';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** The two stamps behind the latest one: rotation and offset in the pile. */
+const BEHIND = [
+  { rotate: -8, left: 3, top: 4 },
+  { rotate: 7, left: 10, top: 2 },
+] as const;
+const TOP = { left: 6, top: 5 } as const;
 
 function monthYear(trip: TripListItem): string {
   const date = trip.endDate ?? trip.startDate;
@@ -21,21 +27,34 @@ function monthYear(trip: TripListItem): string {
   return `${MONTHS[m - 1]} ${y}`;
 }
 
-function ShoeboxRow({
-  trip,
-  past,
-  dealDelay,
-  onPress,
-}: {
-  trip: TripListItem;
-  past: boolean;
-  /** The first past stamp lands after the deal; null sits at rest. */
-  dealDelay: number | null;
-  onPress: () => void;
-}) {
+function PileStamp({ trip }: { trip: TripListItem }) {
   const country = matchDestination(trip.destination);
-  const p = useEntrance(motion.choreo.home.shoebox, dealDelay ?? 0, dealDelay !== null);
-  const stampStyle = useAnimatedStyle(() => ({
+  return country ? (
+    <SceneStamp band="mini" image={DESTINATION_ART[country].sceneStampStill} denomination={null} name={null} />
+  ) : (
+    <SceneStamp band="mini" image={null} initial={(trip.name.trim()[0] ?? '?').toUpperCase()} />
+  );
+}
+
+/**
+ * The shoebox on Home (Airmail v4.1 · 01): one row for every past trip, a pile
+ * of up to three stamps with the latest on top and postmarked, its name, and
+ * how far back the rest go. Tapping it opens the album. On the session's deal
+ * the top stamp lands at 820 ms.
+ */
+export function Shoebox({
+  past,
+  dealing,
+  onOpen,
+}: {
+  /** Past trips, most recent first. */
+  past: TripListItem[];
+  dealing: boolean;
+  onOpen: () => void;
+}) {
+  const { colors } = useTheme();
+  const p = useEntrance(motion.choreo.home.shoebox, motion.choreo.home.shoeboxAt, dealing);
+  const topStyle = useAnimatedStyle(() => ({
     opacity: sampleTrack(shoeboxStamp.opacity, p.value, motion.easing.standard),
     transform: [
       { translateY: sampleTrack(shoeboxStamp.translateY, p.value, motion.easing.standard) },
@@ -43,92 +62,73 @@ function ShoeboxRow({
       { scale: sampleTrack(shoeboxStamp.scale, p.value, motion.easing.standard) },
     ],
   }));
-  const today = toDateOnly(new Date());
-  const meta = past
-    ? `${monthYear(trip)} · postmarked`
-    : [formatTripRange(trip.startDate, trip.endDate), trip.startDate ? daysUntilLabel(trip.startDate, today) : null]
-        .filter(Boolean)
-        .join(' · ') || 'No dates yet';
+
+  if (past.length === 0) return null;
+  const latest = past[0];
+  const country = matchDestination(latest.destination);
+  const behind = past.slice(1, 3);
+  const sub = past.length === 1 ? `${monthYear(latest)} · postmarked` : moreLine(past);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={past ? `${trip.name}, past trip` : trip.name}
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-    >
-      <Animated.View style={[styles.stamp, stampStyle]}>
-        {country ? (
-          <>
-            <SceneStamp band="mini" image={DESTINATION_ART[country].sceneStampStill} denomination={null} name={null} />
-            {past ? (
+    <View style={styles.box}>
+      <AppText role="kicker" tone="secondary">
+        THE SHOEBOX · {past.length} PAST
+      </AppText>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`The shoebox, ${past.length} past ${past.length === 1 ? 'trip' : 'trips'}`}
+        accessibilityHint="Opens the album of past trips"
+        onPress={onOpen}
+        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      >
+        <View style={styles.pile}>
+          {behind
+            .slice()
+            .reverse()
+            .map((trip, i) => {
+              const spot = BEHIND[behind.length - 1 - i];
+              return (
+                <View
+                  key={trip.id}
+                  style={[styles.pileStamp, { left: spot.left, top: spot.top, transform: [{ rotate: `${spot.rotate}deg` }] }]}
+                >
+                  <PileStamp trip={trip} />
+                </View>
+              );
+            })}
+          <Animated.View style={[styles.pileStamp, TOP, topStyle]}>
+            <PileStamp trip={latest} />
+            {country ? (
               <Postmark
                 variant="compact"
                 style={styles.postmark}
                 city={DESTINATION_INFO[country].chip}
-                date={trip.endDate}
+                date={latest.endDate}
               />
             ) : null}
-          </>
-        ) : (
-          <SceneStamp band="mini" image={null} initial={(trip.name.trim()[0] ?? '?').toUpperCase()} />
-        )}
-      </Animated.View>
-      <View style={styles.text}>
-        <AppText role="rowTitleLg" numberOfLines={1}>
-          {trip.name}
-        </AppText>
-        <AppText role="metaSm" tone="secondary">
-          {meta}
-        </AppText>
-      </View>
-    </Pressable>
-  );
-}
-
-/**
- * The shoebox under the Home stack: past trips, postmarked. On the session's
- * deal, the first past stamp lands at 820 ms.
- */
-export function Shoebox({
-  past,
-  dealing,
-  onOpen,
-}: {
-  past: TripListItem[];
-  dealing: boolean;
-  onOpen: (trip: TripListItem) => void;
-}) {
-  return (
-    <View style={styles.box}>
-      {past.length > 0 ? (
-        <>
-          <AppText role="kicker" tone="secondary">
-            THE SHOEBOX · PAST
+          </Animated.View>
+        </View>
+        <View style={styles.text}>
+          <AppText role="envelopeTitle" numberOfLines={1} style={styles.name}>
+            {latest.name}
           </AppText>
-          <View style={styles.list}>
-            {past.map((trip, i) => (
-              <ShoeboxRow
-                key={trip.id}
-                trip={trip}
-                past
-                dealDelay={dealing && i === 0 ? motion.choreo.home.shoeboxAt : null}
-                onPress={() => onOpen(trip)}
-              />
-            ))}
-          </View>
-        </>
-      ) : null}
+          <AppText role="metaSm" tone="secondary" numberOfLines={1}>
+            {sub}
+          </AppText>
+        </View>
+        <ChevronRight size={18} color={colors.ink3} strokeWidth={iconStrokeWidth} />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   box: { paddingTop: spacing.s8, paddingHorizontal: spacing.gutter },
-  list: { marginTop: spacing.s5, gap: spacing.s5 },
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: 48 },
-  stamp: { width: 40, height: 48 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 16, height: 56, marginTop: spacing.s4 },
+  pile: { width: 52, height: 56 },
+  pileStamp: { position: 'absolute', width: 40, height: 48 },
   postmark: { position: 'absolute', left: 10, top: 2, opacity: 0.85 },
-  text: { flex: 1, minWidth: 0, marginLeft: 40 },
+  text: { flex: 1, minWidth: 0, marginLeft: 20 },
+  name: { fontSize: 18, lineHeight: 22 },
   pressed: { opacity: 0.7 },
 });
