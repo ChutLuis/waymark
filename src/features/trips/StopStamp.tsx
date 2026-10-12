@@ -63,6 +63,8 @@ export function StopStamp({
   const { reduced, ms } = useMotion();
   const ref = useRef<LottieView>(null);
   const prevFrame = useRef<number | null>(null);
+  /** While a segment plays, nothing may seek the stamp (README 03 v4.1.1). */
+  const playingUntil = useRef(0);
   const squash = useTimeline(1);
   const contactRef = useRef(onContact);
   contactRef.current = onContact;
@@ -103,7 +105,10 @@ export function StopStamp({
     }
 
     if (reduced) seek(targetFrame);
-    else ref.current?.play(from, targetFrame);
+    else {
+      playingUntil.current = Date.now() + frameMs(targetFrame);
+      ref.current?.play(from, targetFrame);
+    }
 
     const timers = contacts.map(({ status: landed, at }) =>
       setTimeout(() => {
@@ -120,21 +125,23 @@ export function StopStamp({
   // A freshly loaded animation starts at frame 0 (mount, or a destination
   // change). Seek it to the right frame without playing — this is also the web
   // player's only static-seek path, since it isn't ready during the first
-  // effect run.
+  // effect run. A segment in play is left alone.
   const apply = () => {
+    if (Date.now() < playingUntil.current) return;
     const frame = prevFrame.current ?? STATUS_FRAME[status];
     ref.current?.play(frame, frame);
     ref.current?.pause();
   };
 
   // The web player does not consistently fire onAnimationLoaded for a mount
-  // that starts on a non-zero frame, so seek on a short timer as well. A no-op
-  // once the frame is held (N17).
+  // that starts on a non-zero frame, so seek on a short timer as well (N17).
+  // Only when an animation loads: on a status change these seeks landed 50 ms
+  // into the segment and cut it to its last frame.
   useEffect(() => {
     const timers = [setTimeout(apply, 50), setTimeout(apply, 250)];
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, source]);
+  }, [source]);
 
   const squashStyle = useAnimatedStyle(() => ({
     transform: [{ scale: sampleTrack(postmarkSquash.scale, squash.p.value, motion.easing.standard) }],
