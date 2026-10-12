@@ -78,6 +78,8 @@ export interface Palette {
   /** Packing drop slot fill, and its hovered fill. */
   slotFill: string;
   slotHover: string;
+  /** The stamp rail's year dividers. */
+  railDivider: string;
   /** The PAR AVION label: printed airmail blue, fixed in both themes. */
   parAvion: string;
   /** Postmark ring and cancel lines printed over stamp paper. */
@@ -131,6 +133,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     slotFill: 'rgba(226,233,238,0.6)',
     slotHover: 'rgba(36,71,154,0.12)',
     parAvion: '#24479A',
+    railDivider: '#B9B0A0',
     postmarkRing: 'rgba(21,34,59,0.72)',
     postmarkText: 'rgba(21,34,59,0.85)',
     cancelInk: 'rgba(21,34,59,0.62)',
@@ -178,6 +181,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     slotFill: 'rgba(15,23,41,0.6)',
     slotHover: 'rgba(126,156,240,0.16)',
     parAvion: '#24479A',
+    railDivider: '#55627A',
     postmarkRing: 'rgba(21,34,59,0.72)',
     postmarkText: 'rgba(21,34,59,0.85)',
     cancelInk: 'rgba(21,34,59,0.62)',
@@ -435,14 +439,21 @@ export const motion = {
     linear: [0, 0, 1, 1],
   },
   choreo: {
-    /** 01 · Home: deal, the raised stack, bump and idle loops. */
+    /** 01 · Home: deal, the stamp rail, bump and idle loops. */
     home: {
       dealBase: 150,
       dealContact: 450,
       shoeboxAt: 820,
       shoebox: 560,
-      /** The stack rises out of the Home card, the card above each 30 ms later. */
-      riseStagger: 30,
+      /** A pick: the picked stamp rises 4 pt (`standard`)… */
+      pickLift: 200,
+      /** …and `light` fires as the dealt card lands (duration.deal = 640). */
+      pickContact: 450,
+      /** Scroll the picked stamp into view, `standard`. */
+      railScroll: 300,
+      /** Deal: the rail stamps drop in after the Home card. */
+      railAt: 600,
+      railStagger: 45,
       bump: 320,
       press: 180,
       stripeCrawl: 3500,
@@ -532,6 +543,8 @@ export const motion = {
       toss: 560,
       bagsAt: 60,
     },
+    /** 01 · The shoebox album: stamps print in sheet by sheet. */
+    shoebox: { d0: 380, sheetStagger: 120, stampStagger: 45 },
     /** Notes pile entrance offsets from b. */
     notes: { pileAt: 80, pile: 580 },
   },

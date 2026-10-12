@@ -1,0 +1,260 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import Animated, {
+  scrollTo,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import Svg, { Line, Rect } from 'react-native-svg';
+import { AppText } from '@/components/AppText';
+import { PerforatedStamp, STAMP_SHADOW_MARGIN } from '@/components/airmail/PerforatedStamp';
+import { easing, sampleTrack, useEntrance, useMotion } from '@/components/motion';
+import { dayStampRotation, dropIn } from '@/components/motion/keyframes';
+import { motion, useTheme } from '@/theme';
+import { DESTINATION_ART } from './destinationArt';
+import { matchDestination } from './destinations';
+import { RAIL, railEntries, railScrollTarget } from './stack';
+import type { TripListItem } from './hooks';
+
+const CAPTION_GAP = 7;
+const RULE = 2;
+const RAIL_HEIGHT = 92;
+const PAD_TOP = 6;
+
+function RailStamp({ trip }: { trip: TripListItem }) {
+  const { colors } = useTheme();
+  const country = matchDestination(trip.destination);
+  if (!trip.startDate || !trip.endDate) {
+    return (
+      <Svg width={RAIL.stampWidth} height={RAIL.stampHeight}>
+        <Rect
+          x={0.75}
+          y={0.75}
+          width={RAIL.stampWidth - 1.5}
+          height={RAIL.stampHeight - 1.5}
+          rx={2}
+          fill={colors.paper}
+          fillOpacity={0.5}
+          stroke={colors.slot}
+          strokeWidth={1.5}
+          strokeDasharray="4 3"
+        />
+      </Svg>
+    );
+  }
+  return (
+    <PerforatedStamp width={RAIL.stampWidth} height={RAIL.stampHeight} size="sm">
+      {country ? (
+        <Image source={DESTINATION_ART[country].sceneStampStill} style={styles.art} contentFit="cover" />
+      ) : (
+        <View style={[styles.art, styles.initial, { backgroundColor: colors.stampInk }]}>
+          <AppText role="initialLg" style={[styles.initialText, { color: colors.stampPaper }]}>
+            {(trip.name.trim()[0] ?? '?').toUpperCase()}
+          </AppText>
+        </View>
+      )}
+    </PerforatedStamp>
+  );
+}
+
+function RailItem({
+  trip,
+  caption,
+  index,
+  picked,
+  deal,
+  onPick,
+}: {
+  trip: TripListItem;
+  caption: string;
+  index: number;
+  picked: boolean;
+  /** Drops in on the session's deal (only stamps on screen at mount). */
+  deal: boolean;
+  onPick: () => void;
+}) {
+  const { colors } = useTheme();
+  const { ms } = useMotion();
+  const lift = useSharedValue(picked ? -RAIL.lift : 0);
+  const keys = dropIn(dayStampRotation(index));
+  const drop = useEntrance(motion.duration.drop, motion.choreo.home.railAt + index * motion.choreo.home.railStagger, deal);
+
+  // The picked stamp rises 4 pt; the one it replaces settles back.
+  useEffect(() => {
+    lift.value = withTiming(picked ? -RAIL.lift : 0, {
+      duration: ms(motion.choreo.home.pickLift),
+      easing: easing('standard'),
+    });
+  }, [picked, lift, ms]);
+
+  const liftStyle = useAnimatedStyle(() => ({ transform: [{ translateY: lift.value }] }));
+  const dropStyle = useAnimatedStyle(() => ({
+    opacity: sampleTrack(keys.opacity, drop.value, motion.easing.drop),
+    transform: [
+      { translateY: sampleTrack(keys.translateY, drop.value, motion.easing.drop) },
+      { rotate: `${sampleTrack(keys.rotate, drop.value, motion.easing.drop)}deg` },
+    ],
+  }));
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${trip.name}, ${caption === 'NOW' ? 'on now' : caption.toLowerCase()}`}
+      accessibilityState={{ selected: picked }}
+      onPress={onPick}
+      style={styles.item}
+    >
+      <Animated.View style={[liftStyle, dropStyle]}>
+        <RailStamp trip={trip} />
+      </Animated.View>
+      <AppText
+        role="tagSm"
+        numberOfLines={1}
+        style={[
+          styles.caption,
+          { color: picked ? colors.ink : colors.ink2, borderBottomColor: picked ? colors.ink : 'transparent' },
+        ]}
+      >
+        {caption}
+      </AppText>
+    </Pressable>
+  );
+}
+
+function YearDivider({ label }: { label: string | null }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.divider} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Svg width={2} height={RAIL.stampHeight}>
+        <Line x1={1} y1={0} x2={1} y2={RAIL.stampHeight} stroke={colors.railDivider} strokeWidth={1.5} strokeDasharray="4 3" />
+      </Svg>
+      <AppText role="tagSm" tone="secondary" style={styles.caption}>
+        {label ?? ' '}
+      </AppText>
+    </View>
+  );
+}
+
+interface TripRailProps {
+  /** Every current trip, in the default order. */
+  trips: TripListItem[];
+  onNowIds: ReadonlySet<string>;
+  pickedId: string;
+  /** The session's first Home mount: the stamps on screen drop in. */
+  dealing: boolean;
+  onPick: (trip: TripListItem) => void;
+}
+
+/**
+ * The stamp rail under the Home card (Airmail v4.1 · 01): one stamp per
+ * current trip with its start date under it and year dividers between, the
+ * picked one raised 4 pt. Picking a stamp deals its trip onto Home and scrolls
+ * the stamp into view if it was cut off.
+ */
+export function TripRail({ trips, onNowIds, pickedId, dealing, onPick }: TripRailProps) {
+  const { ms } = useMotion();
+  const entries = useMemo(() => railEntries(trips, onNowIds), [trips, onNowIds]);
+  const byId = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips]);
+  const [viewport, setViewport] = useState(0);
+  const ref = useAnimatedRef<Animated.ScrollView>();
+  const offset = useSharedValue(0);
+  const target = useSharedValue(-1);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    offset.value = e.contentOffset.x;
+  });
+  // Drives the scroll only while a pick animates it; user scrolls are left alone.
+  useDerivedValue(() => {
+    if (target.value >= 0) scrollTo(ref, target.value, 0, false);
+  });
+
+  const last = entries[entries.length - 1];
+  const contentWidth = last ? last.x + (last.kind === 'trip' ? RAIL.stampWidth : RAIL.divider) + RAIL.padX : 0;
+  const pickedIndex = trips.findIndex((t) => t.id === pickedId);
+
+  const pick = (trip: TripListItem, x: number) => {
+    if (trip.id === pickedId) return;
+    onPick(trip);
+    const to = railScrollTarget(x, offset.value, viewport, contentWidth);
+    if (to === null) return;
+    target.value = offset.value;
+    target.value = withTiming(to, { duration: ms(motion.choreo.home.railScroll), easing: easing('standard') }, () => {
+      target.value = -1;
+    });
+  };
+
+  let tripIndex = -1;
+  return (
+    <View>
+      <View style={styles.labelRow}>
+        <AppText role="kickerSm" tone="secondary">
+          ALL {trips.length} TRIPS
+        </AppText>
+        <AppText role="tagSm" style={styles.position}>
+          {pickedIndex + 1} OF {trips.length}
+        </AppText>
+      </View>
+      <Animated.ScrollView
+        ref={ref}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        onLayout={(e) => setViewport(e.nativeEvent.layout.width)}
+        style={styles.rail}
+        contentContainerStyle={styles.railContent}
+      >
+        {entries.map((entry) => {
+          if (entry.kind === 'divider') return <YearDivider key={`divider-${entry.x}`} label={entry.label} />;
+          const trip = byId.get(entry.id);
+          if (!trip) return null;
+          tripIndex += 1;
+          return (
+            <RailItem
+              key={entry.id}
+              trip={trip}
+              caption={entry.caption}
+              index={tripIndex}
+              picked={entry.id === pickedId}
+              deal={dealing && (viewport === 0 || entry.x < viewport)}
+              onPick={() => pick(trip, entry.x)}
+            />
+          );
+        })}
+      </Animated.ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingHorizontal: RAIL.padX,
+  },
+  position: { letterSpacing: 0.8 },
+  rail: { height: RAIL_HEIGHT, flexGrow: 0 },
+  railContent: {
+    paddingTop: PAD_TOP,
+    paddingHorizontal: RAIL.padX,
+    paddingBottom: STAMP_SHADOW_MARGIN,
+    gap: RAIL.gap,
+    alignItems: 'flex-start',
+  },
+  item: { width: RAIL.stampWidth, alignItems: 'center', gap: CAPTION_GAP },
+  art: { position: 'absolute', left: 5, top: 5, right: 5, bottom: 5 },
+  initial: { alignItems: 'center', justifyContent: 'center' },
+  initialText: { fontSize: 22, lineHeight: 24 },
+  caption: {
+    lineHeight: 12,
+    letterSpacing: 0.4,
+    borderBottomWidth: RULE,
+    paddingBottom: RULE,
+  },
+  divider: { width: RAIL.divider, alignItems: 'center', gap: CAPTION_GAP },
+});

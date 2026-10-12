@@ -10,11 +10,19 @@ import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { BrandMark } from '@/components/BrandMark';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { EmptyState, ErrorState } from '@/components/StateViews';
-import { sampleTrack, useEntrance } from '@/components/motion';
+import { sampleTrack, useEntrance, useMotion } from '@/components/motion';
 import { greetingRise } from '@/components/motion/keyframes';
 import { haptic } from '@/lib/haptics';
 import { AvatarStamp } from '@/features/trips/SceneStamp';
-import { HomeCard, TripStack, shouldDeal, type CardActions, type HomeCardHandle } from '@/features/trips/TripWallet';
+import {
+  HomeCard,
+  getSessionHomeTrip,
+  setSessionHomeTrip,
+  shouldDeal,
+  type CardActions,
+  type HomeDeal,
+} from '@/features/trips/TripWallet';
+import { TripRail } from '@/features/trips/TripRail';
 import { Shoebox } from '@/features/trips/Shoebox';
 import { TripCardSkeleton } from '@/features/trips/TripCardSkeleton';
 import { homeCovered, isCollapsing, onCollapsingChange, setExpandOrigin } from '@/features/trips/expandStore';
@@ -101,20 +109,32 @@ export default function TripsListScreen() {
     router.push(`/trips/${trip.id}` as never);
   };
 
-  // Wallet style: Home shows one card; with more trips, tapping it raises
-  // all of them into a stack, and tapping one there opens it.
-  const homeCard = useRef<HomeCardHandle>(null);
-  const [stackFrom, setStackFrom] = useState<number | null>(null);
-  const front = stack[0];
-  const onHomeCard = (actions: CardActions) => {
-    if (!front) return;
-    if (stack.length < 2) {
-      openFromCard(front, actions);
-      return;
-    }
-    actions.press();
-    homeCard.current?.measureTop((y) => setStackFrom(y ?? insets.top));
+  // Home shows one trip; the rail picks another. The pick lasts while the app
+  // runs; each launch starts on the on-now (else the soonest) trip.
+  const { ms } = useMotion();
+  const [picked, setPicked] = useState<string | null>(getSessionHomeTrip);
+  const [under, setUnder] = useState<string | null>(null);
+  const lastPick = useRef<string | null>(null);
+  const underTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (underTimer.current) clearTimeout(underTimer.current);
+  }, []);
+  const front = stack.find((t) => t.id === picked) ?? stack[0];
+  const underTrip = under && under !== front?.id ? stack.find((t) => t.id === under) : undefined;
+
+  // A pick deals the new card onto the old one, which stays underneath until
+  // it is covered at 640 ms. A pick mid-deal leaves the dealing card at rest.
+  const pick = (trip: TripListItem) => {
+    if (!front || trip.id === front.id) return;
+    haptic('selection');
+    if (underTimer.current) clearTimeout(underTimer.current);
+    lastPick.current = trip.id;
+    setUnder(front.id);
+    setPicked(trip.id);
+    setSessionHomeTrip(trip.id);
+    underTimer.current = setTimeout(() => setUnder(null), ms(motion.duration.deal));
   };
+  const frontDeal: HomeDeal = front && lastPick.current === front.id ? 'pick' : dealing ? 'launch' : null;
 
   // Envelope papers follow each trip's place in the default order.
   const paperIndex = useMemo(() => {
@@ -204,19 +224,37 @@ export default function TripsListScreen() {
           >
             {front ? (
               <View style={styles.stackWrap}>
+                {underTrip ? (
+                  <View style={styles.under} pointerEvents="none">
+                    <HomeCard
+                      key={`under-${underTrip.id}`}
+                      trip={underTrip}
+                      onNow={onNowIds.has(underTrip.id)}
+                      viewerId={userId}
+                      paperIndex={paperIndex(underTrip.id)}
+                      focused={false}
+                      collapsing={false}
+                      deal={null}
+                      onPress={() => {}}
+                    />
+                  </View>
+                ) : null}
                 <HomeCard
-                  ref={homeCard}
+                  key={front.id}
                   trip={front}
                   onNow={onNowIds.has(front.id)}
                   viewerId={userId}
                   paperIndex={paperIndex(front.id)}
-                  focused={isFocused && stackFrom === null}
+                  focused={isFocused}
                   collapsing={collapsing}
-                  count={stack.length}
-                  hidden={stackFrom !== null}
-                  dealing={dealing}
-                  onPress={onHomeCard}
+                  deal={frontDeal}
+                  onPress={(actions) => openFromCard(front, actions)}
                 />
+              </View>
+            ) : null}
+            {front && stack.length > 1 ? (
+              <View style={styles.rail}>
+                <TripRail trips={stack} onNowIds={onNowIds} pickedId={front.id} dealing={dealing} onPick={pick} />
               </View>
             ) : null}
             <Shoebox past={past} dealing={dealing} onOpen={openTrip} />
@@ -238,20 +276,6 @@ export default function TripsListScreen() {
           </ScrollView>
         )}
       </View>
-      {stackFrom !== null ? (
-        <TripStack
-          trips={stack}
-          onNowIds={onNowIds}
-          viewerId={userId}
-          paperIndex={paperIndex}
-          focused={isFocused}
-          collapsing={collapsing}
-          fromY={stackFrom}
-          onOpen={openFromCard}
-          onNewTrip={() => router.push('/trips/new')}
-          onClosed={() => setStackFrom(null)}
-        />
-      ) : null}
       <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.ink }, dimStyle]} />
     </Animated.View>
   );
@@ -288,6 +312,9 @@ const styles = StyleSheet.create({
   skeletonGap: { height: spacing.s5 },
   listContent: { paddingTop: spacing.s10 },
   stackWrap: { marginHorizontal: spacing.cardGutter },
+  // The card being replaced waits under the one being dealt.
+  under: { position: 'absolute', left: 0, right: 0, top: 0 },
+  rail: { marginTop: spacing.s7 },
   emptySecondary: { marginTop: spacing.s3 },
   inviteRow: {
     flexDirection: 'row',

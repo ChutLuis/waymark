@@ -6,34 +6,79 @@
 /** Every trip card is this tall; an envelope's header row is 38 pt. */
 export const STACK_CARD_HEIGHT = 340;
 export const STACK_PEEK = 38;
+const MONTHS_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
 /**
- * The all-trips stack, Wallet style: Home shows one card; tapping it raises
- * every current trip into a vertical stack where each card peeks this much of
- * itself above the next, the front card fully shown at the bottom.
+ * The stamp rail under the Home card (Airmail v4.1 · 01): one 48 × 56 stamp
+ * per current trip, 10 apart, with a 28 pt divider where the year changes and
+ * an unlabelled one before the undated trips.
  */
-export const WALLET = {
-  peek: 60,
-  /** Room above the first card under the close button. */
-  topPad: 8,
+export const RAIL = {
+  stampWidth: 48,
+  stampHeight: 56,
+  gap: 10,
+  divider: 28,
+  padX: 24,
+  /** The picked stamp sits this much higher. */
+  lift: 4,
+  /** Room left on either side when the picked stamp scrolls into view. */
+  spare: 24,
 } as const;
 
-/** Top of card `index` (0 = the top of the stack) in the raised stack. */
-export function walletTop(index: number): number {
-  return WALLET.topPad + index * WALLET.peek;
+export type RailEntry =
+  | { kind: 'trip'; id: string; caption: string; x: number }
+  | { kind: 'divider'; label: string | null; x: number };
+
+interface RailTrip {
+  id: string;
+  startDate: string | null;
 }
 
-/** Height of the raised stack holding `count` cards. */
-export function walletHeight(count: number): number {
-  return count === 0 ? 0 : walletTop(count - 1) + STACK_CARD_HEIGHT;
+/** "NOW", "13 OCT", "NO DATE". */
+export function railCaption(trip: RailTrip, onNow: boolean): string {
+  if (onNow) return 'NOW';
+  if (!trip.startDate) return 'NO DATE';
+  const [, m, d] = trip.startDate.split('-').map(Number);
+  return `${d} ${MONTHS_SHORT[m - 1]}`;
 }
 
 /**
- * Where the cards rise from: every card starts where the Home card sits and
- * travels to its own slot, the front card at the bottom first, the ones above
- * it after, `stagger` ms apart. Returns the delay for card `index`.
+ * The rail's entries in the default order (on now, then by start date, then
+ * undated), with each entry's x inside the scroll content.
  */
-export function riseDelay(index: number, count: number, stagger: number): number {
-  return Math.max(0, count - 1 - index) * stagger;
+export function railEntries(trips: RailTrip[], onNowIds: ReadonlySet<string>): RailEntry[] {
+  const entries: RailEntry[] = [];
+  let x = RAIL.padX;
+  let year: number | null = null;
+  let seenUndated = false;
+  const push = (entry: RailEntry, width: number) => {
+    entries.push(entry);
+    x += width + RAIL.gap;
+  };
+  for (const trip of trips) {
+    if (trip.startDate) {
+      const tripYear = Number(trip.startDate.slice(0, 4));
+      if (year !== null && tripYear !== year) push({ kind: 'divider', label: String(tripYear), x }, RAIL.divider);
+      year = tripYear;
+    } else if (!seenUndated) {
+      seenUndated = true;
+      if (entries.length > 0) push({ kind: 'divider', label: null, x }, RAIL.divider);
+    }
+    push({ kind: 'trip', id: trip.id, caption: railCaption(trip, onNowIds.has(trip.id)), x }, RAIL.stampWidth);
+  }
+  return entries;
+}
+
+/**
+ * Where to scroll so a stamp at `x` shows in full with `spare` either side,
+ * or null when it already does.
+ */
+export function railScrollTarget(x: number, scrollX: number, viewport: number, contentWidth: number): number | null {
+  const left = x - RAIL.spare;
+  const right = x + RAIL.stampWidth + RAIL.spare;
+  if (left >= scrollX && right <= scrollX + viewport) return null;
+  const target = left < scrollX ? left : right - viewport;
+  return Math.max(0, Math.min(target, Math.max(0, contentWidth - viewport)));
 }
 
 /**

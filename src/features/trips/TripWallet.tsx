@@ -1,16 +1,12 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type RefObject } from 'react';
-import { BackHandler, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
-import { Layers, Plus, X } from 'lucide-react-native';
-import { AppText } from '@/components/AppText';
-import { easing, sampleTrack, useMotion, useTimeline } from '@/components/motion';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, type RefObject } from 'react';
+import { Pressable, View } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { sampleTrack, useMotion, useTimeline } from '@/components/motion';
 import { cardPress, dealCard, frontBump } from '@/components/motion/keyframes';
-import { haptic, hapticAfter } from '@/lib/haptics';
-import { iconStrokeWidth, motion, radius, shadows, spacing, useTheme } from '@/theme';
+import { hapticAfter } from '@/lib/haptics';
+import { motion } from '@/theme';
 import { EnvelopeFace } from './EnvelopeFace';
 import { OnNowPostcard, type OnNowPostcardHandle } from './OnNowPostcard';
-import { STACK_CARD_HEIGHT, riseDelay, walletHeight, walletTop } from './stack';
 import type { Rect } from './expandStore';
 import type { TripListItem } from './hooks';
 
@@ -22,9 +18,19 @@ export function shouldDeal(): boolean {
   return !dealtThisSession;
 }
 
+/** The trip Home shows: kept while the app runs, back to on-now at launch. */
+let sessionHomeTrip: string | null = null;
+
+export function getSessionHomeTrip(): string | null {
+  return sessionHomeTrip;
+}
+
+export function setSessionHomeTrip(id: string): void {
+  sessionHomeTrip = id;
+}
+
 /** Envelopes have no scene window: the trip header grows from their top band. */
 const ENVELOPE_WINDOW = 150;
-const CLOSE_SIZE = 44;
 
 export type ExpandRects = { paper: Rect; window: Rect };
 
@@ -112,10 +118,8 @@ function useCardActions(face: RefObject<TripFaceHandle | null>) {
   return { actions, style };
 }
 
-export interface HomeCardHandle {
-  /** Window y of the Home card, where the stack rises from. */
-  measureTop: (done: (y: number | null) => void) => void;
-}
+/** How a Home card arrives: the session's deal, a pick from the rail, or not at all. */
+export type HomeDeal = 'launch' | 'pick' | null;
 
 interface HomeCardProps {
   trip: TripListItem;
@@ -124,148 +128,57 @@ interface HomeCardProps {
   paperIndex: number;
   focused: boolean;
   collapsing: boolean;
-  /** Every current trip, for the hint under the card. */
-  count: number;
-  /** Hidden while the raised stack shows its own copy of this card. */
-  hidden: boolean;
-  dealing: boolean;
+  /** Read once, on mount. */
+  deal: HomeDeal;
   onPress: (actions: CardActions) => void;
 }
 
 /**
- * The one card Home shows (on now, else the soonest trip). With more than one
- * trip, tapping it raises the whole stack; on its own, it opens the trip.
+ * The one card Home shows (Airmail v4.1 · 01): the on-now postcard or the
+ * picked trip's envelope face. Tapping it opens the trip, expanding from the
+ * card. It deals in on the session's first mount (150 ms in, `light` at 600)
+ * and when picked from the rail (at once, `light` at 450), landing on top of
+ * the card it replaces.
  */
-export const HomeCard = forwardRef<HomeCardHandle, HomeCardProps>(function HomeCard(
-  { trip, onNow, viewerId, paperIndex, focused, collapsing, count, hidden, dealing, onPress },
-  ref,
-) {
-  const { colors } = useTheme();
+export function HomeCard({ trip, onNow, viewerId, paperIndex, focused, collapsing, deal, onPress }: HomeCardProps) {
   const { ms } = useMotion();
   const face = useRef<TripFaceHandle>(null);
-  const wrap = useRef<View>(null);
   const { actions, style } = useCardActions(face);
-  const deal = useTimeline(dealing ? 0 : 1);
+  const dealt = useTimeline(deal ? 0 : 1);
   const keys = useMemo(() => dealCard(0), []);
 
   useEffect(() => {
-    if (!dealing) return;
-    dealtThisSession = true;
-    deal.run(motion.duration.deal, motion.choreo.home.dealBase);
-    return hapticAfter('light', ms(motion.choreo.home.dealBase + motion.choreo.home.dealContact));
-    // Mount only: the deal plays once.
+    if (!deal) return;
+    const { home } = motion.choreo;
+    if (deal === 'launch') dealtThisSession = true;
+    const delay = deal === 'launch' ? home.dealBase : 0;
+    const contact = deal === 'launch' ? home.dealBase + home.dealContact : home.pickContact;
+    dealt.run(motion.duration.deal, delay);
+    return hapticAfter('light', ms(contact));
+    // Mount only: a card deals once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useImperativeHandle(ref, () => ({
-    measureTop: (done) => {
-      if (!wrap.current) done(null);
-      else wrap.current.measureInWindow((_x, y, width) => done(width ? y : null));
-    },
-  }));
-
   const dealStyle = useAnimatedStyle(() => ({
-    opacity: sampleTrack(keys.opacity, deal.p.value, motion.easing.settle),
+    opacity: sampleTrack(keys.opacity, dealt.p.value, motion.easing.settle),
     transform: [
-      { translateY: sampleTrack(keys.translateY, deal.p.value, motion.easing.settle) },
-      { rotate: `${sampleTrack(keys.rotate, deal.p.value, motion.easing.settle)}deg` },
-      { scale: sampleTrack(keys.scale, deal.p.value, motion.easing.settle) },
+      { translateY: sampleTrack(keys.translateY, dealt.p.value, motion.easing.settle) },
+      { rotate: `${sampleTrack(keys.rotate, dealt.p.value, motion.easing.settle)}deg` },
+      { scale: sampleTrack(keys.scale, dealt.p.value, motion.easing.settle) },
     ],
   }));
 
   return (
-    <View>
-      <Animated.View ref={wrap} collapsable={false} style={[dealStyle, hidden ? styles.hidden : null]}>
-        <Animated.View style={style}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={trip.name}
-            accessibilityHint={count > 1 ? `Shows all ${count} trips` : undefined}
-            onPress={() => onPress(actions)}
-          >
-            <TripFace
-              ref={face}
-              trip={trip}
-              onNow={onNow}
-              viewerId={viewerId}
-              paperIndex={paperIndex}
-              live={focused && !hidden}
-              collapsing={collapsing}
-            />
-          </Pressable>
-        </Animated.View>
-      </Animated.View>
-      {count > 1 ? (
-        <View style={[styles.hint, hidden ? styles.hidden : null]}>
-          <Layers size={14} color={colors.ink2} strokeWidth={iconStrokeWidth} />
-          <AppText role="kickerSm" tone="secondary">
-            {count} TRIPS · TAP TO SEE ALL
-          </AppText>
-        </View>
-      ) : null}
-    </View>
-  );
-});
-
-function RisingCard({
-  trip,
-  index,
-  count,
-  fromTop,
-  closing,
-  onNow,
-  viewerId,
-  paperIndex,
-  live,
-  collapsing,
-  onPress,
-}: {
-  trip: TripListItem;
-  index: number;
-  count: number;
-  /** Where the Home card sits, relative to the top of the stack. */
-  fromTop: number;
-  closing: boolean;
-  onNow: boolean;
-  viewerId: string | null;
-  paperIndex: number;
-  live: boolean;
-  collapsing: boolean;
-  onPress: (trip: TripListItem, actions: CardActions) => void;
-}) {
-  const { ms } = useMotion();
-  const face = useRef<TripFaceHandle>(null);
-  const { actions, style: pressStyle } = useCardActions(face);
-  const up = useSharedValue(0);
-  const isFront = index === count - 1;
-  // Every card starts where the Home card sits, behind it.
-  const rise = fromTop - walletTop(index);
-
-  useEffect(() => {
-    const delay = ms(riseDelay(index, count, motion.choreo.home.riseStagger));
-    up.value = closing
-      ? withTiming(0, { duration: ms(motion.duration.pop), easing: easing('exit') })
-      : withDelay(delay, withTiming(1, { duration: ms(motion.duration.drop), easing: easing('stack') }));
-  }, [closing, index, count, up, ms]);
-
-  // The front card travels from the Home card to the bottom of the stack; the
-  // ones above it come up from behind it and fade in as they clear it.
-  const style = useAnimatedStyle(() => ({
-    opacity: isFront ? 1 : Math.min(1, up.value * 3),
-    transform: [{ translateY: (1 - up.value) * rise }],
-  }));
-
-  return (
-    <Animated.View style={[styles.card, { top: walletTop(index), zIndex: index }, style]}>
-      <Animated.View style={pressStyle}>
-        <Pressable accessibilityRole="button" accessibilityLabel={trip.name} accessibilityHint="Opens the trip" onPress={() => onPress(trip, actions)}>
+    <Animated.View style={dealStyle}>
+      <Animated.View style={style}>
+        <Pressable accessibilityRole="button" accessibilityLabel={trip.name} accessibilityHint="Opens the trip" onPress={() => onPress(actions)}>
           <TripFace
             ref={face}
             trip={trip}
             onNow={onNow}
             viewerId={viewerId}
             paperIndex={paperIndex}
-            live={live && isFront}
+            live={focused}
             collapsing={collapsing}
           />
         </Pressable>
@@ -273,176 +186,3 @@ function RisingCard({
     </Animated.View>
   );
 }
-
-interface TripStackProps {
-  /** Every current trip, in the default order (on-now first). */
-  trips: TripListItem[];
-  onNowIds: Set<string>;
-  viewerId: string | null;
-  paperIndex: (id: string) => number;
-  focused: boolean;
-  collapsing: boolean;
-  /** Window y of the Home card the stack rises from. */
-  fromY: number;
-  onOpen: (trip: TripListItem, actions: CardActions) => void;
-  onNewTrip: () => void;
-  /** The stack has fully put itself away. */
-  onClosed: () => void;
-}
-
-/**
- * Every current trip raised out of the Home card, Wallet style: the cards
- * rise from behind it into a vertical stack, each peeking above the next and
- * the front card fully shown at the bottom. Tapping a trip opens it,
- * expanding from its card; the close button (or back) lowers them again.
- */
-export function TripStack({
-  trips,
-  onNowIds,
-  viewerId,
-  paperIndex,
-  focused,
-  collapsing,
-  fromY,
-  onOpen,
-  onNewTrip,
-  onClosed,
-}: TripStackProps) {
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
-  const { ms } = useMotion();
-  const { height: windowHeight } = useWindowDimensions();
-  const scrollRef = useRef<ScrollView>(null);
-  const [closing, setClosing] = useState(false);
-  const shade = useSharedValue(0);
-  // Top to bottom: the front card (on now, else the soonest) is last.
-  const cards = useMemo(() => [...trips].reverse(), [trips]);
-  const count = cards.length;
-  const contentTop = insets.top + CLOSE_SIZE + spacing.s3;
-  const contentBottom = insets.bottom + spacing.s7;
-  // A tall stack opens scrolled to its end, so the card that was tapped lands
-  // in full at the bottom and the rest reach up behind it, as in Wallet.
-  const startScroll = Math.max(0, contentTop + walletHeight(count) + contentBottom - windowHeight);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    haptic('selection');
-    shade.value = withTiming(1, { duration: ms(motion.duration.base), easing: easing('standard') });
-  }, [shade, ms]);
-
-  const close = () => {
-    if (closing) return;
-    haptic('selection');
-    setClosing(true);
-    shade.value = withDelay(
-      ms(motion.duration.pop - motion.duration.base),
-      withTiming(0, { duration: ms(motion.duration.base) }, (done) => {
-        if (done) runOnJS(onClosed)();
-      }),
-    );
-  };
-
-  // Android back lowers the stack, but only while Home is the focused screen.
-  useEffect(() => {
-    if (!focused) return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      close();
-      return true;
-    });
-    return () => sub.remove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focused, closing]);
-
-  const shadeStyle = useAnimatedStyle(() => ({ opacity: shade.value }));
-
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents={closing ? 'none' : 'auto'}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, shadeStyle]} />
-      <Animated.View style={[styles.topBar, { paddingTop: insets.top, backgroundColor: colors.bg }, shadeStyle]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close all trips"
-          onPress={close}
-          style={({ pressed }) => [styles.close, { backgroundColor: colors.paper, boxShadow: shadows.pill }, pressed && styles.pressed]}
-        >
-          <X size={22} color={colors.ink} strokeWidth={iconStrokeWidth} />
-        </Pressable>
-        <AppText role="kicker" tone="secondary">
-          ALL TRIPS · {count}
-        </AppText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="New trip"
-          onPress={onNewTrip}
-          style={({ pressed }) => [styles.close, { backgroundColor: colors.paper, boxShadow: shadows.pill }, pressed && styles.pressed]}
-        >
-          <Plus size={22} color={colors.ink} strokeWidth={2.4} />
-        </Pressable>
-      </Animated.View>
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentOffset={{ x: 0, y: startScroll }}
-        onContentSizeChange={() => {
-          if (scrolled) return;
-          setScrolled(true);
-          scrollRef.current?.scrollTo({ y: startScroll, animated: false });
-        }}
-        contentContainerStyle={{ paddingTop: contentTop, paddingBottom: contentBottom }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.stack, { height: walletHeight(count) }]}>
-          {cards.map((trip, index) => (
-            <RisingCard
-              key={trip.id}
-              trip={trip}
-              index={index}
-              count={count}
-              fromTop={fromY - contentTop + startScroll}
-              closing={closing}
-              onNow={onNowIds.has(trip.id)}
-              viewerId={viewerId}
-              paperIndex={paperIndex(trip.id)}
-              live={focused}
-              collapsing={collapsing}
-              onPress={onOpen}
-            />
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  hidden: { opacity: 0 },
-  hint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingTop: spacing.s5,
-  },
-  topBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    zIndex: 2,
-    paddingHorizontal: spacing.s7,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  close: {
-    width: CLOSE_SIZE,
-    height: CLOSE_SIZE,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scroll: { flex: 1 },
-  stack: { marginHorizontal: spacing.cardGutter },
-  card: { position: 'absolute', left: 0, right: 0, height: STACK_CARD_HEIGHT },
-  pressed: { opacity: 0.7 },
-});
