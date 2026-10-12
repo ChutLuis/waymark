@@ -36,7 +36,9 @@ interface PostcardNoteProps {
 export function PostcardNote({ body, kicker, from, country, tripName, tilt, onEdit }: PostcardNoteProps) {
   const { colors } = useTheme();
   const flip = useTimeline(1);
-  const base = useSharedValue(0);
+  // The flip track runs 0 → 180° relative to `base`; resting at the track's
+  // end, the message side (0°) needs a base of −180°.
+  const base = useSharedValue(-180);
   const side = useRef(0);
 
   const turn = () => {
@@ -46,26 +48,26 @@ export function PostcardNote({ body, kicker, from, country, tripName, tilt, onEd
     flip.run(motion.duration.flip);
   };
 
-  const angle = () => {
-    'worklet';
-    return base.value + sampleTrack(postcardFlip.rotateY, flip.p.value, motion.easing.flip);
-  };
+  // Each style reads `base` and the flip itself: Reanimated only re-runs a
+  // style for the shared values it reads directly.
   const cardStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: GEO.perspective },
-      { rotateY: `${angle()}deg` },
+      { rotateY: `${base.value + sampleTrack(postcardFlip.rotateY, flip.p.value, motion.easing.flip)}deg` },
       { rotateZ: `${sampleTrack(postcardFlip.rotateZ, flip.p.value, motion.easing.flip)}deg` },
       { scale: sampleTrack(postcardFlip.scale, flip.p.value, motion.easing.flip) },
     ],
   }));
-  // Faces also swap by angle, so the hidden one never shows through where
-  // backface culling is unreliable.
+  // Faces swap by angle rather than backface culling, which Android applies
+  // unreliably to a face that is itself turned inside a turning card.
   const messageStyle = useAnimatedStyle(() => {
-    const a = ((angle() % 360) + 360) % 360;
+    const angle = base.value + sampleTrack(postcardFlip.rotateY, flip.p.value, motion.easing.flip);
+    const a = ((angle % 360) + 360) % 360;
     return { opacity: a < 90 || a > 270 ? 1 : 0 };
   });
   const sceneStyle = useAnimatedStyle(() => {
-    const a = ((angle() % 360) + 360) % 360;
+    const angle = base.value + sampleTrack(postcardFlip.rotateY, flip.p.value, motion.easing.flip);
+    const a = ((angle % 360) + 360) % 360;
     return { opacity: a >= 90 && a <= 270 ? 1 : 0 };
   });
   const shadowStyle = useAnimatedStyle(() => ({
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
   },
   press: { height: GEO.height },
   card: { flex: 1 },
-  face: { ...StyleSheet.absoluteFill, borderRadius: radius.tag, backfaceVisibility: 'hidden' },
+  face: { ...StyleSheet.absoluteFill, borderRadius: radius.tag },
   message: { flexDirection: 'row', gap: 12, paddingTop: 14, paddingRight: 14, paddingBottom: 14, paddingLeft: 16 },
   messageCol: { flex: 1, minWidth: 0, gap: 8 },
   kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
