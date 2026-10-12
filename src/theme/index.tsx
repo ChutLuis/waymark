@@ -25,7 +25,7 @@ export {
   stampText,
   typeScale,
 } from './tokens';
-export type { Palette, TypeRole } from './tokens';
+export type { BezierTuple, EasingName, Palette, TypeRole } from './tokens';
 
 export type ColorSchemeName = 'light' | 'dark';
 export type ThemePreference = 'system' | ColorSchemeName;
