@@ -114,5 +114,124 @@
     "timezone": "America/Guatemala",
     "nightMode": "Night mode: no",
     "screen": "Your trips"
+  },
+  "recapture": {
+    "codeCommit": "935d4c8592f997f9e3c88c23fc565e36baaede0a",
+    "frames": [
+      "item-editor-390-light.png",
+      "newtrip-design-390-light.png",
+      "newtrip-empty-390-light.png",
+      "newtrip-typed-390-light.png",
+      "notes-390-light.png",
+      "onboarding-390-light.png",
+      "plan-today-390-light.png",
+      "profile-390-dark.png",
+      "profile-390-light.png",
+      "trip-390-dark.png",
+      "trip-390-light.png",
+      "trip-edit-390-light.png",
+      "trips-390-dark.png",
+      "trips-390-light.png",
+      "web-newtrip-1280-light.png",
+      "web-newtrip-680-light.png"
+    ],
+    "android": {
+      "buildType": "release",
+      "freshInstall": true,
+      "apkSha256": "fae717f4009b108c9e65d1311a8b59bc2775eecf42f5197fbc7f1e1d628e7977",
+      "installedApkSha256": "fae717f4009b108c9e65d1311a8b59bc2775eecf42f5197fbc7f1e1d628e7977",
+      "density": 443,
+      "fontScale": 1.0
+    },
+    "web": {
+      "bundle": "entry-d4f3caee74c12024790c1d3902e44b3c.js",
+      "bundleSha256": "d5a906b809815c68ec662c47d06dc6178cc5a47f66527c5c87647b64ff0882e7",
+      "viewports": [
+        [
+          680,
+          1100
+        ],
+        [
+          1280,
+          900
+        ]
+      ],
+      "devicePixelRatio": 1
+    },
+    "fixtureHashes": {
+      "before": {
+        "trips": {
+          "rows": 14,
+          "md5": "42ce292fd5ac7b5d801d1fe4b432ebbd"
+        },
+        "itinerary_items": {
+          "rows": 12,
+          "md5": "1ae6d002e0dbdb7d71df1fd84219c4ef"
+        },
+        "packing_items": {
+          "rows": 16,
+          "md5": "7a4e7f41e9fbb514fa958829805adc10"
+        },
+        "trip_notes": {
+          "rows": 6,
+          "md5": "329d54432b55f370ec5662658831f07e"
+        },
+        "trip_members": {
+          "rows": 24,
+          "md5": "9c27a0fe6c5154302d000f5a1cae53a8"
+        },
+        "trip_invites": {
+          "rows": 13,
+          "md5": "32d84b970f2044f2c248c7b53f781a64"
+        }
+      },
+      "after": {
+        "trips": {
+          "rows": 14,
+          "md5": "42ce292fd5ac7b5d801d1fe4b432ebbd"
+        },
+        "itinerary_items": {
+          "rows": 12,
+          "md5": "1ae6d002e0dbdb7d71df1fd84219c4ef"
+        },
+        "packing_items": {
+          "rows": 16,
+          "md5": "7a4e7f41e9fbb514fa958829805adc10"
+        },
+        "trip_notes": {
+          "rows": 6,
+          "md5": "329d54432b55f370ec5662658831f07e"
+        },
+        "trip_members": {
+          "rows": 24,
+          "md5": "9c27a0fe6c5154302d000f5a1cae53a8"
+        },
+        "trip_invites": {
+          "rows": 13,
+          "md5": "32d84b970f2044f2c248c7b53f781a64"
+        }
+      },
+      "unchanged": true
+    },
+    "invitesAcceptedOutsidePgTap": 0,
+    "quality": {
+      "typecheck": "passed",
+      "lintErrors": 0,
+      "lintWarnings": 0,
+      "vitestTestsPassed": 79,
+      "finalChecksCompletedAt": "2026-10-11T19:54:40.854696-06:00"
+    },
+    "finalEmulatorState": {
+      "restoredAt": "2026-10-11T19:53:55.790127-06:00",
+      "actor": "Mia",
+      "signedInAccount": "tester@waymark.test",
+      "density": "Physical density: 420",
+      "fontScale": "1.0",
+      "automaticTime": "1",
+      "deviceTime": "Sun Oct 11 19:53:55 CST 2026",
+      "timezone": "America/Guatemala",
+      "nightMode": "Night mode: no",
+      "screen": "Your trips"
+    }
   }
 }

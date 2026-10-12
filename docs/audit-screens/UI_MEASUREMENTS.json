@@ -2090,5 +2090,124 @@
         71.87
       ]
     }
-  ]
+  ],
+  "StampShadow": {
+    "codeCommit": "935d4c8592f997f9e3c88c23fc565e36baaede0a",
+    "shadow": {
+      "colour": "stampInk",
+      "opacity": 0.3,
+      "offsetDp": "1 (0.8 under 40 pt)",
+      "blurStdDeviation": "1 (0.75 for 40–64 pt stamps)",
+      "svgMarginDp": 3,
+      "drawnFrom": "stampOutline() path with the blur on the path itself (no mask on the shadow)"
+    },
+    "platforms": {
+      "android": "blur",
+      "web": "blur",
+      "ios": "blur (same code path; not run here, no iOS device)"
+    },
+    "bottomEdgeColumn": {
+      "screenshot": "trip-390-light.png",
+      "xPx": 864,
+      "fromYPx": 797,
+      "pxPerDp": 2.769,
+      "hex": [
+        "#FFFFFF",
+        "#FFFFFF",
+        "#E2E2E4",
+        "#C4C5C6",
+        "#D1D1D0",
+        "#E3E1DE",
+        "#F3F1EB",
+        "#FDFAF3",
+        "#FFFCF5",
+        "#FFFCF5",
+        "#FFFCF5",
+        "#FFFCF5",
+        "#FFFCF5",
+        "#FFFCF5"
+      ],
+      "before": "pass nine: #FFFFFF straight to the card #FFFCF5",
+      "design": "fades from #CDCCCD to the card over about 3.5 pt"
+    },
+    "darkMode": "The shadow is stampInk (#15223B) in both themes: dark on the dark card, no light halo (trip-390-dark, profile-390-dark, trips-390-dark).",
+    "scrollFrames": {
+      "note": "dumpsys gfxinfo over six swipes, release build on the emulator",
+      "trips": {
+        "withBlur": "0 of 379 janky",
+        "withoutBlur": "0 of 379 and 31 of 300 janky (two runs)"
+      },
+      "profile": {
+        "withBlur": "9 of 279 janky (3.23%)",
+        "withoutBlur": "9 of 279 janky (3.23%)"
+      }
+    },
+    "clipping": "Plan's day strip (a horizontal ScrollView) pads 3 dp below the stamps with a matching -3 dp margin; every other stamp parent leaves at least 3 dp."
+  },
+  "NewTripSheet": {
+    "codeCommit": "935d4c8592f997f9e3c88c23fc565e36baaede0a",
+    "rule": "Sheet size 'tall' (New trip only): the card's top at insets.top + 9 and its bottom at the screen's bottom; the keyboard raises only the bottom.",
+    "sheetTopDp": {
+      "newtrip-empty-390-light": 32.9,
+      "newtrip-typed-390-light": 32.9,
+      "newtrip-design-390-light": 32.9,
+      "live-newtrip-360-light": 33.0,
+      "live-newtrip-360-light-keyboard": 33.0,
+      "live-newtrip-430-light": 33.0,
+      "live-newtrip-430-light-keyboard": 33.0,
+      "live-newtrip-390-dark": 32.9
+    },
+    "statusBarDp": 24,
+    "design": "top 56 under a 47 pt status bar = 9 pt below it",
+    "web": {
+      "680": {
+        "viewport": [
+          680,
+          1100
+        ],
+        "card": {
+          "x": 0,
+          "y": 9,
+          "width": 680,
+          "height": 1091,
+          "bottom": 1100
+        }
+      },
+      "1280": {
+        "viewport": [
+          1280,
+          900
+        ],
+        "card": {
+          "x": 400,
+          "y": 139.5,
+          "width": 480,
+          "height": 621,
+          "bottom": 760.5
+        }
+      }
+    },
+    "unchangedSheets": {
+      "trip-edit-390-light.png": {
+        "changedPixelsBelowStatusBar": 532,
+        "diffBox": [
+          846,
+          520,
+          1006,
+          725
+        ],
+        "note": "Only the Berlin stamp behind the scrim differs (its new shadow); the sheet is identical."
+      },
+      "item-editor-390-light.png": {
+        "changedPixelsBelowStatusBar": 17364,
+        "diffBox": [
+          0,
+          0,
+          1080,
+          984
+        ],
+        "note": "Field boxes and labels identical; the differences are the live scene behind the scrim (y 129–220 px) and the EditText glyph placement inside two inputs."
+      }
+    }
+  }
 }

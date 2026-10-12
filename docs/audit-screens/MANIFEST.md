@@ -1,13 +1,28 @@
 # Airmail audit — ninth-pass release capture
 
-**Code commit:** `3099ae1` (the design-review fixes V1–V12, N46 and N47, plus three
+**Code commits:** `3099ae1` (the design-review fixes V1–V12, N46 and N47, plus three
 design matches found while measuring the design files: field text inset, field label
-colour and the New trip preview's date range).
-**Capture window (local, UTC−6):** 2026-10-11 16:37:31 → 17:02:55.
-**92 fresh PNGs:** 83 Android release frames and 9 headful Chrome frames, all from
-`3099ae1`. Every frame was visually reviewed. There are no runtime error screens,
-LogBox or toasts; `join-invalid-390-light` is the requested invalid-code validation
-state.
+colour and the New trip preview's date range) and `935d4c8` (blurred stamp shadows and
+the tall New trip sheet).
+**Capture windows (local, UTC−6):** 2026-10-11 16:37:31 → 17:02:55 (`3099ae1`) and
+19:48:19 → 19:51:30 (`935d4c8`).
+**92 PNGs:** 83 Android release frames and 9 headful Chrome frames. 76 come from
+`3099ae1`; the 16 that show stamps or the New trip sheet were re-captured from
+`935d4c8` (listed below). Each row of the inventory records its commit and build.
+Every frame was visually reviewed. There are no runtime error screens, LogBox or
+toasts; `join-invalid-390-light` is the requested invalid-code validation state.
+
+## Stamp shadow and New trip sheet (`935d4c8`)
+
+Re-captured: `trips-390-{light,dark}`, `trip-390-{light,dark}`,
+`profile-390-{light,dark}`, `onboarding-390-light`, `plan-today-390-light`,
+`notes-390-light`, `newtrip-{design,empty,typed}-390-light`, `trip-edit-390-light`,
+`item-editor-390-light`, `web-newtrip-{680,1280}-light`.
+
+| Fix | Result and measurements |
+|-----|-------------------------|
+| Stamp shadow | Every `PerforatedStamp` casts the README's shadow along its scalloped edge: `stampInk` at 0.3, offset 1 dp (0.8 under 40 pt), Gaussian blur σ 1 (0.75 on 40–64 pt stamps). The shadow is drawn from the stamp's outline path with the blur on the path, in an Svg that reaches 3 dp past the stamp; react-native-svg filters only shapes and, on Android, masks after the blur, so the masked frame could not carry it. Under the bottom edge of `trip-390-light`'s stamp, between two holes: **#FFFFFF → #E2E2E4 → #C4C5C6 → #D1D1D0 → #E3E1DE → #F3F1EB → #FDFAF3 → #FFFCF5** (one physical pixel each, 2.77 px per dp); before, #FFFFFF went straight to the card. In dark mode the shadow is dark (`stampInk` in both themes). Android and web use the blur; iOS runs the same code path but was not run here. Scrolling Trips and Profile shows the same janky-frame counts with and without the blur. Plan's day strip keeps 3 dp under its stamps inside its scroll view. |
+| New trip sheet | New trip uses Sheet's `tall` size: the card's top sits 9 dp under the status bar and the card runs to the bottom of the screen, with the empty space under the dates. Sheet top **32.9 dp** (24 dp status bar + 9) in `newtrip-design`, `newtrip-empty` and `newtrip-typed` (keyboard up, Destination visible); **33.0 dp** at 360 and 430 with and without the keyboard; **32.9 dp** in dark. Web 680: card from **9 px** to the bottom; web 1280 keeps the centred 480 px card. Edit trip and the item editor still fit their content (their sheets are pixel-identical to the `3099ae1` frames; only the stamp and live scene behind the scrim and the input glyphs differ). |
 
 ## Proof per fix
 
@@ -66,6 +81,10 @@ trip reopens with the saved dates after a cancelled Clear dates. Older fixes: Ba
   `entry-6b2192ccc18dc70244eb97cd5880fb2b.js`, verified as the loaded script on
   every navigation. Headful Chrome via the Chrome DevTools MCP CLI, viewports
   **680×1100** and **1280×900**, DPR **1**, light colour scheme forced.
+- The `935d4c8` frames: a fresh install of its release APK
+  (`fae717f4009b108c9e65d1311a8b59bc2775eecf42f5197fbc7f1e1d628e7977`, local and
+  installed) at density 443, and its web export
+  `entry-d4f3caee74c12024790c1d3902e44b3c.js` at 680×1100 and 1280×900.
 - Per-file timestamps, actor, theme, density/viewport, dimensions, SHA-256,
   visual-review result and source commit:
   [CAPTURE_INVENTORY.json](CAPTURE_INVENTORY.json). APK/export hashes, fixture
@@ -128,7 +147,9 @@ app data (or Back, which signs out) and signing back in as Mia; no profile was
 created. Account passwords are not stored in the audit artifacts.
 
 Quality gates: **typecheck**, **lint with 0 errors and 0 warnings**,
-**76 Vitest tests**, **71 pgTAP assertions** in 10 files.
+**76 Vitest tests**, **71 pgTAP assertions** in 10 files at `3099ae1`; typecheck,
+lint (0 / 0) and **79 Vitest tests** at `935d4c8`. Fixture hashes were unchanged
+across both captures.
 
 Emulator restored to **physical density 420 with no override**, **font scale
 1.0**, **automatic time enabled**, light mode, `America/Guatemala`, signed in as

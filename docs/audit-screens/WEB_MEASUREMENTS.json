@@ -211,5 +211,33 @@
       "boxGap": 10
     }
   },
-  "method": "Live DOM of the production export at DPR 1, light colour scheme."
+  "method": "Live DOM of the production export at DPR 1, light colour scheme.",
+  "NewTripSheet": {
+    "680": {
+      "viewport": [
+        680,
+        1100
+      ],
+      "card": {
+        "x": 0,
+        "y": 9,
+        "width": 680,
+        "height": 1091,
+        "bottom": 1100
+      }
+    },
+    "1280": {
+      "viewport": [
+        1280,
+        900
+      ],
+      "card": {
+        "x": 400,
+        "y": 139.5,
+        "width": 480,
+        "height": 621,
+        "bottom": 760.5
+      }
+    }
+  }
 }
