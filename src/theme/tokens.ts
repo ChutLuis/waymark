@@ -483,6 +483,8 @@ export const motion = {
     /** 05 · Sheet of stamps. Offsets from d0 unless noted. */
     sheet: {
       d0: 380,
+      /** Each stamp prints over 380 ms (`print` easing). */
+      print: 380,
       ringAt: 710,
       ring: 300,
       ringContact: 160,

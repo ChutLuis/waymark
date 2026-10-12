@@ -31,6 +31,7 @@ import {
   shellContent,
   shellPush,
   takeFreshOrigin,
+  tripSheet,
 } from '@/features/trips/expandStore';
 import { useTrip, useTripMembers } from '@/features/trips/hooks';
 import { DESTINATION_ART } from '@/features/trips/destinationArt';
@@ -44,6 +45,10 @@ import {
   type CountryKey,
 } from '@/features/trips/destinations';
 import { motion, radius, useTheme } from '@/theme';
+
+/** Under the Trip page the shell slides 80 pt left and dims to 86%. */
+const SHEET_SHIFT = 80;
+const SHEET_DIM = 0.14;
 
 function lerp(a: number, b: number, t: number): number {
   'worklet';
@@ -201,9 +206,10 @@ export default function TripTabsLayout() {
       width: origin ? lerp(origin.paper.width, winW, e) : winW,
       height: origin ? lerp(origin.paper.height, winH, e) : winH,
       borderRadius: origin ? lerp(radius.airmailInner, 0, e) : 0,
-      transform: [{ translateX: (1 - shellPush.value) * winW }],
+      transform: [{ translateX: (1 - shellPush.value) * winW - SHEET_SHIFT * tripSheet.value }],
     };
   });
+  const sheetDimStyle = useAnimatedStyle(() => ({ opacity: SHEET_DIM * tripSheet.value }));
   const stageStyle = useAnimatedStyle(() => {
     const e = reveal.value;
     return {
@@ -347,6 +353,7 @@ export default function TripTabsLayout() {
               </>
             ) : null}
           </View>
+          <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.ink }, sheetDimStyle]} />
         </Animated.View>
       </Animated.View>
     </View>
@@ -374,4 +381,5 @@ const styles = StyleSheet.create({
   pane: { flex: 1, minHeight: 0 },
   slot: { flex: 1, minHeight: 0 },
   tabBarLayer: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  dim: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
 });

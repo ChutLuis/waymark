@@ -35,7 +35,16 @@ export default function TripLayout() {
     >
       {/* The shell draws its own ground, so Home shows around it mid-expand. */}
       <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: 'transparent', flex: 1 } }} />
-      <Stack.Screen name="settings" />
+      {/* The Trip page pushes and pops itself over the shell (README 05). */}
+      <Stack.Screen
+        name="settings"
+        options={{
+          presentation: 'transparentModal',
+          animation: 'none',
+          gestureEnabled: false,
+          contentStyle: { backgroundColor: 'transparent', flex: 1 },
+        }}
+      />
     </Stack>
   );
 }
