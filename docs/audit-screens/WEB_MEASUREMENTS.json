@@ -1,160 +1,215 @@
-[
-  {
-    "viewport": {
-      "width": 680,
-      "height": 1100,
-      "devicePixelRatio": 1
-    },
-    "root": {
-      "x": 0,
-      "y": 0,
-      "width": 680,
-      "height": 1100,
-      "bottom": 1100
-    },
-    "shell": {
-      "x": 0,
-      "y": 0,
-      "width": 680,
-      "height": 1100,
-      "bottom": 1100
-    },
-    "column": {
-      "x": 0,
-      "y": 0,
-      "width": 680,
-      "height": 1100,
-      "bottom": 1100
-    },
-    "scroller": {
-      "x": 0,
-      "y": 353.734375,
-      "width": 680,
-      "height": 681.265625,
-      "bottom": 1035
-    },
-    "scrollerStyle": {
-      "flex": "1 1 0%",
-      "minHeight": "0px"
-    },
-    "tabBar": {
-      "x": 0,
-      "y": 1035,
-      "width": 680,
-      "height": 65,
-      "bottom": 1100
-    },
-    "labels": {
-      "Plan": {
-        "x": 75.203125,
-        "y": 1076,
-        "width": 31.59375,
-        "height": 16,
-        "bottom": 1092
+{
+  "N16": {
+    "680": {
+      "viewport": {
+        "width": 680,
+        "height": 1100,
+        "devicePixelRatio": 1
       },
-      "Packing": {
-        "x": 229.890625,
-        "y": 1076,
-        "width": 54.203125,
-        "height": 16,
-        "bottom": 1092
+      "scroller": {
+        "x": 0,
+        "y": 353.734375,
+        "width": 680,
+        "height": 681.265625,
+        "bottom": 1035
       },
-      "Notes": {
-        "x": 403.703125,
-        "y": 1076,
-        "width": 38.578125,
-        "height": 16,
-        "bottom": 1092
+      "tabBar": {
+        "x": 0,
+        "y": 1035,
+        "width": 680,
+        "height": 65,
+        "bottom": 1100
       },
-      "Trip": {
-        "x": 574.0625,
-        "y": 1076,
-        "width": 29.875,
-        "height": 16,
-        "bottom": 1092
-      }
+      "documentScrollHeight": 1100,
+      "tabBarEndsAtViewportBottom": true,
+      "noPageScroll": true
     },
-    "commit": "9645fb1fbc968f37093304ffb9083aaa94c5b98a",
-    "exportBundle": "entry-93aa427e05cd9a620a2b258313e84857.js",
-    "measuredAt": "2026-10-09T20:43:29.059554-06:00"
+    "1280": {
+      "viewport": {
+        "width": 1280,
+        "height": 900,
+        "devicePixelRatio": 1
+      },
+      "scroller": {
+        "x": 300,
+        "y": 353.734375,
+        "width": 680,
+        "height": 481.265625,
+        "bottom": 835
+      },
+      "tabBar": {
+        "x": 300,
+        "y": 835,
+        "width": 680,
+        "height": 65,
+        "bottom": 900
+      },
+      "documentScrollHeight": 900,
+      "tabBarEndsAtViewportBottom": true,
+      "noPageScroll": true
+    }
   },
-  {
-    "viewport": {
-      "width": 1280,
-      "height": 900,
-      "devicePixelRatio": 1
-    },
-    "root": {
-      "x": 0,
-      "y": 0,
-      "width": 1280,
-      "height": 900,
-      "bottom": 900
-    },
-    "shell": {
-      "x": 0,
-      "y": 0,
-      "width": 1280,
-      "height": 900,
-      "bottom": 900
-    },
-    "column": {
-      "x": 300,
-      "y": 0,
-      "width": 680,
-      "height": 900,
-      "bottom": 900
-    },
-    "scroller": {
-      "x": 300,
-      "y": 353.734375,
-      "width": 680,
-      "height": 481.265625,
-      "bottom": 835
-    },
-    "scrollerStyle": {
-      "flex": "1 1 0%",
-      "minHeight": "0px"
-    },
-    "tabBar": {
-      "x": 300,
-      "y": 835,
-      "width": 680,
-      "height": 65,
-      "bottom": 900
-    },
-    "labels": {
-      "Plan": {
-        "x": 375.203125,
-        "y": 876,
-        "width": 31.59375,
-        "height": 16,
-        "bottom": 892
+  "V1": {
+    "680": {
+      "viewportHeight": 1100,
+      "button": {
+        "y": 1018,
+        "height": 48,
+        "bottom": 1066
       },
-      "Packing": {
-        "x": 529.890625,
-        "y": 876,
-        "width": 54.203125,
-        "height": 16,
-        "bottom": 892
-      },
-      "Notes": {
-        "x": 703.703125,
-        "y": 876,
-        "width": 38.578125,
-        "height": 16,
-        "bottom": 892
-      },
-      "Trip": {
-        "x": 874.0625,
-        "y": 876,
-        "width": 29.875,
-        "height": 16,
-        "bottom": 892
-      }
+      "bottomGap": 34
     },
-    "commit": "9645fb1fbc968f37093304ffb9083aaa94c5b98a",
-    "exportBundle": "entry-93aa427e05cd9a620a2b258313e84857.js",
-    "measuredAt": "2026-10-09T20:43:38.639652-06:00"
-  }
-]
+    "1280": {
+      "viewportHeight": 900,
+      "button": {
+        "y": 818,
+        "height": 48,
+        "bottom": 866
+      },
+      "bottomGap": 34
+    }
+  },
+  "V4": {
+    "680": {
+      "LEAVE": {
+        "box": {
+          "x": 24,
+          "y": 1010,
+          "w": 311,
+          "h": 64
+        },
+        "border": "1px",
+        "radius": "8px",
+        "background": "rgb(255, 252, 245)",
+        "texts": [
+          {
+            "text": "LEAVE",
+            "left": 14,
+            "top": 12,
+            "width": 35.984375,
+            "height": 13,
+            "font": "CourierPrime_700Bold 11px/14px",
+            "color": "rgb(70, 83, 107)",
+            "letterSpacing": "0.6px"
+          },
+          {
+            "text": "Add date",
+            "left": 14,
+            "top": 25,
+            "width": 84.578125,
+            "height": 30,
+            "font": "Besley_600SemiBold 18px/24px",
+            "color": "rgb(90, 100, 120)",
+            "letterSpacing": "normal"
+          }
+        ]
+      },
+      "RETURN": {
+        "box": {
+          "x": 345,
+          "y": 1010,
+          "w": 311,
+          "h": 64
+        },
+        "border": "1px",
+        "radius": "8px",
+        "background": "rgb(255, 252, 245)",
+        "texts": [
+          {
+            "text": "RETURN",
+            "left": 14,
+            "top": 12,
+            "width": 43.1875,
+            "height": 13,
+            "font": "CourierPrime_700Bold 11px/14px",
+            "color": "rgb(70, 83, 107)",
+            "letterSpacing": "0.6px"
+          },
+          {
+            "text": "Add date",
+            "left": 14,
+            "top": 25,
+            "width": 84.578125,
+            "height": 30,
+            "font": "Besley_600SemiBold 18px/24px",
+            "color": "rgb(90, 100, 120)",
+            "letterSpacing": "normal"
+          }
+        ]
+      },
+      "groupLabelBottomToBoxTop": 6,
+      "boxGap": 10
+    },
+    "1280": {
+      "LEAVE": {
+        "box": {
+          "x": 424,
+          "y": 662.5,
+          "w": 211,
+          "h": 64
+        },
+        "border": "1px",
+        "radius": "8px",
+        "background": "rgb(255, 252, 245)",
+        "texts": [
+          {
+            "text": "LEAVE",
+            "left": 14,
+            "top": 12,
+            "width": 35.984375,
+            "height": 13,
+            "font": "CourierPrime_700Bold 11px/14px",
+            "color": "rgb(70, 83, 107)",
+            "letterSpacing": "0.6px"
+          },
+          {
+            "text": "Add date",
+            "left": 14,
+            "top": 25,
+            "width": 84.578125,
+            "height": 30,
+            "font": "Besley_600SemiBold 18px/24px",
+            "color": "rgb(90, 100, 120)",
+            "letterSpacing": "normal"
+          }
+        ]
+      },
+      "RETURN": {
+        "box": {
+          "x": 645,
+          "y": 662.5,
+          "w": 211,
+          "h": 64
+        },
+        "border": "1px",
+        "radius": "8px",
+        "background": "rgb(255, 252, 245)",
+        "texts": [
+          {
+            "text": "RETURN",
+            "left": 14,
+            "top": 12,
+            "width": 43.1875,
+            "height": 13,
+            "font": "CourierPrime_700Bold 11px/14px",
+            "color": "rgb(70, 83, 107)",
+            "letterSpacing": "0.6px"
+          },
+          {
+            "text": "Add date",
+            "left": 14,
+            "top": 25,
+            "width": 84.578125,
+            "height": 30,
+            "font": "Besley_600SemiBold 18px/24px",
+            "color": "rgb(90, 100, 120)",
+            "letterSpacing": "normal"
+          }
+        ]
+      },
+      "groupLabelBottomToBoxTop": 6,
+      "boxGap": 10
+    }
+  },
+  "method": "Live DOM of the production export at DPR 1, light colour scheme."
+}

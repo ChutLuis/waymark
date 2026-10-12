@@ -1,281 +1,1708 @@
 {
-  "codeCommit": "9645fb1fbc968f37093304ffb9083aaa94c5b98a",
-  "measuredAt": "2026-10-09T20:43:44.018727-06:00",
-  "method": "Android UIAutomator bounds from the capture moment for controls and text nodes; original PNG pixels for glyph ink, gesture pill, shadows and hairlines. px × 160 / density converts to dp. \"Glyph\" gaps run from the date field's bottom border edge to the first/last row of text ink.",
-  "N41": [
-    {
-      "screenshot": "item-editor-390-light.png",
-      "density": 443,
-      "link": "Clear times",
-      "fieldBoundsPx": [
-        66,
-        1469,
-        523,
-        1613
-      ],
-      "linkBoundsPx": [
-        66,
-        1624,
-        317,
-        1680
-      ],
-      "hitSlopDp": {
-        "top": 4,
-        "bottom": 20,
-        "left": 8,
-        "right": 8
+  "codeCommit": "3099ae141a9c2e7bf255909d146aaa8909f57089",
+  "measuredAt": "2026-10-11T18:27:49.434945-06:00",
+  "method": "Android UIAutomator bounds from the capture moment; original PNG pixels for glyph ink, card edges, shadows and hairlines (px × 160 / density = dp). Design values are measured from design/*.png at 2× (px / 2 = pt). Web values come from the live DOM at DPR 1.",
+  "V1": {
+    "android": {
+      "signin-360": {
+        "inviteButton": [
+          24.0,
+          718.0,
+          336.0,
+          766.0
+        ],
+        "height": 48.0,
+        "bottomToScreenEdge": 34.0
       },
-      "touchAreaPx": [
-        43.9,
-        1612.9,
-        339.1,
-        1735.4
-      ],
-      "touchTopMinusFieldBottomDp": -0.03,
-      "touchHeightDp": 44.23,
-      "visualGapLinkBoundsDp": 3.97
-    },
-    {
-      "screenshot": "item-editor-360-light.png",
-      "density": 480,
-      "link": "Clear times",
-      "fieldBoundsPx": [
-        72,
-        1392,
-        522,
-        1548
-      ],
-      "linkBoundsPx": [
-        72,
-        1560,
-        341,
-        1620
-      ],
-      "hitSlopDp": {
-        "top": 4,
-        "bottom": 20,
-        "left": 8,
-        "right": 8
+      "signup-360": {
+        "createAccount": [
+          24.0,
+          660.0,
+          336.0,
+          716.0
+        ],
+        "createBottomToScreenEdge": 84.0,
+        "signInLinkBottomToScreenEdge": 45.0
       },
-      "touchAreaPx": [
-        48.0,
-        1548.0,
-        365.0,
-        1680.0
-      ],
-      "touchTopMinusFieldBottomDp": 0.0,
-      "touchHeightDp": 44.0,
-      "visualGapLinkBoundsDp": 4.0
-    },
-    {
-      "screenshot": "trip-edit-390-light.png",
-      "density": 443,
-      "link": "Clear dates",
-      "fieldBoundsPx": [
-        66,
-        2051,
-        523,
-        2195
-      ],
-      "linkBoundsPx": [
-        66,
-        2206,
-        314,
-        2262
-      ],
-      "hitSlopDp": {
-        "top": 4,
-        "bottom": 20,
-        "left": 8,
-        "right": 8
+      "signin-390": {
+        "inviteButton": [
+          23.8,
+          784.7,
+          366.2,
+          832.7
+        ],
+        "height": 48.0,
+        "bottomToScreenEdge": 33.9
       },
-      "touchAreaPx": [
-        43.9,
-        2194.9,
-        336.1,
-        2317.4
-      ],
-      "touchTopMinusFieldBottomDp": -0.03,
-      "touchHeightDp": 44.23,
-      "visualGapLinkBoundsDp": 3.97
-    },
-    {
-      "screenshot": "newtrip-dates-390-light.png",
-      "density": 443,
-      "link": "Clear dates",
-      "fieldBoundsPx": [
-        66,
-        2051,
-        523,
-        2195
-      ],
-      "linkBoundsPx": [
-        66,
-        2206,
-        314,
-        2262
-      ],
-      "hitSlopDp": {
-        "top": 4,
-        "bottom": 20,
-        "left": 8,
-        "right": 8
+      "signup-390": {
+        "createAccount": [
+          23.8,
+          726.6,
+          366.2,
+          782.5
+        ],
+        "createBottomToScreenEdge": 84.1,
+        "signInLinkBottomToScreenEdge": 45.1
       },
-      "touchAreaPx": [
-        43.9,
-        2194.9,
-        336.1,
-        2317.4
+      "signin-430": {
+        "inviteButton": [
+          23.9,
+          873.5,
+          406.1,
+          921.7
+        ],
+        "height": 48.2,
+        "bottomToScreenEdge": 33.8
+      },
+      "signup-430": {
+        "createAccount": [
+          23.9,
+          815.4,
+          406.1,
+          871.5
+        ],
+        "createBottomToScreenEdge": 84.0,
+        "signInLinkBottomToScreenEdge": 45.0
+      }
+    },
+    "onboarding": {
+      "360": {
+        "continueDp": [
+          24.0,
+          704.0,
+          336.0,
+          760.0
+        ],
+        "continueBottomToScreenEdge": 40.0
+      },
+      "390": {
+        "continueDp": [
+          23.8,
+          770.6,
+          366.2,
+          826.6
+        ],
+        "continueBottomToScreenEdge": 40.1
+      },
+      "430": {
+        "continueDp": [
+          23.9,
+          859.6,
+          406.1,
+          915.7
+        ],
+        "continueBottomToScreenEdge": 39.8
+      }
+    },
+    "rule": "paddingBottom = max(insets.bottom, 34) (40 on Onboarding); this device's gesture inset is smaller, so the block ends 34 / 40 dp above the screen edge",
+    "web": {
+      "680": {
+        "viewportHeight": 1100,
+        "button": {
+          "y": 1018,
+          "height": 48,
+          "bottom": 1066
+        },
+        "bottomGap": 34
+      },
+      "1280": {
+        "viewportHeight": 900,
+        "button": {
+          "y": 818,
+          "height": 48,
+          "bottom": 866
+        },
+        "bottomGap": 34
+      }
+    },
+    "keyboard": "signin-keyboard-390-light, signup-keyboard-360/390-light: the block stays below the form and scrolls with it; no field is covered (flexGrow content, marginTop auto, KeyboardAvoidingView unchanged).",
+    "measuredLive": "Sign in, Sign up and Onboarding at 360/390/430 were measured on the release build without capturing (the matrix holds 360 and 390 Sign in, 390 Sign up and Onboarding)."
+  },
+  "V2": {
+    "360": {
+      "rows": [
+        {
+          "item": "Rain jacket",
+          "label": [
+            70.7,
+            272.7,
+            183.7,
+            294.7
+          ],
+          "labelLines": 1,
+          "me": [
+            197.7,
+            261.7,
+            255.3,
+            305.7
+          ],
+          "theo": [
+            263.3,
+            261.7,
+            335.7,
+            305.7
+          ],
+          "pillHeight": 44.0,
+          "pillGap": 8.0,
+          "pillsOnLabelRow": true,
+          "labelToMeGap": 14.0
+        },
+        {
+          "item": "Camera and charger",
+          "label": [
+            70.7,
+            325.7,
+            183.7,
+            369.7
+          ],
+          "labelLines": 2,
+          "me": [
+            197.7,
+            325.7,
+            255.3,
+            369.7
+          ],
+          "theo": [
+            263.3,
+            325.7,
+            335.7,
+            369.7
+          ],
+          "pillHeight": 44.0,
+          "pillGap": 8.0,
+          "pillsOnLabelRow": true,
+          "labelToMeGap": 14.0
+        },
+        {
+          "item": "Pocket Wi-Fi",
+          "label": [
+            70.7,
+            389.7,
+            183.7,
+            433.7
+          ],
+          "labelLines": 2,
+          "me": [
+            197.7,
+            389.7,
+            255.3,
+            433.7
+          ],
+          "theo": [
+            263.3,
+            389.7,
+            335.7,
+            433.7
+          ],
+          "pillHeight": 44.0,
+          "pillGap": 8.0,
+          "pillsOnLabelRow": true,
+          "labelToMeGap": 14.0
+        }
       ],
-      "touchTopMinusFieldBottomDp": -0.03,
-      "touchHeightDp": 44.23,
-      "visualGapLinkBoundsDp": 3.97
-    }
-  ],
-  "N42": [
-    {
-      "screenshot": "trip-edit-390-light.png",
-      "density": 443,
-      "destinationFirstTextPx": 116,
-      "startsFirstTextPx": 116,
-      "destinationInsetFromBoxDp": 18.06,
-      "startsInsetFromBoxDp": 18.06,
-      "differenceDp": 0.0
+      "rowPitch": [
+        64.0,
+        64.0
+      ],
+      "theoRightEdge": 335.7
     },
-    {
-      "screenshot": "newtrip-dates-390-light.png",
-      "density": 443,
-      "destinationFirstTextPx": 117,
-      "startsFirstTextPx": 116,
-      "destinationInsetFromBoxDp": 18.42,
-      "startsInsetFromBoxDp": 18.06,
-      "differenceDp": 0.36
+    "390": {
+      "rows": [
+        {
+          "item": "Rain jacket",
+          "label": [
+            70.8,
+            281.3,
+            213.1,
+            303.3
+          ],
+          "labelLines": 1,
+          "me": [
+            226.8,
+            270.5,
+            284.6,
+            314.5
+          ],
+          "theo": [
+            292.9,
+            270.5,
+            365.4,
+            314.5
+          ],
+          "pillHeight": 44.1,
+          "pillGap": 8.3,
+          "pillsOnLabelRow": true,
+          "labelToMeGap": 13.7
+        },
+        {
+          "item": "Camera and charger",
+          "label": [
+            70.8,
+            334.4,
+            213.1,
+            378.4
+          ],
+          "labelLines": 2,
+          "me": [
+            226.8,
+            334.4,
+            284.6,
+            378.4
+          ],
+          "theo": [
+            292.9,
+            334.4,
+            365.4,
+            378.4
+          ],
+          "pillHeight": 44.1,
+          "pillGap": 8.3,
+          "pillsOnLabelRow": true,
+          "labelToMeGap": 13.7
+        },
+        {
+          "item": "Pocket Wi-Fi",
+          "label": [
+            70.8,
+            409.5,
+            213.1,
+            431.5
+          ],
+          "labelLines": 1,
+          "me": [
+            226.8,
+            398.7,
+            284.6,
+            442.7
+          ],
+          "theo": [
+            292.9,
+            398.7,
+            365.4,
+            442.7
+          ],
+          "pillHeight": 44.1,
+          "pillGap": 8.3,
+          "pillsOnLabelRow": true,
+          "labelToMeGap": 13.7
+        }
+      ],
+      "rowPitch": [
+        63.9,
+        64.3
+      ],
+      "theoRightEdge": 365.4
     },
-    {
-      "screenshot": "newtrip-empty-390-light.png",
-      "density": 443,
-      "destinationFirstTextPx": 117,
-      "startsFirstTextPx": 114,
-      "destinationInsetFromBoxDp": 18.42,
-      "startsInsetFromBoxDp": 17.34,
-      "differenceDp": 1.08
-    }
-  ],
-  "N42itemEditor360": {
-    "screenshot": "item-editor-longdate-360-light.png",
-    "density": 480,
-    "fieldAccessibility": "STARTS: 28 Nov, 10:40",
-    "fieldBoundsPx": [
-      72,
-      1392,
-      522,
-      1548
-    ],
-    "valueBoundsPx": [
-      124,
-      1434,
-      449,
-      1506
-    ],
-    "singleLine": true,
-    "roomRightOfTextDp": 6.83,
-    "widestPossibleValueDp": {
-      "text": "20 May, 20:00",
-      "widthDp": 114.0,
-      "roomDp": 115.0
+    "design": {
+      "rowHeight": 64,
+      "pill": "44 high, padding 0 16, gap 8",
+      "label": "Besley 600 17/22, up to two lines"
+    },
+    "at360": "Pocket Wi-Fi renders 117.4 dp wide at 17/22 and the row leaves 113 dp, so it wraps to two lines beside the pills (the design allows two). The design's own values leave 115 pt at 360 for its 115.5 pt label. At 390 every label in the fixture is on one line with the pills.",
+    "pillWidthNote": "Pills measure 57.7 / 72.3 dp against the design's 56.5 / 71.5 pt: Android sets the labels ~1 pt wider than Chrome."
+  },
+  "V3": {
+    "360-light": {
+      "track": [
+        14.0,
+        275.0,
+        346.0,
+        327.0
+      ],
+      "trackWidth": 332.0,
+      "firstCardEdges": [
+        13.0,
+        347.0
+      ],
+      "leftEdgeDelta": 1.0,
+      "rightEdgeDelta": -1.0,
+      "segments": [
+        {
+          "label": "All · 3",
+          "width": 105.3,
+          "height": 44.0
+        },
+        {
+          "label": "Shared · 2",
+          "width": 105.4,
+          "height": 44.0
+        },
+        {
+          "label": "Only you · 1",
+          "width": 105.3,
+          "height": 44.0
+        }
+      ]
+    },
+    "360-dark": {
+      "track": [
+        14.0,
+        275.0,
+        346.0,
+        327.0
+      ],
+      "trackWidth": 332.0,
+      "firstCardEdges": [
+        14.0,
+        346.0
+      ],
+      "leftEdgeDelta": 0.0,
+      "rightEdgeDelta": 0.0,
+      "segments": [
+        {
+          "label": "All · 3",
+          "width": 105.3,
+          "height": 44.0
+        },
+        {
+          "label": "Shared · 2",
+          "width": 105.4,
+          "height": 44.0
+        },
+        {
+          "label": "Only you · 1",
+          "width": 105.3,
+          "height": 44.0
+        }
+      ]
+    },
+    "390-light": {
+      "track": [
+        14.1,
+        283.8,
+        375.9,
+        335.5
+      ],
+      "trackWidth": 361.8,
+      "firstCardEdges": [
+        13.4,
+        376.6
+      ],
+      "leftEdgeDelta": 0.7,
+      "rightEdgeDelta": -0.7,
+      "segments": [
+        {
+          "label": "All · 3",
+          "width": 115.1,
+          "height": 43.7
+        },
+        {
+          "label": "Shared · 2",
+          "width": 115.5,
+          "height": 43.7
+        },
+        {
+          "label": "Only you · 1",
+          "width": 115.1,
+          "height": 43.7
+        }
+      ]
+    },
+    "390-dark": {
+      "track": [
+        14.1,
+        283.8,
+        375.9,
+        335.5
+      ],
+      "trackWidth": 361.8,
+      "firstCardEdges": [
+        14.1,
+        375.9
+      ],
+      "leftEdgeDelta": 0.0,
+      "rightEdgeDelta": 0.0,
+      "segments": [
+        {
+          "label": "All · 3",
+          "width": 115.1,
+          "height": 43.7
+        },
+        {
+          "label": "Shared · 2",
+          "width": 115.5,
+          "height": 43.7
+        },
+        {
+          "label": "Only you · 1",
+          "width": 115.1,
+          "height": 43.7
+        }
+      ]
+    },
+    "430-light": {
+      "track": [
+        13.9,
+        294.6,
+        416.1,
+        346.4
+      ],
+      "trackWidth": 402.1,
+      "firstCardEdges": [
+        13.1,
+        416.9
+      ],
+      "leftEdgeDelta": 0.8,
+      "rightEdgeDelta": -0.8,
+      "segments": [
+        {
+          "label": "All · 3",
+          "width": 128.6,
+          "height": 43.8
+        },
+        {
+          "label": "Shared · 2",
+          "width": 129.0,
+          "height": 43.8
+        },
+        {
+          "label": "Only you · 1",
+          "width": 128.6,
+          "height": 43.8
+        }
+      ]
+    },
+    "430-dark": {
+      "track": [
+        13.9,
+        294.6,
+        416.1,
+        346.4
+      ],
+      "trackWidth": 402.1,
+      "firstCardEdges": [
+        13.9,
+        416.1
+      ],
+      "leftEdgeDelta": 0.0,
+      "rightEdgeDelta": 0.0,
+      "segments": [
+        {
+          "label": "All · 3",
+          "width": 128.6,
+          "height": 43.8
+        },
+        {
+          "label": "Shared · 2",
+          "width": 129.0,
+          "height": 43.8
+        },
+        {
+          "label": "Only you · 1",
+          "width": 128.6,
+          "height": 43.8
+        }
+      ]
+    },
+    "note": "Track edges against the first note card: 0.0 dp in dark; ±0.7–1.0 dp in light is the card's 1 dp shadow edge, not the card.",
+    "labelsAt360": "All · 3, Shared · 2, Only you · 1 on one line, untruncated (notes-360-light/dark)."
+  },
+  "V4": {
+    "build-LEAVE": {
+      "desc": "LEAVE: Fri 13 Nov",
+      "box": {
+        "x": 23.8,
+        "y": 728.7,
+        "w": 166.1,
+        "h": 63.9
+      },
+      "label": {
+        "inkTop": 14.4,
+        "inkBottom": 20.9,
+        "inkLeft": 14.1,
+        "inkRightToEdge": 117.0,
+        "inkWidth": 35.0
+      },
+      "value": {
+        "inkTop": 32.9,
+        "inkBottom": 47.7,
+        "inkLeft": 14.4,
+        "inkRightToEdge": 55.2,
+        "inkWidth": 96.4
+      }
+    },
+    "build-RETURN": {
+      "desc": "RETURN: Mon 23 Nov",
+      "box": {
+        "x": 199.7,
+        "y": 728.7,
+        "w": 166.1,
+        "h": 63.9
+      },
+      "label": {
+        "inkTop": 14.4,
+        "inkBottom": 20.9,
+        "inkLeft": 14.1,
+        "inkRightToEdge": 109.4,
+        "inkWidth": 42.6
+      },
+      "value": {
+        "inkTop": 33.6,
+        "inkBottom": 47.7,
+        "inkLeft": 14.4,
+        "inkRightToEdge": 40.4,
+        "inkWidth": 111.2
+      }
+    },
+    "design-LEAVE": {
+      "desc": "LEAVE: Sat 13 Nov",
+      "box": {
+        "x": 24.0,
+        "y": 591.0,
+        "w": 166.0,
+        "h": 64.0
+      },
+      "label": {
+        "inkTop": 14.5,
+        "inkBottom": 21.0,
+        "inkLeft": 14.5,
+        "inkRightToEdge": 117.0,
+        "inkWidth": 34.5
+      },
+      "value": {
+        "inkTop": 32.5,
+        "inkBottom": 47.5,
+        "inkLeft": 15.0,
+        "inkRightToEdge": 54.0,
+        "inkWidth": 97.0
+      }
+    },
+    "design-RETURN": {
+      "desc": "RETURN: Tue 23 Nov",
+      "box": {
+        "x": 200.0,
+        "y": 591.0,
+        "w": 166.0,
+        "h": 64.0
+      },
+      "label": {
+        "inkTop": 14.5,
+        "inkBottom": 21.0,
+        "inkLeft": 14.5,
+        "inkRightToEdge": 109.5,
+        "inkWidth": 42.0
+      },
+      "value": {
+        "inkTop": 33.5,
+        "inkBottom": 47.5,
+        "inkLeft": 14.5,
+        "inkRightToEdge": 47.5,
+        "inkWidth": 104.0
+      }
+    },
+    "groupLabel": {
+      "DATES": [
+        23.8,
+        706.3,
+        366.2,
+        722.6
+      ],
+      "labelBottomToBoxTop": 6.1,
+      "boxGap": 9.8
+    },
+    "widestAt360": {
+      "newtrip-longdate-360-light:LEAVE": {
+        "desc": "LEAVE: Wed 20 May",
+        "boxWidth": 151.0,
+        "boxHeight": 64.0,
+        "room": 123.0,
+        "valueInkWidth": 117.0,
+        "spare": 6.0,
+        "valueLines": 1
+      },
+      "newtrip-longdate-360-light:RETURN": {
+        "desc": "RETURN: Wed 27 May",
+        "boxWidth": 151.0,
+        "boxHeight": 64.0,
+        "room": 123.0,
+        "valueInkWidth": 115.7,
+        "spare": 7.3,
+        "valueLines": 1
+      },
+      "item-editor-longdate-360-light:STARTS": {
+        "desc": "STARTS: 20 May, 20:00",
+        "boxWidth": 151.0,
+        "boxHeight": 64.0,
+        "room": 123.0,
+        "valueInkWidth": 111.3,
+        "spare": 11.7,
+        "valueLines": 1
+      }
+    },
+    "web": {
+      "680": {
+        "LEAVE": {
+          "box": {
+            "x": 24,
+            "y": 1010,
+            "w": 311,
+            "h": 64
+          },
+          "border": "1px",
+          "radius": "8px",
+          "background": "rgb(255, 252, 245)",
+          "texts": [
+            {
+              "text": "LEAVE",
+              "left": 14,
+              "top": 12,
+              "width": 35.984375,
+              "height": 13,
+              "font": "CourierPrime_700Bold 11px/14px",
+              "color": "rgb(70, 83, 107)",
+              "letterSpacing": "0.6px"
+            },
+            {
+              "text": "Add date",
+              "left": 14,
+              "top": 25,
+              "width": 84.578125,
+              "height": 30,
+              "font": "Besley_600SemiBold 18px/24px",
+              "color": "rgb(90, 100, 120)",
+              "letterSpacing": "normal"
+            }
+          ]
+        },
+        "RETURN": {
+          "box": {
+            "x": 345,
+            "y": 1010,
+            "w": 311,
+            "h": 64
+          },
+          "border": "1px",
+          "radius": "8px",
+          "background": "rgb(255, 252, 245)",
+          "texts": [
+            {
+              "text": "RETURN",
+              "left": 14,
+              "top": 12,
+              "width": 43.1875,
+              "height": 13,
+              "font": "CourierPrime_700Bold 11px/14px",
+              "color": "rgb(70, 83, 107)",
+              "letterSpacing": "0.6px"
+            },
+            {
+              "text": "Add date",
+              "left": 14,
+              "top": 25,
+              "width": 84.578125,
+              "height": 30,
+              "font": "Besley_600SemiBold 18px/24px",
+              "color": "rgb(90, 100, 120)",
+              "letterSpacing": "normal"
+            }
+          ]
+        },
+        "groupLabelBottomToBoxTop": 6,
+        "boxGap": 10
+      },
+      "1280": {
+        "LEAVE": {
+          "box": {
+            "x": 424,
+            "y": 662.5,
+            "w": 211,
+            "h": 64
+          },
+          "border": "1px",
+          "radius": "8px",
+          "background": "rgb(255, 252, 245)",
+          "texts": [
+            {
+              "text": "LEAVE",
+              "left": 14,
+              "top": 12,
+              "width": 35.984375,
+              "height": 13,
+              "font": "CourierPrime_700Bold 11px/14px",
+              "color": "rgb(70, 83, 107)",
+              "letterSpacing": "0.6px"
+            },
+            {
+              "text": "Add date",
+              "left": 14,
+              "top": 25,
+              "width": 84.578125,
+              "height": 30,
+              "font": "Besley_600SemiBold 18px/24px",
+              "color": "rgb(90, 100, 120)",
+              "letterSpacing": "normal"
+            }
+          ]
+        },
+        "RETURN": {
+          "box": {
+            "x": 645,
+            "y": 662.5,
+            "w": 211,
+            "h": 64
+          },
+          "border": "1px",
+          "radius": "8px",
+          "background": "rgb(255, 252, 245)",
+          "texts": [
+            {
+              "text": "RETURN",
+              "left": 14,
+              "top": 12,
+              "width": 43.1875,
+              "height": 13,
+              "font": "CourierPrime_700Bold 11px/14px",
+              "color": "rgb(70, 83, 107)",
+              "letterSpacing": "0.6px"
+            },
+            {
+              "text": "Add date",
+              "left": 14,
+              "top": 25,
+              "width": 84.578125,
+              "height": 30,
+              "font": "Besley_600SemiBold 18px/24px",
+              "color": "rgb(90, 100, 120)",
+              "letterSpacing": "normal"
+            }
+          ]
+        },
+        "groupLabelBottomToBoxTop": 6,
+        "boxGap": 10
+      }
     }
   },
-  "N42web": [
-    {
-      "screenshot": "web-newtrip-680-light.png",
-      "viewport": [
-        680,
-        1100
-      ],
-      "destinationFieldPx": [
-        24,
-        934,
-        656,
-        986
-      ],
-      "startsFieldPx": [
-        24,
-        1022,
-        334,
-        1074
-      ],
-      "destinationFirstTextPx": 42,
-      "startsFirstTextPx": 41,
-      "destinationInsetPx": 18,
-      "startsInsetPx": 17,
-      "differencePx": 1
+  "V5": {
+    "screenshot": "newtrip-design-390-light.png",
+    "inputBoundsDp": [
+      39.7,
+      654.3,
+      229.3,
+      678.5
+    ],
+    "stampReadyTextBoundsDp": [
+      258.6,
+      657.6,
+      351.4,
+      675.6
+    ],
+    "insideFieldRow": true,
+    "inputEndsBeforeStampReady": true,
+    "inputToStampReadyGapDp": 29.2,
+    "stampReadyTextRightToFieldEdgeDp": 14.8,
+    "designStampReadyInkRightToFieldEdgeDp": 14.0,
+    "note": "The input is flex: 1 and Stamp ready a non-shrinking sibling, so typed text scrolls inside the input and cannot run under it.",
+    "labelAccessoryProp": "removed (no other caller)"
+  },
+  "V6": {
+    "newtrip-empty-390-light.png": {
+      "optionalTagPresent": false
     },
-    {
-      "screenshot": "web-newtrip-1280-light.png",
-      "viewport": [
-        1280,
-        900
-      ],
-      "destinationFieldPx": [
-        424,
-        580,
-        856,
-        632
-      ],
-      "startsFieldPx": [
-        424,
-        668,
-        634,
-        720
-      ],
-      "destinationFirstTextPx": 442,
-      "startsFirstTextPx": 441,
-      "destinationInsetPx": 18,
-      "startsInsetPx": 17,
-      "differencePx": 1
+    "newtrip-design-390-light.png": {
+      "optionalTagPresent": false
+    },
+    "trip-edit-390-light.png": {
+      "optionalTagPresent": false
     }
-  ],
-  "N43": {
-    "screenshot": "web-newtrip-1280-light.png",
-    "viewport": [
-      1280,
-      900
+  },
+  "V7": {
+    "screenshot": "profile-390-light.png",
+    "text": "tester@waymark.test",
+    "boundsDp": [
+      122.1,
+      122.8,
+      366.5,
+      139.0
     ],
-    "cardPx": [
-      400,
-      146,
-      880,
-      754
+    "inkWidthDp": 146.2,
+    "advancePerCharacterDp": 7.86,
+    "courierPrime13AdvanceDp": 7.8,
+    "singleLine": true,
+    "lineHeightDp": 16.2,
+    "design": "Courier Prime 700 13/16, ink2, no letter-spacing, not uppercase"
+  },
+  "V8": {
+    "360": {
+      "previewCardHeight": 72.7,
+      "stampTopFromCard": 10.3,
+      "stampRightToScreenEdge": 35.0
+    },
+    "390": {
+      "previewCardHeight": 73.7,
+      "stampTopFromCard": 10.5,
+      "stampRightToScreenEdge": 35.0
+    },
+    "430": {
+      "previewCardHeight": 73.3,
+      "stampTopFromCard": 10.8,
+      "stampRightToScreenEdge": 35.4
+    },
+    "design": {
+      "previewCardHeight": 74,
+      "stamp": "top 11, right 11 inside a card at the 24 pt column"
+    },
+    "messageLine": "One line at 360, 390 and 430, as drawn: the fixed sample message has no right padding (the design keeps it on one line in a 74 pt card); the header, which carries the typed name, keeps 30 pt clear of the stamp."
+  },
+  "V9": {
+    "360-light": {
+      "stamps": [
+        {
+          "day": "SAT 3",
+          "bounds": [
+            16.0,
+            428.0,
+            64.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "SUN 4",
+          "bounds": [
+            73.0,
+            428.0,
+            121.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "MON 5",
+          "bounds": [
+            130.0,
+            428.0,
+            178.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "TUE 6",
+          "bounds": [
+            187.0,
+            428.0,
+            235.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "WED 7",
+          "bounds": [
+            244.0,
+            428.0,
+            292.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "THU 8",
+          "bounds": [
+            301.0,
+            428.0,
+            349.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "FRI 9",
+          "bounds": [
+            358.0,
+            428.0,
+            360.0,
+            484.0
+          ],
+          "visibleWidth": 2.0
+        }
+      ],
+      "fullStamps": 6,
+      "stampWidth": 48.0,
+      "gaps": [
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0
+      ],
+      "firstStampLeft": 16.0,
+      "cutStamp": {
+        "day": "FRI 9",
+        "shownWidth": 2.0,
+        "hiddenWidth": 46.0
+      }
+    },
+    "360-dark": {
+      "stamps": [
+        {
+          "day": "SAT 3",
+          "bounds": [
+            16.0,
+            428.0,
+            64.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "SUN 4",
+          "bounds": [
+            73.0,
+            428.0,
+            121.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "MON 5",
+          "bounds": [
+            130.0,
+            428.0,
+            178.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "TUE 6",
+          "bounds": [
+            187.0,
+            428.0,
+            235.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "WED 7",
+          "bounds": [
+            244.0,
+            428.0,
+            292.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "THU 8",
+          "bounds": [
+            301.0,
+            428.0,
+            349.0,
+            484.0
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "FRI 9",
+          "bounds": [
+            358.0,
+            428.0,
+            360.0,
+            484.0
+          ],
+          "visibleWidth": 2.0
+        }
+      ],
+      "fullStamps": 6,
+      "stampWidth": 48.0,
+      "gaps": [
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0
+      ],
+      "firstStampLeft": 16.0,
+      "cutStamp": {
+        "day": "FRI 9",
+        "shownWidth": 2.0,
+        "hiddenWidth": 46.0
+      }
+    },
+    "390-light": {
+      "stamps": [
+        {
+          "day": "SAT 3",
+          "bounds": [
+            15.9,
+            443.4,
+            63.9,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "SUN 4",
+          "bounds": [
+            72.9,
+            443.4,
+            121.0,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "MON 5",
+          "bounds": [
+            130.0,
+            443.4,
+            178.0,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "TUE 6",
+          "bounds": [
+            187.1,
+            443.4,
+            235.1,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "WED 7",
+          "bounds": [
+            244.1,
+            443.4,
+            291.8,
+            499.4
+          ],
+          "visibleWidth": 47.7
+        },
+        {
+          "day": "THU 8",
+          "bounds": [
+            300.8,
+            443.4,
+            348.8,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "FRI 9",
+          "bounds": [
+            357.9,
+            443.4,
+            390.0,
+            499.4
+          ],
+          "visibleWidth": 32.1
+        }
+      ],
+      "fullStamps": 6,
+      "stampWidth": 48.0,
+      "gaps": [
+        9.0,
+        9.0,
+        9.1,
+        9.0,
+        9.0,
+        9.1
+      ],
+      "firstStampLeft": 15.9,
+      "cutStamp": {
+        "day": "FRI 9",
+        "shownWidth": 32.1,
+        "hiddenWidth": 15.9
+      }
+    },
+    "390-dark": {
+      "stamps": [
+        {
+          "day": "SAT 3",
+          "bounds": [
+            15.9,
+            443.4,
+            63.9,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "SUN 4",
+          "bounds": [
+            72.9,
+            443.4,
+            121.0,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "MON 5",
+          "bounds": [
+            130.0,
+            443.4,
+            178.0,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "TUE 6",
+          "bounds": [
+            187.1,
+            443.4,
+            235.1,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "WED 7",
+          "bounds": [
+            244.1,
+            443.4,
+            291.8,
+            499.4
+          ],
+          "visibleWidth": 47.7
+        },
+        {
+          "day": "THU 8",
+          "bounds": [
+            300.8,
+            443.4,
+            348.8,
+            499.4
+          ],
+          "visibleWidth": 48.0
+        },
+        {
+          "day": "FRI 9",
+          "bounds": [
+            357.9,
+            443.4,
+            390.0,
+            499.4
+          ],
+          "visibleWidth": 32.1
+        }
+      ],
+      "fullStamps": 6,
+      "stampWidth": 48.0,
+      "gaps": [
+        9.0,
+        9.0,
+        9.1,
+        9.0,
+        9.0,
+        9.1
+      ],
+      "firstStampLeft": 15.9,
+      "cutStamp": {
+        "day": "FRI 9",
+        "shownWidth": 32.1,
+        "hiddenWidth": 15.9
+      }
+    },
+    "430-light": {
+      "stamps": [
+        {
+          "day": "SAT 3",
+          "bounds": [
+            15.9,
+            464.2,
+            64.1,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "SUN 4",
+          "bounds": [
+            72.9,
+            464.2,
+            121.0,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "MON 5",
+          "bounds": [
+            130.2,
+            464.2,
+            178.0,
+            520.4
+          ],
+          "visibleWidth": 47.8
+        },
+        {
+          "day": "TUE 6",
+          "bounds": [
+            187.1,
+            464.2,
+            234.9,
+            520.4
+          ],
+          "visibleWidth": 47.8
+        },
+        {
+          "day": "WED 7",
+          "bounds": [
+            244.1,
+            464.2,
+            292.2,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "THU 8",
+          "bounds": [
+            301.0,
+            464.2,
+            349.2,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "FRI 9",
+          "bounds": [
+            357.9,
+            464.2,
+            406.1,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "SAT 10",
+          "bounds": [
+            415.3,
+            464.2,
+            430.0,
+            520.4
+          ],
+          "visibleWidth": 14.7
+        }
+      ],
+      "fullStamps": 7,
+      "stampWidth": 48.2,
+      "gaps": [
+        8.8,
+        9.2,
+        9.1,
+        9.2,
+        8.8,
+        8.7,
+        9.2
+      ],
+      "firstStampLeft": 15.9,
+      "cutStamp": {
+        "day": "SAT 10",
+        "shownWidth": 14.7,
+        "hiddenWidth": 33.3
+      }
+    },
+    "430-dark": {
+      "stamps": [
+        {
+          "day": "SAT 3",
+          "bounds": [
+            15.9,
+            464.2,
+            64.1,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "SUN 4",
+          "bounds": [
+            72.9,
+            464.2,
+            121.0,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "MON 5",
+          "bounds": [
+            130.2,
+            464.2,
+            178.0,
+            520.4
+          ],
+          "visibleWidth": 47.8
+        },
+        {
+          "day": "TUE 6",
+          "bounds": [
+            187.1,
+            464.2,
+            234.9,
+            520.4
+          ],
+          "visibleWidth": 47.8
+        },
+        {
+          "day": "WED 7",
+          "bounds": [
+            244.1,
+            464.2,
+            292.2,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "THU 8",
+          "bounds": [
+            301.0,
+            464.2,
+            349.2,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "FRI 9",
+          "bounds": [
+            357.9,
+            464.2,
+            406.1,
+            520.4
+          ],
+          "visibleWidth": 48.2
+        },
+        {
+          "day": "SAT 10",
+          "bounds": [
+            415.3,
+            464.2,
+            430.0,
+            520.4
+          ],
+          "visibleWidth": 14.7
+        }
+      ],
+      "fullStamps": 7,
+      "stampWidth": 48.2,
+      "gaps": [
+        8.8,
+        9.2,
+        9.1,
+        9.2,
+        8.8,
+        8.7,
+        9.2
+      ],
+      "firstStampLeft": 15.9,
+      "cutStamp": {
+        "day": "SAT 10",
+        "shownWidth": 14.7,
+        "hiddenWidth": 33.3
+      }
+    },
+    "design": {
+      "stamp": "48×56",
+      "gap": 9,
+      "stripPadding": "16 16 0",
+      "at390": "six in full, the seventh cut"
+    },
+    "openScroll": "Plan opens on today when it falls within the trip. plan-{360,390,430} were captured on 11 Oct, so SUN 11 (the ninth stamp) was selected on open and the strip scrolled to show it with 16 dp after it; WED 7 was then tapped. plan-today (8 Oct clock) opens on THU 8, which is on screen, so the strip is not scrolled."
+  },
+  "V10": {
+    "frames": {
+      "plan-390-light.png": {
+        "rowTimes": [
+          "08:00",
+          "13:00",
+          "21:00"
+        ],
+        "nextLine": null,
+        "nowChip": null
+      },
+      "plan-today-390-light.png": {
+        "rowTimes": [
+          "08:00",
+          "13:00",
+          "21:00"
+        ],
+        "nextLine": "21:00 · Walk up to Ginkaku-ji",
+        "nowChip": "NOW 19:00"
+      }
+    },
+    "formatter": "formatTimePadded in src/lib/format/date.ts",
+    "tests": [
+      "07:00",
+      "09:05",
+      "20:00"
     ],
-    "createPillPx": [
-      758,
-      165,
-      856,
-      209
+    "nowChip": "formatTime, unchanged"
+  },
+  "V11": {
+    "360": {
+      "backDp": [
+        8.0,
+        26.0,
+        52.0,
+        70.0
+      ],
+      "backSizeDp": [
+        44.0,
+        44.0
+      ]
+    },
+    "390": {
+      "backDp": [
+        7.9,
+        26.0,
+        52.0,
+        69.7
+      ],
+      "backSizeDp": [
+        44.1,
+        43.7
+      ]
+    },
+    "430": {
+      "backDp": [
+        8.0,
+        25.9,
+        52.2,
+        70.1
+      ],
+      "backSizeDp": [
+        44.2,
+        44.2
+      ]
+    },
+    "backWithNothingBehind": {
+      "signedOut": true,
+      "landedOnSignIn": true,
+      "accountKept": "Fresh signed in again afterwards and reached onboarding"
+    }
+  },
+  "V12": {
+    "icon": "SuitcaseIcon in src/features/trips/TripTabBar.tsx: rect 5,7 14×13 rx 2; M9 7V4h6v3; M9 11v5M15 11v5; 22 pt, stroke 2, round caps and joins, tab colour",
+    "frames": "Every trip tab frame (plan, packing, notes, trip; light and dark)."
+  },
+  "N46": {
+    "390": {
+      "linkBox": [
+        23.8,
+        586.1,
+        114.5,
+        606.3
+      ],
+      "linkTouchArea": [
+        15.8,
+        582.1,
+        122.5,
+        626.3
+      ],
+      "startsBox": [
+        23.8,
+        518.2,
+        189.9,
+        582.1
+      ],
+      "statusLabel": [
+        23.8,
+        620.4,
+        366.2,
+        636.6
+      ],
+      "statusControl": [
+        23.8,
+        642.8,
+        366.2,
+        694.8
+      ],
+      "touchAreaTopVsBoxBottom": -0.0,
+      "touchAreaOverlapsStatusLabelBy": 5.9,
+      "touchAreaBottomVsStatusControlTop": 16.5,
+      "tap1": {
+        "at": [
+          69.0,
+          623.3
+        ],
+        "insideStatusLabel": true,
+        "startsAfter": "STARTS: not set",
+        "endsAfter": "ENDS: not set",
+        "cleared": true
+      },
+      "tap2": {
+        "at": [
+          106.9,
+          579.9
+        ],
+        "startsBox": [
+          23.8,
+          518.2,
+          189.9,
+          582.1
+        ],
+        "pickerOpened": true,
+        "startsAfterDismiss": "STARTS: 7 Oct, 8:00"
+      }
+    },
+    "360": {
+      "linkBox": [
+        24.0,
+        520.0,
+        113.7,
+        540.0
+      ],
+      "linkTouchArea": [
+        16.0,
+        516.0,
+        121.7,
+        560.0
+      ],
+      "startsBox": [
+        24.0,
+        452.0,
+        175.0,
+        516.0
+      ],
+      "statusLabel": [
+        24.0,
+        554.0,
+        336.0,
+        570.0
+      ],
+      "statusControl": [
+        24.0,
+        576.0,
+        336.0,
+        628.0
+      ],
+      "touchAreaTopVsBoxBottom": 0.0,
+      "touchAreaOverlapsStatusLabelBy": 6.0,
+      "touchAreaBottomVsStatusControlTop": 16.0,
+      "tap1": {
+        "at": [
+          68.7,
+          557.0
+        ],
+        "insideStatusLabel": true,
+        "startsAfter": "STARTS: not set",
+        "endsAfter": "ENDS: not set",
+        "cleared": true
+      },
+      "tap2": {
+        "at": [
+          99.3,
+          514.0
+        ],
+        "startsBox": [
+          24.0,
+          452.0,
+          175.0,
+          516.0
+        ],
+        "pickerOpened": true,
+        "startsAfterDismiss": "STARTS: 7 Oct, 8:00"
+      }
+    }
+  },
+  "fieldInset": {
+    "measurements": [
+      {
+        "field": "TRIP NAME",
+        "outerLeft": 23.8,
+        "textLeftFromOuterEdge": 15.9
+      },
+      {
+        "field": "Destination",
+        "outerLeft": 23.8,
+        "textLeftFromOuterEdge": 17.0
+      },
+      {
+        "field": "TRIP NAME",
+        "outerLeft": 23.8,
+        "textLeftFromOuterEdge": 16.6
+      },
+      {
+        "field": "Destination",
+        "outerLeft": 23.8,
+        "textLeftFromOuterEdge": 16.6
+      }
     ],
-    "cardPaddingTop": "16px",
-    "cardTopToCreatePillPx": 19.5,
-    "lastFieldToCardBottomPx": 34,
-    "passSevenCardTopToCreatePillPx": 3,
-    "lastField": "STARTS / ENDS"
+    "rule": "TextField pads 16 − border (14 − border on the right while a trailing node shows), so text sits 16 pt from the outer edge as in the design and does not move when the border thickens on focus.",
+    "design": {
+      "TRIP NAME": 16.0,
+      "Destination": 17.0
+    }
+  },
+  "fieldLabelColour": {
+    "measurements": [
+      {
+        "label": "TRIP NAME",
+        "dominantInk": "#15223B"
+      },
+      {
+        "label": "DATES",
+        "dominantInk": "#15223B"
+      },
+      {
+        "label": "EMAIL",
+        "dominantInk": "#15223B"
+      }
+    ],
+    "design": "#15223B (ink) for field labels; section kickers stay ink2"
+  },
+  "previewRange": {
+    "screenshot": "newtrip-design-390-light.png",
+    "shown": "13–23 NOV · 10 NIGHTS",
+    "design": "13–23 NOV · 10 NIGHTS",
+    "alsoShown": {
+      "newtrip-dates-390-light.png": "13–16 OCT · 3 NIGHTS",
+      "newtrip-longdate-360-light.png": "20–27 MAY · 7 NIGHTS"
+    }
+  },
+  "N41": {
+    "390": {
+      "linkBoxDp": [
+        23.8,
+        586.1,
+        114.5,
+        606.3
+      ],
+      "touchAreaDp": [
+        15.8,
+        582.1,
+        122.5,
+        626.3
+      ],
+      "touchTopMinusBoxBottomDp": -0.0,
+      "touchHeightDp": 44.2
+    },
+    "360": {
+      "linkBoxDp": [
+        24.0,
+        520.0,
+        113.7,
+        540.0
+      ],
+      "touchAreaDp": [
+        16.0,
+        516.0,
+        121.7,
+        560.0
+      ],
+      "touchTopMinusBoxBottomDp": 0.0,
+      "touchHeightDp": 44.0
+    }
   },
   "N44": {
     "screenshot": "newtrip-dates-390-light.png",
-    "tripName": "Weekend away",
-    "destination": "Berlin",
     "stampLetter": "W",
-    "stampCaption": "BERLIN",
-    "stampBoundsPx": [
-      806,
-      868,
-      941,
-      996
-    ],
-    "datesSet": [
-      "STARTS: Tue 13 Oct",
-      "ENDS: Fri 16 Oct"
-    ],
-    "clearDatesShown": true
+    "stampCaption": "BERLIN"
   },
   "N45": {
     "migration": "supabase/migrations/20260726000000_invite_member_first.sql",
@@ -304,76 +1731,10 @@
         "Open trip"
       ],
       "usedCodeErrorShown": false
-    }
-  },
-  "JoinLineRevisit": {
-    "issue": "On Android, revisiting the join screen in one session drew 'You’re already on Berlin' with the trip name clipped.",
-    "fix": "foundText uses flex: 1 instead of flexShrink: 1.",
-    "evidence": "join-member-390-light (second join visit of the session) and join-member-used-390-light (third) both draw the full line; verified visually."
-  },
-  "N35": {
-    "notScrolled": {
-      "screenshot": "signup-from-code-390-light.png",
-      "density": 443,
-      "pageColourRgb": [
-        226,
-        233,
-        238
-      ],
-      "cards": [
-        {
-          "card": "POSTCARDS",
-          "sampleColumnPx": 180,
-          "cardBottomPx": 899,
-          "shadowEndPx": 950,
-          "shadowReachDp": 18.42,
-          "maxShadowDeltaFromPage": 51
-        },
-        {
-          "card": "SEALED NOTES",
-          "sampleColumnPx": 900,
-          "cardBottomPx": 899,
-          "shadowEndPx": 950,
-          "shadowReachDp": 18.42,
-          "maxShadowDeltaFromPage": 51
-        }
-      ],
-      "threshold": "pixel differs from the page colour by ≥2 in any channel",
-      "passFiveReferenceDp": 16
     },
-    "keyboardFrames": [
-      {
-        "screenshot": "signup-keyboard-360-light.png",
-        "density": 480,
-        "statusBandHeightPx": 72,
-        "stripBelowBandPx": [
-          10,
-          72,
-          1070,
-          90
-        ],
-        "stripHeightDp": 6.0,
-        "pageColourPixels": 2232,
-        "visibleControlPixels": 16848,
-        "shadowPixels": 0,
-        "note": "Non-page pixels are counted as control pixels only inside a UIAutomator node (the scrolled EMAIL field); anything else would be shadow."
-      },
-      {
-        "screenshot": "signup-keyboard-390-light.png",
-        "density": 443,
-        "statusBandHeightPx": 66,
-        "stripBelowBandPx": [
-          10,
-          66,
-          1070,
-          84
-        ],
-        "stripHeightDp": 6.5,
-        "pageColourPixels": 19080,
-        "visibleControlPixels": 0,
-        "shadowPixels": 0,
-        "note": "Non-page pixels are counted as control pixels only inside a UIAutomator node (the scrolled EMAIL field); anything else would be shadow."
-      }
+    "fullSuite": [
+      "Files=10, Tests=71,  0 wallclock secs ( 0.02 usr  0.02 sys +  0.04 cusr  0.01 csys =  0.09 CPU)",
+      "Result: PASS"
     ]
   },
   "N36": {
@@ -413,8 +1774,7 @@
       "afterNonMemberAccept": "code=MEMBER23 accepted=t accepted_by_newcomer=t"
     },
     "fullSuite": [
-      "All tests successful.",
-      "Files=10, Tests=71,  0 wallclock secs ( 0.03 usr  0.01 sys +  0.05 cusr  0.02 csys =  0.11 CPU)",
+      "Files=10, Tests=71,  0 wallclock secs ( 0.02 usr  0.02 sys +  0.04 cusr  0.01 csys =  0.09 CPU)",
       "Result: PASS"
     ],
     "appState": {
@@ -426,704 +1786,144 @@
         "Open trip"
       ],
       "joinButtonPresent": false,
-      "openTripTapped": false
+      "openTripTapped": false,
+      "note": "Re-checked in join-member-390-light and join-member-used-390-light; the pgTAP files are unchanged since pass eight."
     }
   },
-  "N37": [
-    {
-      "screenshot": "trip-edit-390-light.png",
-      "density": 443,
-      "field": "STARTS",
-      "fieldAccessibility": "STARTS: Tue 13 Oct",
-      "fieldBoundsPx": [
-        66,
-        2051,
-        523,
-        2195
-      ],
-      "labelBoundsPx": [
-        66,
-        1989,
-        200,
-        2034
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "trip-edit-390-light.png",
-      "density": 443,
-      "field": "ENDS",
-      "fieldAccessibility": "ENDS: Fri 16 Oct",
-      "fieldBoundsPx": [
-        556,
-        2051,
-        1013,
-        2195
-      ],
-      "labelBoundsPx": [
-        556,
-        1989,
-        645,
-        2034
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "trip-edit-cleared-390-light.png",
-      "density": 443,
-      "field": "STARTS",
-      "fieldAccessibility": "STARTS: not set",
-      "fieldBoundsPx": [
-        66,
-        2118,
-        523,
-        2262
-      ],
-      "labelBoundsPx": [
-        66,
-        2056,
-        200,
-        2101
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "trip-edit-cleared-390-light.png",
-      "density": 443,
-      "field": "ENDS",
-      "fieldAccessibility": "ENDS: not set",
-      "fieldBoundsPx": [
-        556,
-        2118,
-        1013,
-        2262
-      ],
-      "labelBoundsPx": [
-        556,
-        2056,
-        645,
-        2101
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "newtrip-empty-390-light.png",
-      "density": 443,
-      "field": "STARTS",
-      "fieldAccessibility": "STARTS: not set",
-      "fieldBoundsPx": [
-        66,
-        2118,
-        523,
-        2262
-      ],
-      "labelBoundsPx": [
-        66,
-        2056,
-        200,
-        2101
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "newtrip-empty-390-light.png",
-      "density": 443,
-      "field": "ENDS",
-      "fieldAccessibility": "ENDS: not set",
-      "fieldBoundsPx": [
-        556,
-        2118,
-        1013,
-        2262
-      ],
-      "labelBoundsPx": [
-        556,
-        2056,
-        645,
-        2101
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "item-editor-open-390-light.png",
-      "density": 443,
-      "field": "STARTS",
-      "fieldAccessibility": "STARTS: 7 Oct, 8:00",
-      "fieldBoundsPx": [
-        66,
-        1510,
-        523,
-        1654
-      ],
-      "labelBoundsPx": [
-        66,
-        1448,
-        200,
-        1493
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "item-editor-open-390-light.png",
-      "density": 443,
-      "field": "ENDS",
-      "fieldAccessibility": "ENDS: 7 Oct, 10:30",
-      "fieldBoundsPx": [
-        556,
-        1510,
-        1013,
-        1654
-      ],
-      "labelBoundsPx": [
-        556,
-        1448,
-        645,
-        1493
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "item-editor-390-light.png",
-      "density": 443,
-      "field": "STARTS",
-      "fieldAccessibility": "STARTS: 7 Oct, 8:00",
-      "fieldBoundsPx": [
-        66,
-        1469,
-        523,
-        1613
-      ],
-      "labelBoundsPx": [
-        66,
-        1407,
-        200,
-        1452
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "item-editor-390-light.png",
-      "density": 443,
-      "field": "ENDS",
-      "fieldAccessibility": "ENDS: 7 Oct, 10:30",
-      "fieldBoundsPx": [
-        556,
-        1469,
-        1013,
-        1613
-      ],
-      "labelBoundsPx": [
-        556,
-        1407,
-        645,
-        1452
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "item-editor-360-light.png",
-      "density": 480,
-      "field": "STARTS",
-      "fieldAccessibility": "STARTS: 7 Oct, 8:00",
-      "fieldBoundsPx": [
-        72,
-        1392,
-        522,
-        1548
-      ],
-      "labelBoundsPx": [
-        72,
-        1326,
-        214,
-        1374
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.0,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "item-editor-360-light.png",
-      "density": 480,
-      "field": "ENDS",
-      "fieldAccessibility": "ENDS: 7 Oct, 10:30",
-      "fieldBoundsPx": [
-        558,
-        1392,
-        1008,
-        1548
-      ],
-      "labelBoundsPx": [
-        558,
-        1326,
-        652,
-        1374
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.0,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "item-editor-cleared-390-light.png",
-      "density": 443,
-      "field": "STARTS",
-      "fieldAccessibility": "STARTS: not set",
-      "fieldBoundsPx": [
-        66,
-        1713,
-        523,
-        1857
-      ],
-      "labelBoundsPx": [
-        66,
-        1651,
-        200,
-        1696
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    },
-    {
-      "screenshot": "item-editor-cleared-390-light.png",
-      "density": 443,
-      "field": "ENDS",
-      "fieldAccessibility": "ENDS: not set",
-      "fieldBoundsPx": [
-        556,
-        1713,
-        1013,
-        1857
-      ],
-      "labelBoundsPx": [
-        556,
-        1651,
-        645,
-        1696
-      ],
-      "labelAboveField": true,
-      "labelBottomToFieldTopDp": 6.14,
-      "labelLeftAlignedWithFieldDp": 0.0,
-      "optionalTagOnLabelRow": true,
-      "labelInsideField": false
-    }
-  ],
-  "N37web": [
-    {
-      "screenshot": "web-newtrip-680-light.png",
-      "viewport": [
-        680,
-        1100
-      ],
-      "STARTS": {
-        "input": {
-          "x": 24,
-          "y": 1022,
-          "width": 310,
-          "height": 52,
-          "bottom": 1074
+  "JoinLineRevisit": {
+    "issue": "On Android, revisiting the join screen in one session drew 'You’re already on Berlin' with the trip name clipped.",
+    "fix": "foundText uses flex: 1 instead of flexShrink: 1.",
+    "evidence": "join-member-390-light (second join visit of the session) and join-member-used-390-light (third) both draw the full line; verified visually."
+  },
+  "N35": {
+    "notScrolled": {
+      "screenshot": "signup-from-code-390-light.png",
+      "cards": [
+        {
+          "card": "POSTCARDS",
+          "sampleColumnPx": 294,
+          "cardBottomPx": 899,
+          "shadowEndPx": 950,
+          "shadowReachDp": 18.42
         },
-        "label": {
-          "x": 24,
-          "y": 1000,
-          "width": 47.984375,
-          "height": 16,
-          "bottom": 1016
-        },
-        "optional": {
-          "x": 77.984375,
-          "y": 1000,
-          "width": 63.96875,
-          "height": 16,
-          "bottom": 1016
-        },
-        "labelAboveInput": true,
-        "labelBottomToInputTopPx": 6,
-        "labelFontSize": "12px",
-        "tripNameFontSize": "12px",
-        "placeholder": "Add date"
+        {
+          "card": "SEALED NOTES",
+          "sampleColumnPx": 785,
+          "cardBottomPx": 899,
+          "shadowEndPx": 950,
+          "shadowReachDp": 18.42
+        }
+      ]
+    },
+    "keyboardFrames": [
+      {
+        "screenshot": "signup-keyboard-360-light.png",
+        "statusBandHeightPx": 72,
+        "stripHeightDp": 6.0,
+        "contentUnderBandPx": [
+          [
+            72,
+            522
+          ],
+          [
+            558,
+            1008
+          ]
+        ],
+        "contentPixels": 16200,
+        "pageColourPixelsBeside": 2880,
+        "shadowPixels": 0
       },
-      "ENDS": {
-        "input": {
-          "x": 346,
-          "y": 1022,
-          "width": 310,
-          "height": 52,
-          "bottom": 1074
-        },
-        "label": {
-          "x": 346,
-          "y": 1000,
-          "width": 31.984375,
-          "height": 16,
-          "bottom": 1016
-        },
-        "optional": {
-          "x": 383.984375,
-          "y": 1000,
-          "width": 63.96875,
-          "height": 16,
-          "bottom": 1016
-        },
-        "labelAboveInput": true,
-        "labelBottomToInputTopPx": 6,
-        "labelFontSize": "12px",
-        "tripNameFontSize": "12px",
-        "placeholder": "Add date"
+      {
+        "screenshot": "signup-keyboard-390-light.png",
+        "statusBandHeightPx": 66,
+        "stripHeightDp": 6.0,
+        "contentUnderBandPx": [
+          [
+            66,
+            523
+          ],
+          [
+            556,
+            1013
+          ]
+        ],
+        "contentPixels": 15538,
+        "pageColourPixelsBeside": 2482,
+        "shadowPixels": 0
       }
-    },
-    {
-      "screenshot": "web-newtrip-1280-light.png",
-      "viewport": [
-        1280,
-        900
-      ],
-      "STARTS": {
-        "input": {
-          "x": 424,
-          "y": 668.5,
-          "width": 210,
-          "height": 52,
-          "bottom": 720.5
-        },
-        "label": {
-          "x": 424,
-          "y": 646.5,
-          "width": 47.984375,
-          "height": 16,
-          "bottom": 662.5
-        },
-        "optional": {
-          "x": 477.984375,
-          "y": 646.5,
-          "width": 63.96875,
-          "height": 16,
-          "bottom": 662.5
-        },
-        "labelAboveInput": true,
-        "labelBottomToInputTopPx": 6,
-        "labelFontSize": "12px",
-        "tripNameFontSize": "12px",
-        "placeholder": "Add date"
-      },
-      "ENDS": {
-        "input": {
-          "x": 646,
-          "y": 668.5,
-          "width": 210,
-          "height": 52,
-          "bottom": 720.5
-        },
-        "label": {
-          "x": 646,
-          "y": 646.5,
-          "width": 31.984375,
-          "height": 16,
-          "bottom": 662.5
-        },
-        "optional": {
-          "x": 683.984375,
-          "y": 646.5,
-          "width": 63.96875,
-          "height": 16,
-          "bottom": 662.5
-        },
-        "labelAboveInput": true,
-        "labelBottomToInputTopPx": 6,
-        "labelFontSize": "12px",
-        "tripNameFontSize": "12px",
-        "placeholder": "Add date"
-      }
-    }
-  ],
-  "N38": [
-    {
-      "screenshot": "item-editor-open-390-light.png",
-      "density": 443,
-      "link": "Clear times",
-      "fieldBoundsPx": [
-        66,
-        1510,
-        523,
-        1654
-      ],
-      "linkBoundsPx": [
-        66,
-        1665,
-        317,
-        1721
-      ],
-      "linkGlyphRowsPx": [
-        1677,
-        1710
-      ],
-      "pairToLinkGlyphDp": 8.31,
-      "pairToLinkBoundsDp": 3.97,
-      "nominalPairToLinkLayoutDp": 4,
-      "followerText": "STATUS",
-      "followerBoundsPx": [
-        66,
-        1760,
-        1014,
-        1805
-      ],
-      "followerGlyphRowsPx": [
-        1770,
-        1789
-      ],
-      "linkToFollowerGlyphDp": 21.31,
-      "linkToFollowerBoundsDp": 14.09,
-      "nominalSectionGapDp": 14
-    },
-    {
-      "screenshot": "item-editor-390-light.png",
-      "density": 443,
-      "link": "Clear times",
-      "fieldBoundsPx": [
-        66,
-        1469,
-        523,
-        1613
-      ],
-      "linkBoundsPx": [
-        66,
-        1624,
-        317,
-        1680
-      ],
-      "linkGlyphRowsPx": [
-        1636,
-        1669
-      ],
-      "pairToLinkGlyphDp": 8.31,
-      "pairToLinkBoundsDp": 3.97,
-      "nominalPairToLinkLayoutDp": 4,
-      "followerText": "STATUS",
-      "followerBoundsPx": [
-        66,
-        1719,
-        1014,
-        1764
-      ],
-      "followerGlyphRowsPx": [
-        1729,
-        1748
-      ],
-      "linkToFollowerGlyphDp": 21.31,
-      "linkToFollowerBoundsDp": 14.09,
-      "nominalSectionGapDp": 14
-    },
-    {
-      "screenshot": "item-editor-360-light.png",
-      "density": 480,
-      "link": "Clear times",
-      "fieldBoundsPx": [
-        72,
-        1392,
-        522,
-        1548
-      ],
-      "linkBoundsPx": [
-        72,
-        1560,
-        341,
-        1620
-      ],
-      "linkGlyphRowsPx": [
-        1574,
-        1609
-      ],
-      "pairToLinkGlyphDp": 8.67,
-      "pairToLinkBoundsDp": 4.0,
-      "nominalPairToLinkLayoutDp": 4,
-      "followerText": "STATUS",
-      "followerBoundsPx": [
-        72,
-        1662,
-        1008,
-        1710
-      ],
-      "followerGlyphRowsPx": [
-        1673,
-        1693
-      ],
-      "linkToFollowerGlyphDp": 21.0,
-      "linkToFollowerBoundsDp": 14.0,
-      "nominalSectionGapDp": 14
-    },
-    {
-      "screenshot": "trip-edit-390-light.png",
-      "density": 443,
-      "link": "Clear dates",
-      "fieldBoundsPx": [
-        66,
-        2051,
-        523,
-        2195
-      ],
-      "linkBoundsPx": [
-        66,
-        2206,
-        314,
-        2262
-      ],
-      "linkGlyphRowsPx": [
-        2218,
-        2251
-      ],
-      "pairToLinkGlyphDp": 8.31,
-      "pairToLinkBoundsDp": 3.97,
-      "nominalPairToLinkLayoutDp": 4
-    }
-  ],
-  "N38reference": {
-    "passSixGlyphGapsDp": {
-      "pairToClearTimes": 28,
-      "clearTimesToStatus": 22
-    }
+    ]
+  },
+  "N38": {
+    "screenshot": "item-editor-open-390-light.png",
+    "boxBoundsPx": [
+      66,
+      1448,
+      526,
+      1625
+    ],
+    "linkBoundsPx": [
+      66,
+      1636,
+      317,
+      1692
+    ],
+    "statusLabelBoundsPx": [
+      66,
+      1731,
+      1014,
+      1776
+    ],
+    "pairToLinkBoundsDp": 3.97,
+    "pairToLinkGlyphDp": 8.31,
+    "linkToStatusGlyphDp": 21.67
   },
   "N39": [
     {
       "screenshot": "item-editor-open-390-light.png",
       "scrolled": false,
-      "fullWidthHairlineRows": [],
+      "fullWidthHairlineRowsPx": [],
       "hairlineVisible": false
     },
     {
       "screenshot": "item-editor-390-light.png",
       "scrolled": true,
-      "fullWidthHairlineRows": [
-        {
-          "yPx": 392,
-          "rgb": [
-            201,
-            211,
-            219
-          ]
-        },
-        {
-          "yPx": 393,
-          "rgb": [
-            201,
-            211,
-            219
-          ]
-        }
+      "fullWidthHairlineRowsPx": [
+        392,
+        393
       ],
       "hairlineVisible": true
     },
     {
       "screenshot": "item-editor-360-light.png",
       "scrolled": true,
-      "fullWidthHairlineRows": [
-        {
-          "yPx": 408,
-          "rgb": [
-            213,
-            222,
-            228
-          ]
-        },
-        {
-          "yPx": 409,
-          "rgb": [
-            201,
-            211,
-            219
-          ]
-        },
-        {
-          "yPx": 410,
-          "rgb": [
-            201,
-            211,
-            219
-          ]
-        }
+      "fullWidthHairlineRowsPx": [
+        409,
+        410
       ],
       "hairlineVisible": true
     }
   ],
   "N40": {
     "screenshot": "join-preview-dated-390-light.png",
-    "density": 443,
     "cardFillRgb": [
       255,
       252,
       245
     ],
-    "cardFillIsPaper": true,
     "stampCaptionBoundsPx": [
       739,
       1093,
       956,
       1121
     ],
-    "stampOnRightHalf": true,
-    "destinationLineBoundsPx": [
-      110,
-      981,
-      687,
-      1042
-    ],
     "airmailBandTopPx": 1187,
     "stampToBandDp": 23.84
   },
   "EditTripReset": {
-    "sequence": [
-      "trip-edit-390-light.png (saved dates)",
-      "Clear dates -> trip-edit-cleared-390-light.png",
-      "Cancel",
-      "reopen Edit trip on the same mounted Trip screen -> trip-edit-keyboard-390-light.png"
-    ],
     "reopenedFieldValues": [
-      "STARTS: Tue 13 Oct",
-      "ENDS: Fri 16 Oct"
+      "LEAVE: Tue 13 Oct",
+      "RETURN: Fri 16 Oct"
     ],
     "savedDatesRestored": true
   },
@@ -1159,113 +1959,69 @@
         314,
         2262
       ],
-      "gestureHandleBoundsPx": [
-        391,
+      "gestureHandleRowsPx": [
         2362,
-        689,
-        2372
+        2371
       ],
       "gapDp": 36.12
     },
     {
       "screenshot": "trip-edit-cleared-390-light.png",
-      "lastControl": "ENDS: not set",
+      "lastControl": "RETURN: not set",
       "lastControlBoundsPx": [
-        556,
-        2118,
+        553,
+        2085,
         1013,
         2262
       ],
-      "gestureHandleBoundsPx": [
-        391,
+      "gestureHandleRowsPx": [
         2362,
-        689,
-        2372
+        2371
       ],
       "gapDp": 36.12
     },
     {
       "screenshot": "newtrip-empty-390-light.png",
-      "lastControl": "ENDS: not set",
+      "lastControl": "RETURN: not set",
       "lastControlBoundsPx": [
-        556,
-        2118,
+        553,
+        2085,
         1013,
         2262
       ],
-      "gestureHandleBoundsPx": [
-        391,
+      "gestureHandleRowsPx": [
         2362,
-        689,
-        2372
+        2371
       ],
       "gapDp": 36.12
     },
     {
-      "screenshot": "item-editor-360-light.png",
-      "lastControl": "Delete item",
-      "lastControlBoundsPx": [
-        72,
-        2118,
-        1008,
-        2250
-      ],
-      "gestureHandleBoundsPx": [
-        378,
-        2358,
-        702,
-        2370
-      ],
-      "gapDp": 36.0
-    },
-    {
-      "screenshot": "item-editor-390-light.png",
-      "lastControl": "Delete item",
+      "screenshot": "newtrip-dates-390-light.png",
+      "lastControl": "Clear dates",
       "lastControlBoundsPx": [
         66,
-        2140,
-        1014,
+        2206,
+        314,
         2262
       ],
-      "gestureHandleBoundsPx": [
-        391,
+      "gestureHandleRowsPx": [
         2362,
-        689,
-        2372
+        2371
       ],
       "gapDp": 36.12
     },
     {
-      "screenshot": "item-editor-cleared-390-light.png",
-      "lastControl": "Delete item",
+      "screenshot": "newtrip-design-390-light.png",
+      "lastControl": "Clear dates",
       "lastControlBoundsPx": [
         66,
-        2140,
-        1014,
+        2206,
+        314,
         2262
       ],
-      "gestureHandleBoundsPx": [
-        391,
+      "gestureHandleRowsPx": [
         2362,
-        689,
-        2372
-      ],
-      "gapDp": 36.12
-    },
-    {
-      "screenshot": "profile-delete-390-light.png",
-      "lastControl": "Cancel",
-      "lastControlBoundsPx": [
-        66,
-        2129,
-        1014,
-        2262
-      ],
-      "gestureHandleBoundsPx": [
-        391,
-        2362,
-        689,
-        2372
+        2371
       ],
       "gapDp": 36.12
     }
@@ -1273,10 +2029,11 @@
   "N34": [
     {
       "screenshot": "plan-noart-390-light.png",
+      "preceding": "TUE 13",
       "precedingBoundsPx": [
         44,
         660,
-        165,
+        177,
         815
       ],
       "stampBoundsPx": [
@@ -1293,6 +2050,7 @@
     },
     {
       "screenshot": "packing-noart-390-light.png",
+      "preceding": "Berlin weekend",
       "precedingBoundsPx": [
         66,
         455,
@@ -1313,6 +2071,7 @@
     },
     {
       "screenshot": "notes-noart-390-light.png",
+      "preceding": "Postcards are shared with Joiner. Sealed notes are only for you. Joiner can't open yours, and you can't open Joiner's.",
       "precedingBoundsPx": [
         0,
         516,

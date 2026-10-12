@@ -1,11 +1,11 @@
 {
-  "codeCommit": "9645fb1fbc968f37093304ffb9083aaa94c5b98a",
+  "codeCommit": "3099ae141a9c2e7bf255909d146aaa8909f57089",
   "android": {
     "buildType": "release",
     "freshInstall": true,
     "installMethod": "adb uninstall app.waymark; adb install app-release.apk",
-    "apkSha256": "30714b84e772998fd7b86d145a0a5477b13ecdce3a7b045fd07e0aa69c3c5392",
-    "installedApkSha256": "30714b84e772998fd7b86d145a0a5477b13ecdce3a7b045fd07e0aa69c3c5392",
+    "apkSha256": "c361ceb31a0bbbaf6ff42c93899d8483a7d019c6947ed825876c897024a3a36c",
+    "installedApkSha256": "c361ceb31a0bbbaf6ff42c93899d8483a7d019c6947ed825876c897024a3a36c",
     "physicalPixels": [
       1080,
       2400
@@ -20,8 +20,8 @@
   },
   "web": {
     "buildType": "production static export",
-    "bundle": "entry-93aa427e05cd9a620a2b258313e84857.js",
-    "bundleSha256": "28d878c16b096f4d0df5f8492b36dabc417445104bd48a299ff6e4874d9d6181",
+    "bundle": "entry-6b2192ccc18dc70244eb97cd5880fb2b.js",
+    "bundleSha256": "505e9245831044b3e84fb30846c454ea3a0a5d4caff80332609db7db8c0c2e60",
     "browser": "Headful Chrome via Chrome DevTools MCP CLI",
     "devicePixelRatio": 1,
     "colorScheme": "light",
@@ -98,19 +98,19 @@
     "typecheck": "passed",
     "lintErrors": 0,
     "lintWarnings": 0,
-    "vitestTestsPassed": 73,
+    "vitestTestsPassed": 76,
     "pgTapAssertionsPassed": 71,
     "pgTapFiles": 10,
-    "finalChecksCompletedAt": "2026-10-09T20:47:30.736200-06:00"
+    "finalChecksCompletedAt": "2026-10-11T18:27:49.448870-06:00"
   },
   "finalEmulatorState": {
-    "restoredAt": "2026-10-09T20:47:24.326965-06:00",
+    "restoredAt": "2026-10-11T18:25:47.620302-06:00",
     "actor": "Mia",
     "signedInAccount": "tester@waymark.test",
     "density": "Physical density: 420",
     "fontScale": "1.0",
     "automaticTime": "1",
-    "deviceTime": "Fri Oct  9 20:47:24 CST 2026",
+    "deviceTime": "Sun Oct 11 18:25:47 CST 2026",
     "timezone": "America/Guatemala",
     "nightMode": "Night mode: no",
     "screen": "Your trips"
