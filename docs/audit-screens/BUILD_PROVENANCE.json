@@ -233,5 +233,84 @@
       "nightMode": "Night mode: no",
       "screen": "Your trips"
     }
+  },
+  "perforationRecapture": {
+    "codeCommit": "5fdc1f0ba4a1973f517a75265f0b60290ef875c1",
+    "frames": [
+      "onboarding-390-light.png",
+      "trip-390-dark.png",
+      "trip-390-light.png",
+      "trips-390-light.png"
+    ],
+    "android": {
+      "buildType": "release",
+      "freshInstall": true,
+      "apkSha256": "a3c00f5c60d9e0e8085090126f0b5bead9bc120465dc1928db22e0661d9c06fb",
+      "installedApkSha256": "a3c00f5c60d9e0e8085090126f0b5bead9bc120465dc1928db22e0661d9c06fb",
+      "density": 443,
+      "fontScale": 1.0
+    },
+    "fixtureHashes": {
+      "before": {
+        "trips": {
+          "rows": 14,
+          "md5": "42ce292fd5ac7b5d801d1fe4b432ebbd"
+        },
+        "itinerary_items": {
+          "rows": 12,
+          "md5": "1ae6d002e0dbdb7d71df1fd84219c4ef"
+        },
+        "packing_items": {
+          "rows": 16,
+          "md5": "7a4e7f41e9fbb514fa958829805adc10"
+        },
+        "trip_notes": {
+          "rows": 6,
+          "md5": "329d54432b55f370ec5662658831f07e"
+        },
+        "trip_members": {
+          "rows": 24,
+          "md5": "9c27a0fe6c5154302d000f5a1cae53a8"
+        },
+        "trip_invites": {
+          "rows": 13,
+          "md5": "32d84b970f2044f2c248c7b53f781a64"
+        }
+      },
+      "after": {
+        "trips": {
+          "rows": 14,
+          "md5": "42ce292fd5ac7b5d801d1fe4b432ebbd"
+        },
+        "itinerary_items": {
+          "rows": 12,
+          "md5": "1ae6d002e0dbdb7d71df1fd84219c4ef"
+        },
+        "packing_items": {
+          "rows": 16,
+          "md5": "7a4e7f41e9fbb514fa958829805adc10"
+        },
+        "trip_notes": {
+          "rows": 6,
+          "md5": "329d54432b55f370ec5662658831f07e"
+        },
+        "trip_members": {
+          "rows": 24,
+          "md5": "9c27a0fe6c5154302d000f5a1cae53a8"
+        },
+        "trip_invites": {
+          "rows": 13,
+          "md5": "32d84b970f2044f2c248c7b53f781a64"
+        }
+      },
+      "unchanged": true
+    },
+    "quality": {
+      "typecheck": "passed",
+      "lintErrors": 0,
+      "lintWarnings": 0,
+      "vitestTestsPassed": 79,
+      "finalChecksCompletedAt": "2026-10-11T20:19:31.875213-06:00"
+    }
   }
 }

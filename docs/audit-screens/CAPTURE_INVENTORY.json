@@ -649,8 +649,8 @@
   },
   {
     "file": "onboarding-390-light.png",
-    "commit": "935d4c8592f997f9e3c88c23fc565e36baaede0a",
-    "capturedAt": "2026-10-11T19:51:30.814148-06:00",
+    "commit": "5fdc1f0ba4a1973f517a75265f0b60290ef875c1",
+    "capturedAt": "2026-10-11T20:17:28.127404-06:00",
     "actor": "Fresh",
     "theme": "light",
     "targetWidth": 390,
@@ -659,7 +659,7 @@
       1080,
       2400
     ],
-    "sha256": "24793b1ad0ff0608c6e1c94521c29e1dab6d30e7e2e18359e1f6222599ccf085",
+    "sha256": "6aeab860c26ae6e9e59944475a58d3392bfb405b954b8f397c1f274e1b3e64b6",
     "expectedScreen": [
       "What's your name?",
       "Joiner",
@@ -670,7 +670,7 @@
     "visualReview": "passed",
     "fontScale": 1.0,
     "buildType": "release",
-    "apkSha256": "fae717f4009b108c9e65d1311a8b59bc2775eecf42f5197fbc7f1e1d628e7977"
+    "apkSha256": "a3c00f5c60d9e0e8085090126f0b5bead9bc120465dc1928db22e0661d9c06fb"
   },
   {
     "file": "packing-360-dark.png",
@@ -1601,8 +1601,8 @@
   },
   {
     "file": "trip-390-dark.png",
-    "commit": "935d4c8592f997f9e3c88c23fc565e36baaede0a",
-    "capturedAt": "2026-10-11T19:48:43.445443-06:00",
+    "commit": "5fdc1f0ba4a1973f517a75265f0b60290ef875c1",
+    "capturedAt": "2026-10-11T20:16:57.398680-06:00",
     "actor": "Mia",
     "theme": "dark",
     "targetWidth": 390,
@@ -1611,7 +1611,7 @@
       1080,
       2400
     ],
-    "sha256": "dae3a8b6b9a84d60c9ab519c3baaeba38a779554770fab5f4a5b2e9440bfdda9",
+    "sha256": "2db99ac65f6fa0cbecfcb590dace93215d92c5a8c867a5cea28e13695e482f41",
     "expectedScreen": [
       "Edit trip",
       "INVITE CODE",
@@ -1621,12 +1621,12 @@
     "visualReview": "passed",
     "fontScale": 1.0,
     "buildType": "release",
-    "apkSha256": "fae717f4009b108c9e65d1311a8b59bc2775eecf42f5197fbc7f1e1d628e7977"
+    "apkSha256": "a3c00f5c60d9e0e8085090126f0b5bead9bc120465dc1928db22e0661d9c06fb"
   },
   {
     "file": "trip-390-light.png",
-    "commit": "935d4c8592f997f9e3c88c23fc565e36baaede0a",
-    "capturedAt": "2026-10-11T19:48:25.455769-06:00",
+    "commit": "5fdc1f0ba4a1973f517a75265f0b60290ef875c1",
+    "capturedAt": "2026-10-11T20:16:51.394014-06:00",
     "actor": "Mia",
     "theme": "light",
     "targetWidth": 390,
@@ -1635,7 +1635,7 @@
       1080,
       2400
     ],
-    "sha256": "da78d1c8b3f6c76cbde21c1b1ebf349435772ddff79644688a9eb118c0f3c4c2",
+    "sha256": "bf6e0f301e0c0110dd2d844ffb88124131ab111f37fcfe65623900c61891b57a",
     "expectedScreen": [
       "Edit trip",
       "INVITE CODE",
@@ -1645,7 +1645,7 @@
     "visualReview": "passed",
     "fontScale": 1.0,
     "buildType": "release",
-    "apkSha256": "fae717f4009b108c9e65d1311a8b59bc2775eecf42f5197fbc7f1e1d628e7977"
+    "apkSha256": "a3c00f5c60d9e0e8085090126f0b5bead9bc120465dc1928db22e0661d9c06fb"
   },
   {
     "file": "trip-430-dark.png",
@@ -1913,8 +1913,8 @@
   },
   {
     "file": "trips-390-light.png",
-    "commit": "935d4c8592f997f9e3c88c23fc565e36baaede0a",
-    "capturedAt": "2026-10-11T19:48:19.989887-06:00",
+    "commit": "5fdc1f0ba4a1973f517a75265f0b60290ef875c1",
+    "capturedAt": "2026-10-11T20:16:47.890188-06:00",
     "actor": "Mia",
     "theme": "light",
     "targetWidth": 390,
@@ -1923,7 +1923,7 @@
       1080,
       2400
     ],
-    "sha256": "b9b58ef5228d7b23510c8388ed43f365be0956110aa7bee4db4c6ceedbec7f35",
+    "sha256": "b46ebaf91762bfeda665d3fe1a929dd84e63fcec139eb4d91fb2108ae167029b",
     "expectedScreen": [
       "Your trips",
       "Kyoto & Nara"
@@ -1932,7 +1932,7 @@
     "visualReview": "passed",
     "fontScale": 1.0,
     "buildType": "release",
-    "apkSha256": "fae717f4009b108c9e65d1311a8b59bc2775eecf42f5197fbc7f1e1d628e7977"
+    "apkSha256": "a3c00f5c60d9e0e8085090126f0b5bead9bc120465dc1928db22e0661d9c06fb"
   },
   {
     "file": "trips-430-dark.png",

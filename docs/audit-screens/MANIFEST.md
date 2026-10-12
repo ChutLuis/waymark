@@ -2,13 +2,14 @@
 
 **Code commits:** `3099ae1` (the design-review fixes V1–V12, N46 and N47, plus three
 design matches found while measuring the design files: field text inset, field label
-colour and the New trip preview's date range) and `935d4c8` (blurred stamp shadows and
-the tall New trip sheet).
-**Capture windows (local, UTC−6):** 2026-10-11 16:37:31 → 17:02:55 (`3099ae1`) and
-19:48:19 → 19:51:30 (`935d4c8`).
-**92 PNGs:** 83 Android release frames and 9 headful Chrome frames. 76 come from
-`3099ae1`; the 16 that show stamps or the New trip sheet were re-captured from
-`935d4c8` (listed below). Each row of the inventory records its commit and build.
+colour and the New trip preview's date range), `935d4c8` (blurred stamp shadows and
+the tall New trip sheet) and `5fdc1f0` (large perforations on the 56×72 and 64×80
+stamps).
+**Capture windows (local, UTC−6):** 2026-10-11 16:37:31 → 17:02:55 (`3099ae1`),
+19:48:19 → 19:51:30 (`935d4c8`) and 20:16:47 → 20:17:28 (`5fdc1f0`).
+**92 PNGs:** 83 Android release frames and 9 headful Chrome frames: 76 from `3099ae1`,
+12 from `935d4c8` and 4 from `5fdc1f0` (the later two sets are listed below). Each row
+of the inventory records its commit and build.
 Every frame was visually reviewed. There are no runtime error screens, LogBox or
 toasts; `join-invalid-390-light` is the requested invalid-code validation state.
 
@@ -23,6 +24,17 @@ Re-captured: `trips-390-{light,dark}`, `trip-390-{light,dark}`,
 |-----|-------------------------|
 | Stamp shadow | Every `PerforatedStamp` casts the README's shadow along its scalloped edge: `stampInk` at 0.3, offset 1 dp (0.8 under 40 pt), Gaussian blur σ 1 (0.75 on 40–64 pt stamps). The shadow is drawn from the stamp's outline path with the blur on the path, in an Svg that reaches 3 dp past the stamp; react-native-svg filters only shapes and, on Android, masks after the blur, so the masked frame could not carry it. Under the bottom edge of `trip-390-light`'s stamp, between two holes: **#FFFFFF → #E2E2E4 → #C4C5C6 → #D1D1D0 → #E3E1DE → #F3F1EB → #FDFAF3 → #FFFCF5** (one physical pixel each, 2.77 px per dp); before, #FFFFFF went straight to the card. In dark mode the shadow is dark (`stampInk` in both themes). Android and web use the blur; iOS runs the same code path but was not run here. Scrolling Trips and Profile shows the same janky-frame counts with and without the blur. Plan's day strip keeps 3 dp under its stamps inside its scroll view. |
 | New trip sheet | New trip uses Sheet's `tall` size: the card's top sits 9 dp under the status bar and the card runs to the bottom of the screen, with the empty space under the dates. Sheet top **32.9 dp** (24 dp status bar + 9) in `newtrip-design`, `newtrip-empty` and `newtrip-typed` (keyboard up, Destination visible); **33.0 dp** at 360 and 430 with and without the keyboard; **32.9 dp** in dark. Web 680: card from **9 px** to the bottom; web 1280 keeps the centred 480 px card. Edit trip and the item editor still fit their content (their sheets are pixel-identical to the `3099ae1` frames; only the stamp and live scene behind the scrim and the input glyphs differ). |
+
+## Stamp perforations (`5fdc1f0`)
+
+Re-captured: `trips-390-light`, `trip-390-light`, `trip-390-dark`,
+`onboarding-390-light` (fresh install of APK `a3c00f5c60d9e0e8085090126f0b5bead9bc120465dc1928db22e0661d9c06fb`).
+
+The 56×72 stamps (Trips list, Trip card) and the 64×80 Onboarding name stamp now use
+the large perforation profile, holes r 3 every 8 with padding 5, like the other stamps
+of 40 pt and up. The Trip card stamp's notches measure **8.0 dp** apart (were 4); the
+Onboarding panel measures **49.8 × 54.9 dp** (design 50 × 55) over a 13 pt name strip.
+The 1.5 px shadow is unchanged.
 
 ## Proof per fix
 

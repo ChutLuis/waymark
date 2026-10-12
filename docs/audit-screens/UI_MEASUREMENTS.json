@@ -2209,5 +2209,30 @@
         "note": "Field boxes and labels identical; the differences are the live scene behind the scrim (y 129–220 px) and the EditText glyph placement inside two inputs."
       }
     }
+  },
+  "StampPerforation": {
+    "codeCommit": "5fdc1f0ba4a1973f517a75265f0b60290ef875c1",
+    "rule": "Stamps of 40 pt and up use holes r 3 every 8 with padding 5 (README, PerforatedStamp, Large).",
+    "stamps": {
+      "56x72 (Trips list, Trip card)": "large profile; art 5 + 2 + 42 + 2 + 5 = 56 across, 5 + 2 + 49 + 11 + 5 = 72 down",
+      "64x80 (Onboarding name stamp)": "large profile; 50x55 panel over a 13 pt name strip"
+    },
+    "measured": {
+      "onboarding-390-light.png": {
+        "panelDp": [
+          49.8,
+          54.9
+        ],
+        "design": [
+          50,
+          55
+        ]
+      },
+      "trip-390-light.png": {
+        "notchPitchDp": 8.0,
+        "before": 4
+      }
+    },
+    "shadow": "0 1px 1.5px (blur 0.75) for both sizes, unchanged"
   }
 }
