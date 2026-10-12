@@ -100,9 +100,12 @@ function StatusTag({
   );
 }
 
+/** A status's place in a letter's life: going backwards never waits. */
+const STATUS_RANK: Record<ItineraryItem['status'], number> = { planned: 0, confirmed: 1, done: 2 };
+
 function RouteStop({
-  item,
-  kind,
+  item: live,
+  kind: layoutKind,
   top,
   index,
   country,
@@ -127,6 +130,14 @@ function RouteStop({
 }) {
   const { colors } = useTheme();
   const tag = useTimeline(1);
+
+  // The row keeps showing the previous status, tag and style, while the stamp
+  // is in the air (README 03/04); it swaps on the stamp's contact frame, and
+  // at once when the status moves backwards.
+  const [shown, setShown] = useState(live.status);
+  if (shown !== live.status && STATUS_RANK[live.status] < STATUS_RANK[shown]) setShown(live.status);
+  const item = shown === live.status ? live : { ...live, status: shown };
+  const kind: RowKind = layoutKind === 'ticket' ? 'ticket' : shown === 'done' ? 'compact' : 'block';
   const stampTop = top + (kind === 'ticket' ? GEO.ticketLift : 0);
   const done = item.status === 'done';
 
@@ -153,7 +164,7 @@ function RouteStop({
     ],
   }));
 
-  const nextStatus = item.status === 'planned' ? 'confirmed' : item.status === 'confirmed' ? 'done' : null;
+  const nextStatus = live.status === 'planned' ? 'confirmed' : live.status === 'confirmed' ? 'done' : null;
   const stampLabel = nextStatus
     ? `Mark ${item.title} ${statusLabel(nextStatus).toLowerCase()}`
     : `Edit ${item.title}`;
@@ -179,7 +190,7 @@ function RouteStop({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Edit ${item.title}`}
-            onPress={() => onEdit(item)}
+            onPress={() => onEdit(live)}
             style={({ pressed }) => pressed && styles.pressed}
           >
             <View style={styles.ticketHead}>
@@ -207,7 +218,7 @@ function RouteStop({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Edit ${item.title}`}
-          onPress={() => onEdit(item)}
+          onPress={() => onEdit(live)}
           onLayout={(e) => measure(e.nativeEvent.layout.height)}
           style={({ pressed }) => [
             styles.rowText,
@@ -252,13 +263,16 @@ function RouteStop({
           accessibilityRole="button"
           accessibilityLabel={stampLabel}
           hitSlop={4}
-          onPress={() => (nextStatus ? onAdvance(item) : onEdit(item))}
+          onPress={() => (nextStatus ? onAdvance(live) : onEdit(live))}
           style={({ pressed }) => pressed && styles.pressed}
         >
           <StopStamp
-            status={item.status}
+            status={live.status}
             country={country}
-            onContact={() => tag.run(motion.duration.stampTag)}
+            onContact={(landed) => {
+              setShown(landed);
+              tag.run(motion.duration.stampTag);
+            }}
           />
         </Pressable>
       </Animated.View>
