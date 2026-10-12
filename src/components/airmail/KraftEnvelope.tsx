@@ -1,6 +1,16 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, {
+  Circle,
+  ClipPath,
+  Defs,
+  G,
+  Path,
+  Polygon,
+  RadialGradient,
+  Stop,
+  Text as SvgText,
+} from 'react-native-svg';
 import { fontFamilies, radius, shadows, useTheme } from '@/theme';
 
 interface WaxSealProps {
@@ -112,3 +122,65 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+/** The prototype's jagged seam, as fractions of the disc (x, y). */
+const SEAM: [number, number][] = [
+  [0.53, 0],
+  [0.47, 0.2],
+  [0.57, 0.42],
+  [0.45, 0.62],
+  [0.55, 0.8],
+  [0.49, 1],
+];
+
+function halfPolygon(side: 'left' | 'right', size: number): string {
+  const seam = SEAM.map(([x, y]) => `${x * size},${y * size}`);
+  return side === 'left'
+    ? [`0,0`, ...seam, `0,${size}`].join(' ')
+    : [`${size},0`, `${size},${size}`, ...[...seam].reverse()].join(' ');
+}
+
+/**
+ * One half of the private note's wax seal (Airmail v4 · 06): a wax disc lit
+ * from the upper left, clipped along a jagged vertical seam, with the
+ * author's initial spanning both halves.
+ */
+export function WaxSealHalf({ side, initial, size = 42 }: { side: 'left' | 'right'; initial: string; size?: number }) {
+  const { colors } = useTheme();
+  const id = `wax-${side}`;
+  const ring = 3;
+  return (
+    <Svg width={size} height={size}>
+      <Defs>
+        <ClipPath id={`${id}-clip`}>
+          <Polygon points={halfPolygon(side, size)} />
+        </ClipPath>
+        <RadialGradient id={`${id}-fill`} cx="38%" cy="34%" r="70%">
+          <Stop offset="0.3" stopColor={colors.waxLight} />
+          <Stop offset="1" stopColor={colors.wax} />
+        </RadialGradient>
+      </Defs>
+      <G clipPath={`url(#${id}-clip)`}>
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill={`url(#${id}-fill)`} />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={size / 2 - ring / 2}
+          fill="none"
+          stroke={colors.waxRing}
+          strokeOpacity={0.9}
+          strokeWidth={ring}
+        />
+        <SvgText
+          x={size / 2}
+          y={size / 2 + 6}
+          textAnchor="middle"
+          fill={colors.waxText}
+          fontFamily={fontFamilies.extrabold}
+          fontSize={17}
+        >
+          {initial}
+        </SvgText>
+      </G>
+    </Svg>
+  );
+}
