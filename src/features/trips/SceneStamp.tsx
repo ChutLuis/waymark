@@ -29,7 +29,8 @@ export const STAMP_BANDS: Record<StampBand, BandLayout> = {
   lg: { width: 104, height: 128, artW: 90, artH: 99, nameStrip: 17, size: 'lg', denomPad: { t: 2, r: 4, b: 0, l: 0 }, denomSize: 9.5, denomLine: 11, nameSize: 9.5, nameLine: 11, nameLs: 0.8 },
   md: { width: 88, height: 104, artW: 74, artH: 77, nameStrip: 15, size: 'md', denomPad: { t: 1, r: 3, b: 0, l: 0 }, denomSize: 8.5, denomLine: 10, nameSize: 8.5, nameLine: 10, nameLs: 0.8 },
   sm: { width: 80, height: 96, artW: 66, artH: 71, nameStrip: 13, size: 'sm', denomPad: { t: 1, r: 3, b: 0, l: 0 }, denomSize: 8, denomLine: 9, nameSize: 8, nameLine: 9, nameLs: 0.5 },
-  xs: { width: 56, height: 72, artW: 42, artH: 49, nameStrip: 11, size: 'xs', denomPad: { t: 1, r: 2, b: 1, l: 3 }, denomSize: 6.5, denomLine: 8, nameSize: 6.5, nameLine: 8, nameLs: 0.5 },
+  // Large perforations (holes r 3 every 8, padding 5): 5 + 2 + 42 + 2 + 5 = 56.
+  xs: { width: 56, height: 72, artW: 42, artH: 49, nameStrip: 11, size: 'sm', denomPad: { t: 1, r: 2, b: 1, l: 3 }, denomSize: 6.5, denomLine: 8, nameSize: 6.5, nameLine: 8, nameLs: 0.5 },
   mini: { width: 40, height: 48, artW: 28, artH: 36, nameStrip: 0, size: 'mini', denomPad: { t: 0, r: 0, b: 0, l: 0 }, denomSize: 0, denomLine: 0, nameSize: 0, nameLine: 0, nameLs: 0 },
 };
 
@@ -40,6 +41,12 @@ export const AVATAR_STAMP_SIZES = {
 } as const;
 
 type AvatarStampSize = keyof typeof AVATAR_STAMP_SIZES;
+
+/**
+ * The 64x80 avatar stamp, with large perforations: a 50x55 panel
+ * (64 - 2x5 padding - 2x2 margin) over a 13 pt name strip.
+ */
+const AVATAR_MD_LAYOUT: BandLayout = { ...STAMP_BANDS.xs, width: 64, height: 80, artW: 50, artH: 55, nameStrip: 13 };
 
 /** Paste/pane-relative art margins: 2 inside the padding (1 on the 40x48). */
 function artMargin(layout: BandLayout): number {
@@ -172,8 +179,8 @@ export function AvatarStamp({
   const signed = useSignedUrl('avatars', imageUri ? null : avatarPath);
   const resolvedImage = imageUri ?? signed.data ?? null;
   const dims = AVATAR_STAMP_SIZES[size];
-  const layout = STAMP_BANDS[size === 'lg' ? 'sm' : size === 'md' ? 'xs' : 'mini'];
-  const perforation: StampSize = size === 'lg' ? 'sm' : size === 'md' ? 'xs' : 'mini';
+  const layout = size === 'md' ? AVATAR_MD_LAYOUT : STAMP_BANDS[size === 'lg' ? 'sm' : 'mini'];
+  const perforation: StampSize = size === 'sm' ? 'mini' : 'sm';
   const margin = artMargin(layout);
   return (
     <PerforatedStamp width={dims.width} height={dims.height} size={perforation} tone={frame}>
