@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Platform, StyleSheet, View, type AppStateStatus, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
 import { useIsFocused } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, type AnimatedStyle } from 'react-native-reanimated';
+import { useAppActive } from '@/components/useAppActive';
 import { useReducedMotion } from '@/components/useReducedMotion';
 import { useSignedUrl } from '@/lib/supabase/storage';
 import { motion, useTheme } from '@/theme';
@@ -70,15 +71,8 @@ export function TripScene({
   const reducedMotion = useReducedMotion();
   const isFocused = useIsFocused();
   const ref = useRef<LottieView>(null);
-  const [appActive, setAppActive] = useState(true);
+  const appActive = useAppActive();
   const [loadedSource, setLoadedSource] = useState<unknown>(null);
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (state: AppStateStatus) =>
-      setAppActive(state === 'active'),
-    );
-    return () => sub.remove();
-  }, []);
 
   const coverUrl = useSignedUrl('trip-covers', coverImagePath);
   const art = country ? DESTINATION_ART[country] : null;

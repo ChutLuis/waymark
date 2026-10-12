@@ -1,17 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+import { useIsFocused } from 'expo-router';
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { Plane } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
-import { easing, sampleTrack, useEntrance, useMotion, useTimeline } from '@/components/motion';
+import { easing, sampleTrack, useEntrance, useLoop, useMotion, useTimeline } from '@/components/motion';
+import { useAppActive } from '@/components/useAppActive';
 import {
   TICKET_ROTATION,
   dropIn,
@@ -280,25 +274,17 @@ function RouteStop({
   );
 }
 
-/** The dashed line ahead of the plane, marching downward (idle loop). */
+/**
+ * The dashed line ahead of the plane, marching downward. An idle loop: off
+ * with reduced motion, and parked while the screen is out of focus (Plan
+ * stays mounted under the Trip page) or the app is in the background.
+ */
 function MarchingDashes({ top, height }: { top: number; height: number }) {
   const { colors } = useTheme();
-  const { reduced } = useMotion();
-  const offset = useSharedValue(0);
-  useEffect(() => {
-    if (reduced) {
-      cancelAnimation(offset);
-      offset.value = 0;
-      return;
-    }
-    offset.value = 0;
-    offset.value = withRepeat(
-      withTiming(GEO.dashPitch, { duration: motion.choreo.plan.routeMarch, easing: Easing.linear }),
-      -1,
-    );
-    return () => cancelAnimation(offset);
-  }, [reduced, offset]);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }));
+  const isFocused = useIsFocused();
+  const appActive = useAppActive();
+  const march = useLoop(motion.choreo.plan.routeMarch, isFocused && appActive);
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: march.value * GEO.dashPitch }] }));
   const count = Math.ceil(height / GEO.dashPitch) + 2;
   if (height <= 0) return null;
   return (
