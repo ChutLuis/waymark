@@ -6,57 +6,77 @@
 /** Every card is this tall; a card behind shows only its 38 pt header row. */
 export const STACK_CARD_HEIGHT = 340;
 export const STACK_PEEK = 38;
-/** Four depths show; deeper cards wait hidden behind the last one. */
-export const STACK_VISIBLE = 4;
+/** Horizontal inset (each side) of a card in the pile, by its place in it. */
+const PILE_INSETS = [5, 11, 18] as const;
 
-/** Horizontal inset (each side) by depth, 0 = front. */
-const INSETS = [0, 5, 11, 18] as const;
+/** Wallet geometry: the pile under a selected card, and the scroll effects. */
+export const WALLET = {
+  /** Selected card sits this far below the top of the viewport. */
+  selectedMargin: 16,
+  /** How much of the pile's first card shows at the bottom of the screen. */
+  pileReveal: 64,
+  /** Each card behind it in the pile peeks this much lower. */
+  pileStep: 8,
+  /** Cards stuck at the top while scrolling peek this much under each other. */
+  stickStep: 3,
+  /** Pulling down past the top fans the cards apart by this much per card. */
+  spread: 0.22,
+} as const;
 
-export interface StackPosition {
-  top: number;
-  inset: number;
-  z: number;
-  /** Deeper than the four visible depths: parked behind the last one. */
-  hidden: boolean;
-}
-
-/**
- * Where the card at `depth` sits in a stack of `count`: the deepest visible
- * card is at the top of the container and each nearer card 38 pt lower, so
- * four cards land on the design's 0 / 38 / 76 / 114. Cards past the fourth
- * share the last visible slot, hidden, until passing brings them forward.
- */
-export function stackPosition(depth: number, count: number): StackPosition {
-  const visible = Math.min(count, STACK_VISIBLE);
-  const d = Math.max(0, Math.min(depth, visible - 1));
-  return {
-    top: (visible - 1 - d) * STACK_PEEK,
-    inset: INSETS[Math.min(d, INSETS.length - 1)],
-    z: 100 - depth,
-    hidden: depth >= STACK_VISIBLE,
-  };
+/** Top of card `index` (0 = the top of the stack) in the resting stack. */
+export function walletTop(index: number): number {
+  return index * STACK_PEEK;
 }
 
 /** Container height for `count` cards. */
 export function stackHeight(count: number): number {
-  const visible = Math.min(count, STACK_VISIBLE);
-  return visible === 0 ? 0 : (visible - 1) * STACK_PEEK + STACK_CARD_HEIGHT;
+  return count === 0 ? 0 : (count - 1) * STACK_PEEK + STACK_CARD_HEIGHT;
 }
 
-/** Swiping the front card passes it to the back of the stack. */
-export function passToBack(order: string[]): string[] {
-  return order.length < 2 ? order : [...order.slice(1), order[0]];
+export interface CardSlot {
+  top: number;
+  inset: number;
 }
 
-/** The reverse of a pass: the card at the back comes to the front. */
-export function backToFront(order: string[]): string[] {
-  return order.length < 2 ? order : [order[order.length - 1], ...order.slice(0, -1)];
+/**
+ * Selected mode, Wallet style: the selected card at the stack's top, fully
+ * shown; every other card in a pile at the bottom of the screen, in stack
+ * order. `room` is the viewport height left below the stack's top once Home
+ * has scrolled as far as it can towards it; tops are relative to the stack.
+ */
+export function selectedLayout(count: number, selected: number, room: number): CardSlot[] {
+  const pileCount = count - 1;
+  const floor = STACK_CARD_HEIGHT + WALLET.selectedMargin;
+  const pileTop = Math.max(
+    floor,
+    room - WALLET.pileReveal - Math.max(0, pileCount - 1) * WALLET.pileStep,
+  );
+  let place = 0;
+  return Array.from({ length: count }, (_, i) => {
+    if (i === selected) return { top: 0, inset: 0 };
+    const slot = {
+      top: pileTop + place * WALLET.pileStep,
+      inset: PILE_INSETS[Math.min(pileCount - 1 - place, PILE_INSETS.length - 1)],
+    };
+    place += 1;
+    return slot;
+  });
 }
 
-/** The tapped card goes to the front; the rest keep their relative order. */
-export function bringToFront(order: string[], id: string): string[] {
-  if (!order.includes(id) || order[0] === id) return order;
-  return [id, ...order.filter((x) => x !== id)];
+/**
+ * The scroll offset for a resting card (Wallet's sticky pile): once the stack
+ * scrolls past the top of the viewport, each card sticks there, a few points
+ * under the one before, until the front card itself would scroll; and pulling
+ * down past the top fans the cards apart.
+ *
+ * `scrolled` is how far the stack's top is above the viewport's top (negative
+ * while pulling down); `frontTop` is the front card's resting top.
+ */
+export function walletScrollOffset(index: number, top: number, scrolled: number, frontTop: number): number {
+  'worklet';
+  if (scrolled < 0) return -scrolled * index * WALLET.spread;
+  const stick = Math.min(scrolled, frontTop) + index * WALLET.stickStep;
+  return Math.max(0, stick - top);
 }
 
 /**

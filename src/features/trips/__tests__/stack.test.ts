@@ -1,72 +1,65 @@
 import { describe, expect, it } from 'vitest';
 import {
+  STACK_CARD_HEIGHT,
+  WALLET,
   addressDates,
-  backToFront,
-  bringToFront,
   envelopeNote,
   isDaysAway,
   miniRouteX,
-  passToBack,
   reconcileOrder,
+  selectedLayout,
   stackHeight,
-  stackPosition,
+  walletScrollOffset,
+  walletTop,
 } from '../stack';
 
-describe('stackPosition', () => {
-  it('matches the design table for four cards', () => {
-    expect([0, 1, 2, 3].map((d) => stackPosition(d, 4))).toEqual([
-      { top: 114, inset: 0, z: 100, hidden: false },
-      { top: 76, inset: 5, z: 99, hidden: false },
-      { top: 38, inset: 11, z: 98, hidden: false },
-      { top: 0, inset: 18, z: 97, hidden: false },
-    ]);
-  });
-
-  it('parks cards past the fourth behind the last visible one', () => {
-    const fifth = stackPosition(4, 8);
-    expect(fifth).toMatchObject({ top: 0, inset: 18, hidden: true });
-    expect(fifth.z).toBeLessThan(stackPosition(3, 8).z);
-    expect(stackPosition(0, 8).top).toBe(114);
-  });
-
-  it('keeps the deepest card at the top of a smaller stack', () => {
-    expect(stackPosition(0, 2).top).toBe(38);
-    expect(stackPosition(1, 2).top).toBe(0);
-    expect(stackPosition(0, 1).top).toBe(0);
+describe('wallet stack', () => {
+  it('peeks each card 38 pt below the one above', () => {
+    expect([0, 1, 2, 3].map(walletTop)).toEqual([0, 38, 76, 114]);
   });
 
   it('sizes the container to the cards', () => {
     expect(stackHeight(4)).toBe(454);
-    expect(stackHeight(9)).toBe(454);
+    expect(stackHeight(8)).toBe(606);
     expect(stackHeight(1)).toBe(340);
     expect(stackHeight(0)).toBe(0);
   });
 });
 
-describe('bringToFront', () => {
-  it('moves the tapped card to depth 0 and keeps the rest in order', () => {
-    expect(bringToFront(['kyoto', 'chiang', 'berlin', 'invite'], 'berlin')).toEqual([
-      'berlin', 'kyoto', 'chiang', 'invite',
-    ]);
+describe('selectedLayout', () => {
+  it('puts the selected card on top and the rest in a pile at the bottom', () => {
+    const slots = selectedLayout(4, 2, 784);
+    expect(slots[2]).toEqual({ top: 0, inset: 0 });
+    const pile = [slots[0], slots[1], slots[3]];
+    expect(pile.map((p) => p.top)).toEqual([704, 712, 720]);
+    // The nearest card in the pile is the widest.
+    expect(pile[2].inset).toBeLessThan(pile[0].inset);
   });
 
-  it('is a no-op for the front card or an unknown id', () => {
-    const order = ['a', 'b'];
-    expect(bringToFront(order, 'a')).toBe(order);
-    expect(bringToFront(order, 'z')).toBe(order);
+  it('never lets the pile cover the selected card', () => {
+    const slots = selectedLayout(8, 0, 400);
+    for (const slot of slots.slice(1)) expect(slot.top).toBeGreaterThanOrEqual(STACK_CARD_HEIGHT + WALLET.selectedMargin);
   });
 });
 
-describe('passToBack / backToFront', () => {
-  it('cycles the stack both ways', () => {
-    const order = ['a', 'b', 'c', 'd', 'e'];
-    expect(passToBack(order)).toEqual(['b', 'c', 'd', 'e', 'a']);
-    expect(backToFront(order)).toEqual(['e', 'a', 'b', 'c', 'd']);
-    expect(backToFront(passToBack(order))).toEqual(order);
+describe('walletScrollOffset', () => {
+  it('rests while the stack is in view', () => {
+    expect(walletScrollOffset(2, 76, 0, 114)).toBe(0);
   });
 
-  it('leaves a single card alone', () => {
-    expect(passToBack(['a'])).toEqual(['a']);
+  it('sticks scrolled cards at the top, each a few points under the last', () => {
+    expect(walletScrollOffset(0, 0, 50, 114)).toBe(50);
+    expect(walletScrollOffset(1, 38, 50, 114)).toBe(50 + WALLET.stickStep - 38);
+    expect(walletScrollOffset(3, 114, 50, 114)).toBe(0);
+  });
+
+  it('stops sticking once the front card itself scrolls', () => {
+    expect(walletScrollOffset(0, 0, 400, 114)).toBe(114);
+  });
+
+  it('fans the cards apart when pulled down', () => {
+    expect(walletScrollOffset(0, 0, -100, 114)).toBe(0);
+    expect(walletScrollOffset(3, 114, -100, 114)).toBeCloseTo(100 * 3 * WALLET.spread, 6);
   });
 });
 

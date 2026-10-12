@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
 import { useIsFocused, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -11,12 +16,13 @@ import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { BrandMark } from '@/components/BrandMark';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { EmptyState, ErrorState } from '@/components/StateViews';
-import { sampleTrack, useEntrance } from '@/components/motion';
+import { easing, sampleTrack, useEntrance, useMotion } from '@/components/motion';
 import { greetingRise } from '@/components/motion/keyframes';
 import { haptic } from '@/lib/haptics';
 import { AvatarStamp } from '@/features/trips/SceneStamp';
 import { MailStack, shouldDeal, type CardActions } from '@/features/trips/MailStack';
 import { Shoebox } from '@/features/trips/Shoebox';
+import { WALLET } from '@/features/trips/stack';
 import { TripCardSkeleton } from '@/features/trips/TripCardSkeleton';
 import { homeCovered, isCollapsing, onCollapsingChange, setExpandOrigin } from '@/features/trips/expandStore';
 import { markShellOpening } from '@/features/trips/shellMotion';
@@ -101,6 +107,34 @@ export default function TripsListScreen() {
     router.push(`/trips/${trip.id}` as never);
   };
 
+  // The wallet: the stack follows the scroll, and a selected card locks it,
+  // with the stack's top just under the top of the screen and the rest of
+  // Home faded behind the pile.
+  const { ms } = useMotion();
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const [viewport, setViewport] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [stackY, setStackY] = useState(0);
+  const [selecting, setSelecting] = useState(false);
+  const below = useSharedValue(1);
+  // Scroll as far as the content allows towards the stack's top; the pile
+  // goes in whatever room that leaves below it.
+  const selectScroll = Math.max(0, Math.min(stackY - WALLET.selectedMargin, contentHeight - viewport));
+  const room = viewport - (stackY - selectScroll);
+  const onSelectedChange = useCallback(
+    (on: boolean) => {
+      setSelecting(on);
+      below.value = withTiming(on ? 0 : 1, { duration: ms(motion.duration.base), easing: easing('standard') });
+      if (on) scrollRef.current?.scrollTo({ y: selectScroll, animated: true });
+    },
+    [below, ms, scrollRef, selectScroll],
+  );
+  const belowStyle = useAnimatedStyle(() => ({ opacity: below.value }));
+
   const coveredStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 - HOME_COVERED_SCALE * homeCovered.value }],
   }));
@@ -177,12 +211,18 @@ export default function TripsListScreen() {
             />
           </EmptyState>
         ) : (
-          <ScrollView
+          <Animated.ScrollView
+            ref={scrollRef}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            scrollEnabled={!selecting}
+            onLayout={(e) => setViewport(e.nativeEvent.layout.height)}
+            onContentSizeChange={(_, h) => setContentHeight(h)}
             contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + spacing.s12 }]}
             showsVerticalScrollIndicator={false}
           >
             {stack.length > 0 ? (
-              <View style={styles.stackWrap}>
+              <View style={styles.stackWrap} onLayout={(e) => setStackY(e.nativeEvent.layout.y)}>
                 <MailStack
                   trips={stack}
                   onNowIds={onNowIds}
@@ -190,11 +230,16 @@ export default function TripsListScreen() {
                   focused={isFocused}
                   collapsing={collapsing}
                   dealing={dealing}
+                  scrollY={scrollY}
+                  stackY={stackY}
+                  room={room}
+                  onSelectedChange={onSelectedChange}
                   onOpenOnNow={openOnNow}
                   onOpenTrip={openTrip}
                 />
               </View>
             ) : null}
+            <Animated.View style={belowStyle} pointerEvents={selecting ? 'none' : 'auto'}>
             <Shoebox past={past} dealing={dealing} onOpen={openTrip} />
             <View style={styles.inviteRow}>
               <AppText role="bodySm" tone="secondary">
@@ -211,7 +256,8 @@ export default function TripsListScreen() {
                 </AppText>
               </Pressable>
             </View>
-          </ScrollView>
+            </Animated.View>
+          </Animated.ScrollView>
         )}
       </View>
       <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.ink }, dimStyle]} />
@@ -249,7 +295,8 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: spacing.cardGutter, paddingTop: spacing.s7 },
   skeletonGap: { height: spacing.s5 },
   listContent: { paddingTop: spacing.s10 },
-  stackWrap: { marginHorizontal: spacing.cardGutter },
+  // Above the shoebox, so the pile can sit over it while a card is selected.
+  stackWrap: { marginHorizontal: spacing.cardGutter, zIndex: 1 },
   emptySecondary: { marginTop: spacing.s3 },
   inviteRow: {
     flexDirection: 'row',
