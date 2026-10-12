@@ -94,16 +94,18 @@ function StatusTag({
 }: {
   item: ItineraryItem;
   boxed?: boolean;
-  stampIn: ReturnType<typeof useTimeline>;
+  /** Stamps in on mount: the tag is keyed by status, so a swap mounts it hidden. */
+  stampIn: boolean;
 }) {
   const { colors } = useTheme();
   const done = item.status === 'done';
   const color = done ? colors.ink3 : item.status === 'confirmed' ? colors.ink : colors.ink2;
+  const p = useEntrance(motion.duration.stampTag, 0, stampIn);
   const style = useAnimatedStyle(() => ({
-    opacity: sampleTrack(statusTagStamp.opacity, stampIn.p.value, motion.easing.standard),
+    opacity: sampleTrack(statusTagStamp.opacity, p.value, motion.easing.standard),
     transform: [
-      { scale: sampleTrack(statusTagStamp.scale, stampIn.p.value, motion.easing.standard) },
-      { rotate: `${sampleTrack(statusTagStamp.rotate, stampIn.p.value, motion.easing.standard)}deg` },
+      { scale: sampleTrack(statusTagStamp.scale, p.value, motion.easing.standard) },
+      { rotate: `${sampleTrack(statusTagStamp.rotate, p.value, motion.easing.standard)}deg` },
     ],
   }));
   return (
@@ -146,7 +148,8 @@ function RouteStop({
   reflow: Reflow;
 }) {
   const { colors } = useTheme();
-  const tag = useTimeline(1);
+  // The status the stamp's contact delivered: only that tag stamps in.
+  const [stamped, setStamped] = useState<ItineraryItem['status'] | null>(null);
 
   // The row keeps showing the previous status, tag and style, while the stamp
   // is in the air (README 03/04); it swaps on the stamp's contact frame, and
@@ -215,7 +218,7 @@ function RouteStop({
               <AppText role="kicker" tone="accent" style={styles.ticketKicker}>
                 NEXT · {item.startAt ? countdownLabel(minutesUntil(item.startAt, now)) : 'ANYTIME'}
               </AppText>
-              <StatusTag item={item} boxed stampIn={tag} />
+              <StatusTag key={item.status} item={item} boxed stampIn={stamped === item.status} />
             </View>
             <View style={styles.baselineRow}>
               <AppText role="time" style={styles.ticketTime}>
@@ -252,7 +255,7 @@ function RouteStop({
                 <AppText role="rowTitle" tone="muted" numberOfLines={1} style={[styles.compactTitle, styles.flexText]}>
                   {item.title}
                 </AppText>
-                <StatusTag item={item} stampIn={tag} />
+                <StatusTag key={item.status} item={item} stampIn={stamped === item.status} />
               </View>
             ) : (
               <>
@@ -270,7 +273,7 @@ function RouteStop({
                   </AppText>
                 ) : null}
                 <View style={styles.tagLine}>
-                  <StatusTag item={item} stampIn={tag} />
+                  <StatusTag key={item.status} item={item} stampIn={stamped === item.status} />
                 </View>
               </>
             )}
@@ -289,8 +292,10 @@ function RouteStop({
             status={live.status}
             country={country}
             onContact={(landed) => {
+              // One commit swaps the text and mounts the new tag hidden, so it
+              // never paints at rest before stamping in.
+              setStamped(landed);
               setShown(landed);
-              tag.run(motion.duration.stampTag);
             }}
           />
         </Pressable>
