@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { flightStartY, layoutRoute, routeYAt, stopsSummary } from '../route';
+import { NOW_SLOT, flightStartY, layoutRoute, nowSlotIndex, routeYAt, stopsSummary, withNowSlot } from '../route';
 
 const H = (h: number, m = 0) => h * 60 + m;
 
@@ -65,6 +65,74 @@ describe('routeYAt', () => {
 
   it('is null without timed stops', () => {
     expect(routeYAt([{ minutes: null, y: 10 }], H(9))).toBeNull();
+  });
+
+  it("returns the NOW slot's centre when the route has one", () => {
+    expect(routeYAt([...points, { minutes: null, y: 200, slot: true }], H(17))).toBe(200);
+  });
+});
+
+describe('the NOW slot', () => {
+  const times = [H(8), H(11, 30), H(16, 30), H(21)];
+
+  it('sits after the last stop at or before now', () => {
+    expect(nowSlotIndex(times, H(7, 30))).toBe(0);
+    expect(nowSlotIndex(times, H(8))).toBe(1);
+    expect(nowSlotIndex(times, H(16, 28))).toBe(2);
+    expect(nowSlotIndex(times, H(16, 31))).toBe(3);
+    expect(nowSlotIndex(times, H(22))).toBe(4);
+  });
+
+  it('ignores untimed stops', () => {
+    expect(nowSlotIndex([H(8), null, H(13)], H(12))).toBe(1);
+  });
+
+  it('takes the free-time label of its gap and moves the rows below down', () => {
+    const rows = [
+      { minutes: H(8), height: 42 },
+      { minutes: H(8, 30), height: 42, freeBefore: true },
+    ];
+    const laid = withNowSlot(rows, 1);
+    expect(laid.map((r) => [!!r.slot, !!r.freeBefore])).toEqual([
+      [false, false],
+      [true, true],
+      [false, false],
+    ]);
+    // Under the label: 42 + 40; the next row below it: + 30 + 16.
+    expect(layoutRoute(laid)).toEqual([0, 82, 128]);
+    expect(rows[1].freeBefore).toBe(true);
+  });
+
+  it('goes above the first row and below the last', () => {
+    const rows = [
+      { minutes: H(8), height: 42 },
+      { minutes: H(12), height: 42 },
+    ];
+    expect(layoutRoute(rows)).toEqual([0, 96]);
+    // Above: the day moves down 30 + 16 and keeps its time scale.
+    expect(layoutRoute(withNowSlot(rows, 0))).toEqual([0, 46, 142]);
+    // Below: 16 under the last row.
+    expect(layoutRoute(withNowSlot(rows, 2))).toEqual([0, 96, 154]);
+  });
+
+  it('keeps the NOW tag off the NEXT ticket at 16:28 on Kyoto day 10', () => {
+    // Fushimi Inari (done, compact), Tea ceremony (confirmed), Gion walk (the
+    // NEXT ticket), Philosopher's Path; free time between each.
+    const rows = [
+      { minutes: H(8), height: 42 },
+      { minutes: H(11, 30), height: 76, freeBefore: true },
+      { minutes: H(16, 30), height: 104, freeBefore: true },
+      { minutes: H(21), height: 76, freeBefore: true },
+    ];
+    const at = nowSlotIndex(rows.map((r) => r.minutes), H(16, 28));
+    const laid = withNowSlot(rows, at);
+    const tops = layoutRoute(laid);
+    const slotTop = tops[at];
+    const tag = { top: slotTop + (NOW_SLOT.height - NOW_SLOT.tag) / 2, bottom: slotTop + (NOW_SLOT.height + NOW_SLOT.tag) / 2 };
+    const ticket = { top: tops[at + 1], bottom: tops[at + 1] + 104 };
+    const tea = { top: tops[at - 1], bottom: tops[at - 1] + 76 };
+    expect(tag.bottom <= ticket.top || tag.top >= ticket.bottom).toBe(true);
+    expect(tag.top >= tea.bottom).toBe(true);
   });
 });
 

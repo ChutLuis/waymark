@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useIsFocused } from 'expo-router';
-import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, {
+  LinearTransition,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import { Plane } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { easing, sampleTrack, useEntrance, useLoop, useMotion, useTimeline } from '@/components/motion';
@@ -19,7 +26,18 @@ import { formatTime, formatTimePadded } from '@/lib/format/date';
 import { motion, radius, shadows, useTheme } from '@/theme';
 import type { ItineraryItem } from '@/lib/types';
 import { minutesUntil, statusLabel, type DayRow } from './group';
-import { flightStartY, layoutRoute, minutesOfDay, routeYAt, ROUTE, type RoutePoint } from './route';
+import {
+  NOW_SLOT,
+  ROUTE,
+  flightStartY,
+  layoutRoute,
+  minutesOfDay,
+  nowSlotIndex,
+  routeYAt,
+  withNowSlot,
+  type RouteRowInput,
+  type RoutePoint,
+} from './route';
 
 /** Route geometry, in points from the screen's left edge (README Plan). */
 const GEO = {
@@ -40,6 +58,9 @@ const GEO = {
   dashPitch: 10,
   freeLabel: 18,
 } as const;
+
+/** Reflow when the NOW slot moves (README 02 v4.1.1). */
+type Reflow = LinearTransition | undefined;
 
 /** First-pass heights before rows are measured. */
 const ESTIMATE = { compact: STOP_STAMP_HEIGHT, block: 76, ticket: 104 } as const;
@@ -109,6 +130,7 @@ function RouteStop({
   onAdvance,
   onEdit,
   onMeasure,
+  reflow,
 }: {
   item: ItineraryItem;
   kind: RowKind;
@@ -121,6 +143,7 @@ function RouteStop({
   onAdvance: (item: ItineraryItem) => void;
   onEdit: (item: ItineraryItem) => void;
   onMeasure: (id: string, height: number) => void;
+  reflow: Reflow;
 }) {
   const { colors } = useTheme();
   const tag = useTimeline(1);
@@ -174,6 +197,7 @@ function RouteStop({
     <>
       {kind === 'ticket' ? (
         <Animated.View
+          layout={reflow}
           style={[
             styles.ticket,
             { top, backgroundColor: colors.paper, boxShadow: shadows.nextTicket },
@@ -209,50 +233,51 @@ function RouteStop({
           </Pressable>
         </Animated.View>
       ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Edit ${item.title}`}
-          onPress={() => onEdit(live)}
+        <Animated.View
+          layout={reflow}
           onLayout={(e) => measure(e.nativeEvent.layout.height)}
-          style={({ pressed }) => [
-            styles.rowText,
-            { top: kind === 'compact' ? stampTop + GEO.compactTextTop : stampTop },
-            pressed && styles.pressed,
-          ]}
+          style={[styles.rowText, { top: kind === 'compact' ? stampTop + GEO.compactTextTop : stampTop }]}
         >
-          {kind === 'compact' ? (
-            <View style={styles.compactRow}>
-              <AppText role="routeTime" tone="muted">
-                {rowTime(item)}
-              </AppText>
-              <AppText role="rowTitle" tone="muted" numberOfLines={1} style={[styles.compactTitle, styles.flexText]}>
-                {item.title}
-              </AppText>
-              <StatusTag item={item} stampIn={tag} />
-            </View>
-          ) : (
-            <>
-              <View style={styles.baselineRow}>
-                <AppText role="routeTime" tone={done ? 'muted' : 'primary'}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${item.title}`}
+            onPress={() => onEdit(live)}
+            style={({ pressed }) => pressed && styles.pressed}
+          >
+            {kind === 'compact' ? (
+              <View style={styles.compactRow}>
+                <AppText role="routeTime" tone="muted">
                   {rowTime(item)}
                 </AppText>
-                <AppText role="rowTitle" tone={done ? 'muted' : 'primary'} style={styles.flexText}>
+                <AppText role="rowTitle" tone="muted" numberOfLines={1} style={[styles.compactTitle, styles.flexText]}>
                   {item.title}
                 </AppText>
-              </View>
-              {sub ? (
-                <AppText role="bodySm" tone="secondary" style={styles.subLine}>
-                  {sub}
-                </AppText>
-              ) : null}
-              <View style={styles.tagLine}>
                 <StatusTag item={item} stampIn={tag} />
               </View>
-            </>
-          )}
-        </Pressable>
+            ) : (
+              <>
+                <View style={styles.baselineRow}>
+                  <AppText role="routeTime" tone={done ? 'muted' : 'primary'}>
+                    {rowTime(item)}
+                  </AppText>
+                  <AppText role="rowTitle" tone={done ? 'muted' : 'primary'} style={styles.flexText}>
+                    {item.title}
+                  </AppText>
+                </View>
+                {sub ? (
+                  <AppText role="bodySm" tone="secondary" style={styles.subLine}>
+                    {sub}
+                  </AppText>
+                ) : null}
+                <View style={styles.tagLine}>
+                  <StatusTag item={item} stampIn={tag} />
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Animated.View>
       )}
-      <Animated.View style={[styles.stamp, { top: stampTop }, popStyle]}>
+      <Animated.View layout={reflow} style={[styles.stamp, { top: stampTop }, popStyle]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={stampLabel}
@@ -279,7 +304,7 @@ function RouteStop({
  * with reduced motion, and parked while the screen is out of focus (Plan
  * stays mounted under the Trip page) or the app is in the background.
  */
-function MarchingDashes({ top, height }: { top: number; height: number }) {
+function MarchingDashes({ top, height, reflow }: { top: number; height: number; reflow: Reflow }) {
   const { colors } = useTheme();
   const isFocused = useIsFocused();
   const appActive = useAppActive();
@@ -288,13 +313,13 @@ function MarchingDashes({ top, height }: { top: number; height: number }) {
   const count = Math.ceil(height / GEO.dashPitch) + 2;
   if (height <= 0) return null;
   return (
-    <View style={[styles.dashClip, { top, height }]} pointerEvents="none">
+    <Animated.View layout={reflow} style={[styles.dashClip, { top, height }]} pointerEvents="none">
       <Animated.View style={[styles.dashColumn, style]}>
         {Array.from({ length: count }, (_, i) => (
           <View key={i} style={[styles.dash, { backgroundColor: colors.ink3 }]} />
         ))}
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -328,51 +353,79 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
   }, [rows, nextId]);
 
   const timedRoute = day !== 'untimed';
-  const tops = useMemo(
-    () =>
-      layoutRoute(
-        stops.map((s) => ({
-          minutes: timedRoute && s.item.startAt ? minutesOfDay(s.item.startAt) : null,
-          height: heights[s.item.id] ?? ESTIMATE[s.kind],
-          freeBefore: s.freeBefore,
-        })),
-      ),
-    [stops, heights, timedRoute],
-  );
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const stopMinutes = stops.map((s) => (timedRoute && s.item.startAt ? minutesOfDay(s.item.startAt) : null));
+  // Today, "now" takes a slot of its own between rows (README 02 v4.1.1).
+  const slotAt = day === 'today' && stopMinutes.some((m) => m !== null) ? nowSlotIndex(stopMinutes, nowMinutes) : null;
+
+  const inputs = stops.map((s, i) => ({
+    minutes: stopMinutes[i],
+    height: heights[s.item.id] ?? ESTIMATE[s.kind],
+    freeBefore: s.freeBefore,
+  }));
+  const laid: RouteRowInput[] = slotAt === null ? inputs : withNowSlot(inputs, slotAt);
+  const laidTops = layoutRoute(laid);
+  const tops = slotAt === null ? laidTops : laidTops.filter((_, i) => i !== slotAt);
+  const slotY = slotAt === null ? null : laidTops[slotAt] + NOW_SLOT.height / 2;
+  // The free-time label of each laid row, in the gap above it.
+  const laidFree = stops.map((s) => s.freeMinutes);
+  if (slotAt !== null) {
+    laidFree.splice(slotAt, 0, stops[slotAt]?.freeMinutes ?? 0);
+    if (slotAt < stops.length) laidFree[slotAt + 1] = 0;
+  }
 
   const onMeasure = useCallback((id: string, height: number) => {
     setHeights((prev) => (Math.abs((prev[id] ?? -1) - height) < 0.5 ? prev : { ...prev, [id]: height }));
   }, []);
 
   const points: RoutePoint[] = stops.map((s, i) => ({
-    minutes: timedRoute && s.item.startAt ? minutesOfDay(s.item.startAt) : null,
+    minutes: stopMinutes[i],
     y: tops[i] + (s.kind === 'ticket' ? GEO.ticketLift : 0) + STOP_STAMP_HEIGHT / 2,
     status: s.item.status,
   }));
-  const firstY = points[0]?.y ?? 0;
-  const lastY = points[points.length - 1]?.y ?? 0;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  if (slotY !== null) points.push({ minutes: null, y: slotY, slot: true });
+  const stampYs = points.filter((p) => !p.slot).map((p) => p.y);
+  // Before the first stop the plane sits above it, and the line starts there.
+  const firstY = Math.min(stampYs[0] ?? 0, slotY ?? Infinity);
+  const lastY = stampYs[stampYs.length - 1] ?? 0;
   const nowY = day === 'today' ? routeYAt(points, nowMinutes) : null;
   const startY = day === 'today' ? flightStartY(points, nowMinutes) : null;
   const measured = stops.every((s) => heights[s.item.id] !== undefined);
 
-  const height =
-    stops.length > 0 ? tops[tops.length - 1] + (heights[stops[stops.length - 1].item.id] ?? ESTIMATE[stops[stops.length - 1].kind]) : 0;
+  const height = laid.length > 0 ? laidTops[laid.length - 1] + laid[laid.length - 1].height : 0;
 
-  // The plane and the ink behind it share one value: the plane's centre y.
+  // Rows reflow with the slot, once measured: before that, a height settling
+  // on the first frames would slide the rows instead of placing them.
+  const reflow: Reflow = useMemo(
+    () =>
+      measured && !reduced
+        ? LinearTransition.duration(motion.choreo.plan.nowSlot).easing(easing('standard'))
+        : undefined,
+    [measured, reduced],
+  );
+
+  // The plane, the ink behind it and the NOW tag share one value: the plane's centre y.
   const planeY = useSharedValue(startY ?? firstY);
+  const routeTop = useSharedValue(firstY);
   const nowTag = useTimeline(entering ? 0 : 1);
   const mountedAt = useRef(Date.now());
   const flown = useRef(false);
+  const lastSlot = useRef(slotAt);
+  /** End of a slot slide: a re-measure during it continues the slide. */
+  const slideUntil = useRef(0);
 
   useEffect(() => {
     if (nowY === null) return;
     if (flown.current || !entering) {
-      // Placed each minute without animation.
       flown.current = true;
-      cancelAnimation(planeY);
-      planeY.value = nowY;
       nowTag.set(1);
+      cancelAnimation(planeY);
+      // Passing a stop slides the slot to the next gap with the rows; otherwise
+      // the plane is placed without animation.
+      const moved = lastSlot.current !== null && lastSlot.current !== slotAt;
+      if (moved && !reduced) slideUntil.current = Date.now() + motion.choreo.plan.nowSlot;
+      const left = slideUntil.current - Date.now();
+      planeY.value = left > 0 ? withTiming(nowY, { duration: left, easing: easing('standard') }) : nowY;
       return;
     }
     // Fly once the rows have been measured, keeping the entrance's clock.
@@ -387,39 +440,57 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
     }
     nowTag.run(motion.choreo.plan.nowTag, delay + ms(motion.choreo.plan.nowTagAfterPlane));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nowY, measured, startY]);
+  }, [nowY, measured, startY, slotAt]);
+
+  useEffect(() => {
+    const moved = lastSlot.current !== slotAt;
+    lastSlot.current = slotAt;
+    routeTop.value =
+      moved && measured && !reduced
+        ? withTiming(firstY, { duration: motion.choreo.plan.nowSlot, easing: easing('standard') })
+        : firstY;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstY, slotAt]);
 
   const inkEnd = day === 'past' ? lastY : day === 'today' ? null : firstY;
   const inkStyle = useAnimatedStyle(() => ({
-    height: Math.max(0, (inkEnd ?? planeY.value) - firstY),
+    top: routeTop.value,
+    height: Math.max(0, (inkEnd ?? planeY.value) - routeTop.value),
   }));
   const planeStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: planeY.value - (GEO.plane + 2 * GEO.planeRing) / 2 }],
   }));
   const nowTagStyle = useAnimatedStyle(() => ({
     opacity: sampleTrack(nowTagPop.opacity, nowTag.p.value, motion.easing.standard),
-    transform: [{ scale: sampleTrack(nowTagPop.scale, nowTag.p.value, motion.easing.standard) }],
+    transform: [
+      { translateY: planeY.value - NOW_SLOT.tag / 2 },
+      { scale: sampleTrack(nowTagPop.scale, nowTag.p.value, motion.easing.standard) },
+    ],
   }));
 
   return (
     <View style={[styles.route, { height }]}>
-      <MarchingDashes top={firstY} height={lastY - firstY} />
-      <Animated.View style={[styles.ink, { top: firstY, backgroundColor: colors.ink }, inkStyle]} />
+      <MarchingDashes top={firstY} height={lastY - firstY} reflow={reflow} />
+      <Animated.View style={[styles.ink, { backgroundColor: colors.ink }, inkStyle]} />
 
-      {stops.map((s, i) => {
-        if (!s.freeBefore || i === 0) return null;
-        const prevBottom = tops[i - 1] + (heights[stops[i - 1].item.id] ?? ESTIMATE[stops[i - 1].kind]);
-        const gap = tops[i] - prevBottom;
+      {laid.map((row, i) => {
+        const minutes = laidFree[i];
+        if (!row.freeBefore || i === 0 || !minutes) return null;
+        const prevBottom = laidTops[i - 1] + laid[i - 1].height;
+        const gap = laidTops[i] - prevBottom;
         if (gap < GEO.freeLabel + 8) return null;
         return (
-          <AppText
-            key={`free-${s.item.id}`}
-            role="metaSm"
-            tone="muted"
+          <Animated.View
+            // Keyed by the stop below the gap, so a label keeps its text and
+            // slides when the slot moves in or out of its gap.
+            key={`free-${stops[slotAt !== null && i > slotAt ? i - 1 : i].item.id}`}
+            layout={reflow}
             style={[styles.free, { top: prevBottom + (gap - GEO.freeLabel) / 2 }]}
           >
-            {freeTimeLabel(s.freeMinutes)}
-          </AppText>
+            <AppText role="metaSm" tone="muted">
+              {freeTimeLabel(minutes)}
+            </AppText>
+          </Animated.View>
         );
       })}
 
@@ -437,6 +508,7 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
           onAdvance={onAdvance}
           onEdit={onEdit}
           onMeasure={onMeasure}
+          reflow={reflow}
         />
       ))}
 
@@ -454,7 +526,7 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
           </Animated.View>
           <Animated.View
             pointerEvents="none"
-            style={[styles.nowTag, { top: nowY - 9, backgroundColor: colors.airmailBlue }, nowTagStyle]}
+            style={[styles.nowTag, { height: NOW_SLOT.tag, backgroundColor: colors.airmailBlue }, nowTagStyle]}
           >
             <AppText role="tag" style={{ color: colors.paper, letterSpacing: 0.6 }}>
               NOW {formatTime(now.toISOString())}
@@ -498,7 +570,7 @@ const styles = StyleSheet.create({
   ticketHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ticketKicker: { letterSpacing: 0.6, flexShrink: 1 },
   ticketTime: { fontSize: 14, lineHeight: 18 },
-  free: { position: 'absolute', left: GEO.textLeft, height: GEO.freeLabel },
+  free: { position: 'absolute', left: GEO.textLeft, right: GEO.textRight, height: GEO.freeLabel },
   plane: {
     position: 'absolute',
     top: 0,
@@ -517,6 +589,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     paddingHorizontal: 6,
     borderRadius: radius.chip,
+    top: 0,
+    justifyContent: 'center',
     transformOrigin: 'left',
   },
   pressed: { opacity: 0.7 },

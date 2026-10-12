@@ -15,6 +15,13 @@ export const ROUTE = {
   freeGap: 40,
 } as const;
 
+/** Today's "now" slot (README 02 v4.1.1): a row of its own for the plane and the NOW tag. */
+export const NOW_SLOT = {
+  height: 30,
+  /** The NOW tag's height, centred in the slot. */
+  tag: 18,
+} as const;
+
 export interface RouteRowInput {
   /** Minutes since local midnight, or null for an untimed stop. */
   minutes: number | null;
@@ -22,27 +29,64 @@ export interface RouteRowInput {
   height: number;
   /** A free-time label sits between this row and the one before it. */
   freeBefore?: boolean;
+  /** The NOW slot: placed under the row before it, never by time. */
+  slot?: boolean;
+}
+
+/**
+ * Where today's NOW slot goes, as the row index it sits before: in the gap
+ * after the last timed stop at or before now, so 0 before the first stop and
+ * the row count after the last.
+ */
+export function nowSlotIndex(minutes: (number | null)[], nowMinutes: number): number {
+  let at = 0;
+  minutes.forEach((m, i) => {
+    if (m !== null && m <= nowMinutes) at = i + 1;
+  });
+  return at;
+}
+
+/**
+ * The rows with the NOW slot inserted before row `at`. A free-time label in
+ * that gap moves onto the slot, so the slot sits under the label and the rows
+ * below move down to make room.
+ */
+export function withNowSlot(rows: RouteRowInput[], at: number): RouteRowInput[] {
+  const out = rows.map((r) => ({ ...r }));
+  const next = out[at];
+  const slot: RouteRowInput = { minutes: null, height: NOW_SLOT.height, freeBefore: next?.freeBefore ?? false, slot: true };
+  if (next) next.freeBefore = false;
+  out.splice(at, 0, slot);
+  return out;
 }
 
 /** Top offset of each row, in input order. */
 export function layoutRoute(rows: RouteRowInput[], opts: typeof ROUTE = ROUTE): number[] {
-  const origin = rows.find((r) => r.minutes !== null)?.minutes ?? 0;
+  const origin = rows.find((r) => r.minutes !== null && !r.slot)?.minutes ?? 0;
+  // The time scale runs from wherever the first timed row lands, so a slot
+  // above it moves the whole day down.
+  let originTop: number | null = null;
   const tops: number[] = [];
   rows.forEach((row, i) => {
+    const timedRow = row.minutes !== null && !row.slot;
     const proportional =
-      row.minutes === null ? 0 : ((row.minutes - origin) / 60) * opts.pxPerHour;
+      timedRow && originTop !== null ? originTop + ((row.minutes! - origin) / 60) * opts.pxPerHour : 0;
     const floor =
       i === 0 ? 0 : tops[i - 1] + rows[i - 1].height + (row.freeBefore ? opts.freeGap : opts.gap);
-    tops.push(Math.max(proportional, floor));
+    const top = Math.max(proportional, floor);
+    if (timedRow && originTop === null) originTop = top;
+    tops.push(top);
   });
   return tops;
 }
 
 export interface RoutePoint {
   minutes: number | null;
-  /** The stop stamp's centre on the route line. */
+  /** The stop stamp's centre on the route line (the slot's centre for the slot). */
   y: number;
   status?: ItineraryStatus;
+  /** Today's NOW slot. */
+  slot?: boolean;
 }
 
 function timed(points: RoutePoint[]): { minutes: number; y: number; status?: ItineraryStatus }[] {
@@ -50,11 +94,13 @@ function timed(points: RoutePoint[]): { minutes: number; y: number; status?: Iti
 }
 
 /**
- * Where "now" sits on the route: between the two timed stops around it,
- * proportional to time; clamped to the first and last stops. Null when no
- * stop has a time.
+ * Where "now" sits on the route: the NOW slot's centre when the route has one;
+ * otherwise between the two timed stops around it, proportional to time and
+ * clamped to the first and last stops. Null when no stop has a time.
  */
 export function routeYAt(points: RoutePoint[], nowMinutes: number): number | null {
+  const slot = points.find((p) => p.slot);
+  if (slot) return slot.y;
   const list = timed(points);
   if (list.length === 0) return null;
   if (nowMinutes <= list[0].minutes) return list[0].y;

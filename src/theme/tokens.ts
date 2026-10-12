@@ -492,6 +492,8 @@ export const motion = {
       ticket: 420,
       nowTagAfterPlane: 820,
       nowTag: 380,
+      /** v4.1.1 · The NOW slot moving to the next gap, with the rows and the ink. */
+      nowSlot: 300,
       routeMarch: 1200,
     },
     /** 03/04 · Stop stamp contact frames (ms after play starts). */
