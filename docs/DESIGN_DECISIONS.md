@@ -2,7 +2,7 @@
 
 This document records the shipped design system and the reasoning behind it. Waymark is a small, deliberate product rather than a template-derived interface.
 
-The visual system is **Airmail**: trip planning looks like two people writing to each other. Shared things are postcards; private notes are sealed kraft envelopes. A stop's status follows a letter's life — an empty stamp slot is planned, stamped is confirmed, postmarked is done — and the airmail border marks what's next. Each trip takes on its destination: an animated scene heads the trip and its centre is cut into the trip's stamp. The handoff spec the implementation follows is `design_handoff_airmail_v3/README.md`.
+The visual system is **Airmail**: trip planning looks like two people writing to each other. Shared things are postcards; private notes are sealed kraft envelopes. A stop's status follows a letter's life — an empty stamp slot is planned, stamped is confirmed, postmarked is done — and the airmail border marks what's next. Each trip takes on its destination: an animated scene heads the trip and its centre is cut into the trip's stamp. The handoff specs the implementation follows are `design_handoff_airmail_v3/README.md` for the static system and `design_handoff_airmail_v4_motion/README.md` for motion.
 
 ## 1. Design intent and positioning
 
@@ -72,11 +72,23 @@ Row separators are a flat 1 pt (`hairlineWidth`), not `StyleSheet.hairlineWidth`
 
 ## 5. Motion
 
-Scenes loop 240 frames (8 s). **Only one scene plays per screen**, and a scene pauses when the screen loses focus, the app backgrounds, or (for the trips-list on-now card) the card scrolls out of view. Everywhere else the scene is a still, never a `LottieView`. The trip shell mounts one scene and animates the header height 196↔104 over 300 ms without remounting it. Stop stamps play once: they seek to the frame their status maps to (0 planned, 18 confirmed, 36 done) and play the transition forward, seeking instantly when a status moves backwards. Haptics fire as the stamp and the postmark land. `useReducedMotion` (via `AccessibilityInfo`) shows the frame-0 still, jumps stamps to their end frame, makes the header change instant, and still fires haptics.
+Motion follows `design_handoff_airmail_v4_motion/README.md`: every change of state happens to paper. Cards are dealt, stamps land and get postmarked, a sealed note breaks open, postcards flip, tags are dragged into bags and full bags get stamped PACKED. The static system above does not change.
+
+**Tokens.** `motion` in `src/theme/tokens.ts` holds the handoff's durations, staggers and easing curves verbatim, plus `choreo`, every per-moment offset (contact frames, delays, idle-loop periods). Feature code reads timings only from there. Percentage keyframes live as data in `src/components/motion/keyframes.ts`; each element drives one linear 0→1 timeline and samples its tracks with `sampleTrack`, so every segment between two keyframes runs the moment's full easing curve, as the handoff maps keyframes to `withSequence` segments. `bezierAt` is a pure CSS `cubic-bezier` solver that runs on both threads and in Vitest; overshooting curves (`indicator`, `springHome`, `claim`) work unchanged.
+
+| Decision | Evidence |
+| --- | --- |
+| UI-thread animation only | Reanimated 4 shared values and worklets; the header height and the envelope height are shared values, never React state. |
+| One scene per screen, never restarted | Every `TripScene` seeks to `sceneFrameAt(now)` from one epoch when it starts or resumes, so the Home card and the trip header show the same frame; native loops by replaying from 0 on finish. |
+| Home → trip without a native transition | Home measures the postcard's paper and scene window; the trip route is a transparent modal with no animation and its shell runs the clip, colour and header-frame morph itself, re-cropping the scene each frame. Without a measured card it pushes and pops instead. |
+| Haptics on contact | One `haptic(kind)` helper (`selection`, `light`, `medium`, `rigid`), scheduled on the contact frame; a no-op on web. |
+| Reduced motion | `useMotion().ms` turns every duration and delay to 0, idle loops stop, scenes hold frame 0 and stop stamps seek to their end frame. Haptics still fire, and the seal's 600 ms hold never shrinks: it is a privacy gesture. |
+
+Scenes loop 240 frames (8 s) and pause when their screen loses focus, the app backgrounds, the Trip page covers the shell, or the on-now card is not at the front of the stack. Idle loops (the stripe crawl, the ON NOW dot, the plane bob and the marching route dashes) follow the same rules. Stop stamps play their `confirm` and `done` markers once, hold on frames 0 / 17 / 35, and seek instantly when a status moves backwards.
 
 ## 6. Iconography
 
-Lucide with stroke 2. Navigation: Plan `Calendar`, Notes `Mail`; Packing is a custom wheel-less suitcase (a 14×13 case with a handle and two straps) and Trip a custom dashed-rectangle stamp icon. Back chevrons use 2.2 and plus signs 2.4.
+Lucide with stroke 2. The trip shell's ticket-stub tab bar has three tabs: Plan `Calendar`, Packing a custom wheel-less suitcase (a 14×13 case with a handle and two straps) and Notes `Mail`. The Trip page opens from the title pill (`ChevronDown`) rather than a tab. Back chevrons use 2.2 and plus signs 2.4.
 
 ## 7. Airmail primitives and components
 
@@ -84,7 +96,7 @@ Lucide with stroke 2. Navigation: Plan `Calendar`, Notes `Mail`; Packing is a cu
 
 `src/components/airmail/` holds the mail system: `PerforatedStamp` (an SVG `Mask` punches holes on the frame edges, so the surface behind shows through), `AirmailBorder` (an SVG diagonal stripe `Pattern` around paper content), `PatternBand` (seigaiha, huipil and azulejo, with airmail stripes as the fallback), `Postmark` (ink rings, arc city text and wavy cancel lines), `Postcard`, and `KraftEnvelope` + `WaxSeal`.
 
-The shared components are: `AppText`; `Avatar`/`AvatarStack`; `BrandMark` (the airmail square with a "W"); `Button` (primary/secondary/quiet/text/destructive at 56/48/44); `Card`/`CardRow`; `Chip`; `DateTimeField` (+ web); `ErrorBanner`; `OfflineBanner`; `SectionLabel`; `SegmentedControl`; `Sheet`; `StateViews` (`EmptyStampSlot`, `LoadingState`, `EmptyState`, `ErrorState`); `TextField`; `Toggle`. Feature components own the mail behaviour: `TripScene`, `SceneStamp`/`AvatarStamp`/`DestinationStamp`, `StopStamp`, `TripCard`, and `TripTabBar`.
+The shared components are: `AppText`; `Avatar`/`AvatarStack`; `BrandMark` (the airmail square with a "W"); `Button` (primary/secondary/quiet/text/destructive at 56/48/44); `Card`/`CardRow`; `Chip`; `DateTimeField` (+ web); `ErrorBanner`; `OfflineBanner`; `SectionLabel`; `SegmentedControl`; `Sheet`; `StateViews` (`EmptyStampSlot`, `LoadingState`, `EmptyState`, `ErrorState`); `TextField`; `Toggle`. Feature components own the mail behaviour: `TripScene`, `SceneStamp`/`AvatarStamp`/`DestinationStamp`, `StopStamp`, the Home `MailStack` (`OnNowPostcard`, `EnvelopeFace`, `Shoebox`), the shell's `ShellTopBar` and `TripTabBar`, Plan's `DayStrip` and `PlanRoute`, Notes' `SealedNote` and `PostcardNote`, Packing's `LooseTag` and `Bag`, and the Trip page's `SheetOfStamps`, `AddressCard` and `RegisteredInvite`.
 
 ## 8. Destination system
 
@@ -96,7 +108,7 @@ Private versus shared notes are triple-coded and never conveyed by colour alone.
 
 ## 10. Accessibility
 
-Interactive controls target at least 44 pt through component dimensions or hit slop. Controls expose React Native accessibility roles, labels and state; the stop stamp's label says "Mark {title} confirmed/done", and the text tag still shows the status so the stamp is never the only signal. Font scaling stays on. Error banners use the alert role. Status, privacy and selection are never shown by colour alone.
+Interactive controls target at least 44 pt through component dimensions or hit slop. Gestures always have a screen-reader path: the wax seal has an "Open sealed note" action, each loose packing tag has a "Put in …'s bag" action per bag, and postcards keep "Edit shared note" as their activate action with a separate flip action. A sealed note's text is not rendered until it is opened. Controls expose React Native accessibility roles, labels and state; the stop stamp's label says "Mark {title} confirmed/done", and the text tag still shows the status so the stamp is never the only signal. Font scaling stays on. Error banners use the alert role. Status, privacy and selection are never shown by colour alone.
 
 ## 11. Cross-platform decisions
 
