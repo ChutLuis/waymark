@@ -72,7 +72,8 @@ export function LooseTag({
   const hover = useSharedValue<string | null>(null);
   const toss = tagToss(index);
   const tossIn = useEntrance(motion.choreo.packing.toss, base + motion.choreo.packing.tagsAt + index * motion.stagger.tag, entering);
-  const springMs = ms(motion.duration.springHome);
+  // Easings resolve on the JS thread; the worklets below only capture them.
+  const springHome = { duration: ms(motion.duration.springHome), easing: easing('springHome') };
   const liftMs = ms(motion.duration.fast);
 
   const pan = Gesture.Pan()
@@ -95,10 +96,9 @@ export function LooseTag({
       const over = hover.value;
       hover.value = null;
       if (!over) {
-        const config = { duration: springMs, easing: easing('springHome') };
-        tx.value = withTiming(0, config);
-        ty.value = withTiming(0, config);
-        lift.value = withTiming(0, config);
+        tx.value = withTiming(0, springHome);
+        ty.value = withTiming(0, springHome);
+        lift.value = withTiming(0, springHome);
       }
       runOnJS(onDrop)(id, over);
     });

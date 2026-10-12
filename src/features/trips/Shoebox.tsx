@@ -87,38 +87,23 @@ function ShoeboxRow({
 }
 
 /**
- * The shoebox under the Home stack: past trips, postmarked, plus any current
- * trips the four-envelope stack can't hold. On the session's deal, the first
- * past stamp lands at 820 ms.
+ * The shoebox under the Home stack: past trips, postmarked. On the session's
+ * deal, the first past stamp lands at 820 ms.
  */
 export function Shoebox({
   past,
-  overflow,
   dealing,
   onOpen,
 }: {
   past: TripListItem[];
-  overflow: TripListItem[];
   dealing: boolean;
   onOpen: (trip: TripListItem) => void;
 }) {
   return (
     <View style={styles.box}>
-      {overflow.length > 0 ? (
-        <>
-          <AppText role="kicker" tone="secondary">
-            ALSO COMING UP
-          </AppText>
-          <View style={styles.list}>
-            {overflow.map((trip) => (
-              <ShoeboxRow key={trip.id} trip={trip} past={false} dealDelay={null} onPress={() => onOpen(trip)} />
-            ))}
-          </View>
-        </>
-      ) : null}
       {past.length > 0 ? (
         <>
-          <AppText role="kicker" tone="secondary" style={overflow.length > 0 ? styles.secondKicker : null}>
+          <AppText role="kicker" tone="secondary">
             THE SHOEBOX · PAST
           </AppText>
           <View style={styles.list}>
@@ -140,7 +125,6 @@ export function Shoebox({
 
 const styles = StyleSheet.create({
   box: { paddingTop: spacing.s8, paddingHorizontal: spacing.gutter },
-  secondKicker: { marginTop: spacing.s8 },
   list: { marginTop: spacing.s5, gap: spacing.s5 },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 48 },
   stamp: { width: 40, height: 48 },

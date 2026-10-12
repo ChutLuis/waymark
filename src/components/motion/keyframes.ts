@@ -42,6 +42,16 @@ export const shuffleLift = {
   scale: t([0, 0.38, 0.8, 1], [1, 1.02, 1, 1]),
 };
 
+/** 01 · Swiping the front card: past 28% of its width or a flick, it passes. */
+export const PASS_DISTANCE = 0.28;
+export const PASS_VELOCITY = 800;
+/** It flies out a little past the edge, leaning with the drag. */
+export const PASS_FLY = 1.15;
+export const PASS_LEAN_PER_PT = 0.04;
+export const PASS_LEAN_MAX = 8;
+/** Horizontal travel before the swipe takes over from a tap or a scroll. */
+export const PASS_SLOP = 12;
+
 /** 01 · Tapping a front card that isn't on now. */
 export const frontBump = {
   translateY: t([0, 0.5, 1], [0, -6, 0]),

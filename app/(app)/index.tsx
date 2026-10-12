@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { useIsFocused, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
@@ -19,7 +20,6 @@ import { Shoebox } from '@/features/trips/Shoebox';
 import { TripCardSkeleton } from '@/features/trips/TripCardSkeleton';
 import { homeCovered, isCollapsing, onCollapsingChange, setExpandOrigin } from '@/features/trips/expandStore';
 import { markShellOpening } from '@/features/trips/shellMotion';
-import { STACK_MAX } from '@/features/trips/stack';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { splitTrips } from '@/features/trips/sort';
 import { greetingFor } from '@/features/trips/destinations';
@@ -68,16 +68,15 @@ export default function TripsListScreen() {
   const isWide = width >= 720;
   const today = toDateOnly(new Date());
 
-  const { stack, onNowIds, overflow, past } = useMemo(() => {
+  const { stack, onNowIds, past } = useMemo(() => {
     const all = trips.data ?? [];
     const { current, past } = splitTrips(all, today);
     const onNow = current.filter((t) => isOnNow(t, today));
     const upcoming = current.filter((t) => !isOnNow(t, today));
     const ordered = [...onNow, ...upcoming];
     return {
-      stack: ordered.slice(0, STACK_MAX),
+      stack: ordered,
       onNowIds: new Set(onNow.map((t) => t.id)),
-      overflow: ordered.slice(STACK_MAX),
       past,
     };
   }, [trips.data, today]);
@@ -196,7 +195,7 @@ export default function TripsListScreen() {
                 />
               </View>
             ) : null}
-            <Shoebox past={past} overflow={overflow} dealing={dealing} onOpen={openTrip} />
+            <Shoebox past={past} dealing={dealing} onOpen={openTrip} />
             <View style={styles.inviteRow}>
               <AppText role="bodySm" tone="secondary">
                 Have an invite code?

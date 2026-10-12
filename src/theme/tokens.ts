@@ -442,6 +442,11 @@ export const motion = {
       shoeboxAt: 820,
       shoebox: 560,
       shuffleContact: 520,
+      /** Passing the front card: it flies out, then tucks in at the back. */
+      passOut: 220,
+      passTuck: 360,
+      /** Hidden cards fade in as they reach the fourth depth. */
+      reveal: 200,
       bump: 320,
       press: 180,
       stripeCrawl: 3500,

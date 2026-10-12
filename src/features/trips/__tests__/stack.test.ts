@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   addressDates,
+  backToFront,
   bringToFront,
   envelopeNote,
   isDaysAway,
   miniRouteX,
+  passToBack,
   reconcileOrder,
   stackHeight,
   stackPosition,
@@ -13,11 +15,18 @@ import {
 describe('stackPosition', () => {
   it('matches the design table for four cards', () => {
     expect([0, 1, 2, 3].map((d) => stackPosition(d, 4))).toEqual([
-      { top: 114, inset: 0, z: 10 },
-      { top: 76, inset: 5, z: 9 },
-      { top: 38, inset: 11, z: 8 },
-      { top: 0, inset: 18, z: 7 },
+      { top: 114, inset: 0, z: 100, hidden: false },
+      { top: 76, inset: 5, z: 99, hidden: false },
+      { top: 38, inset: 11, z: 98, hidden: false },
+      { top: 0, inset: 18, z: 97, hidden: false },
     ]);
+  });
+
+  it('parks cards past the fourth behind the last visible one', () => {
+    const fifth = stackPosition(4, 8);
+    expect(fifth).toMatchObject({ top: 0, inset: 18, hidden: true });
+    expect(fifth.z).toBeLessThan(stackPosition(3, 8).z);
+    expect(stackPosition(0, 8).top).toBe(114);
   });
 
   it('keeps the deepest card at the top of a smaller stack', () => {
@@ -28,6 +37,7 @@ describe('stackPosition', () => {
 
   it('sizes the container to the cards', () => {
     expect(stackHeight(4)).toBe(454);
+    expect(stackHeight(9)).toBe(454);
     expect(stackHeight(1)).toBe(340);
     expect(stackHeight(0)).toBe(0);
   });
@@ -44,6 +54,19 @@ describe('bringToFront', () => {
     const order = ['a', 'b'];
     expect(bringToFront(order, 'a')).toBe(order);
     expect(bringToFront(order, 'z')).toBe(order);
+  });
+});
+
+describe('passToBack / backToFront', () => {
+  it('cycles the stack both ways', () => {
+    const order = ['a', 'b', 'c', 'd', 'e'];
+    expect(passToBack(order)).toEqual(['b', 'c', 'd', 'e', 'a']);
+    expect(backToFront(order)).toEqual(['e', 'a', 'b', 'c', 'd']);
+    expect(backToFront(passToBack(order))).toEqual(order);
+  });
+
+  it('leaves a single card alone', () => {
+    expect(passToBack(['a'])).toEqual(['a']);
   });
 });
 

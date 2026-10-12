@@ -6,8 +6,8 @@
 /** Every card is this tall; a card behind shows only its 38 pt header row. */
 export const STACK_CARD_HEIGHT = 340;
 export const STACK_PEEK = 38;
-/** The stack holds four envelopes; the rest go in the shoebox below. */
-export const STACK_MAX = 4;
+/** Four depths show; deeper cards wait hidden behind the last one. */
+export const STACK_VISIBLE = 4;
 
 /** Horizontal inset (each side) by depth, 0 = front. */
 const INSETS = [0, 5, 11, 18] as const;
@@ -16,21 +16,41 @@ export interface StackPosition {
   top: number;
   inset: number;
   z: number;
+  /** Deeper than the four visible depths: parked behind the last one. */
+  hidden: boolean;
 }
 
 /**
- * Where the card at `depth` sits in a stack of `count`: the deepest card is
- * at the top of the container and each nearer card 38 pt lower, so four
- * cards land on the design's 0 / 38 / 76 / 114.
+ * Where the card at `depth` sits in a stack of `count`: the deepest visible
+ * card is at the top of the container and each nearer card 38 pt lower, so
+ * four cards land on the design's 0 / 38 / 76 / 114. Cards past the fourth
+ * share the last visible slot, hidden, until passing brings them forward.
  */
 export function stackPosition(depth: number, count: number): StackPosition {
-  const d = Math.max(0, Math.min(depth, STACK_MAX - 1));
-  return { top: (count - 1 - depth) * STACK_PEEK, inset: INSETS[d], z: 10 - depth };
+  const visible = Math.min(count, STACK_VISIBLE);
+  const d = Math.max(0, Math.min(depth, visible - 1));
+  return {
+    top: (visible - 1 - d) * STACK_PEEK,
+    inset: INSETS[Math.min(d, INSETS.length - 1)],
+    z: 100 - depth,
+    hidden: depth >= STACK_VISIBLE,
+  };
 }
 
 /** Container height for `count` cards. */
 export function stackHeight(count: number): number {
-  return count === 0 ? 0 : (count - 1) * STACK_PEEK + STACK_CARD_HEIGHT;
+  const visible = Math.min(count, STACK_VISIBLE);
+  return visible === 0 ? 0 : (visible - 1) * STACK_PEEK + STACK_CARD_HEIGHT;
+}
+
+/** Swiping the front card passes it to the back of the stack. */
+export function passToBack(order: string[]): string[] {
+  return order.length < 2 ? order : [...order.slice(1), order[0]];
+}
+
+/** The reverse of a pass: the card at the back comes to the front. */
+export function backToFront(order: string[]): string[] {
+  return order.length < 2 ? order : [order[order.length - 1], ...order.slice(0, -1)];
 }
 
 /** The tapped card goes to the front; the rest keep their relative order. */
