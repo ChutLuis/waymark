@@ -84,6 +84,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
   return (
     <Sheet
       visible={visible}
+      size="tall"
       title="New trip"
       onClose={onClose}
       actionLabel="Create"

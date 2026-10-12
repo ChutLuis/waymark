@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateViews';
-import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
+import { PerforatedStamp, STAMP_SHADOW_MARGIN } from '@/components/airmail/PerforatedStamp';
 import { AirmailBorder } from '@/components/airmail/AirmailBorder';
 import { ItineraryItemEditor } from '@/features/itinerary/ItineraryItemEditor';
 import {
@@ -456,10 +456,17 @@ const styles = StyleSheet.create({
   nextTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   nextTitle: { marginTop: 4 },
   nextLine: { marginTop: 4, fontSize: 16, lineHeight: 22 },
-  dayStrip: { paddingTop: spacing.s7, paddingHorizontal: spacing.s7, gap: dayStampLayout.gap },
+  dayStrip: {
+    paddingTop: spacing.s7,
+    paddingBottom: STAMP_SHADOW_MARGIN,
+    paddingHorizontal: spacing.s7,
+    gap: dayStampLayout.gap,
+  },
   // The Plan scroll content grows (item 14); without this the horizontal strip
-  // would absorb half the free space, leaving a band above the sheet.
-  dayStripScroll: { flexGrow: 0 },
+  // would absorb half the free space, leaving a band above the sheet. The
+  // ScrollView clips, so its padding keeps room for the stamps' shadow and the
+  // matching negative margin keeps the sheet where it was.
+  dayStripScroll: { flexGrow: 0, marginBottom: -STAMP_SHADOW_MARGIN },
   dayStampContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 1 },
   sheet: {
     flexGrow: 1,

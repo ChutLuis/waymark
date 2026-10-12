@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { perforationOffsets } from '../perforation';
+import { perforationOffsets, stampOutline } from '../perforation';
 
 describe('perforationOffsets', () => {
   it('spaces a whole multiple of the pitch exactly', () => {
@@ -32,5 +32,30 @@ describe('perforationOffsets', () => {
   it('degrades safely for non-positive input', () => {
     expect(perforationOffsets(0, 8)).toEqual([0]);
     expect(perforationOffsets(56, 0)).toEqual([0]);
+  });
+});
+describe('stampOutline', () => {
+  it('is the plain rectangle without perforations', () => {
+    expect(stampOutline(56, 72, 8, 3, false)).toBe('M0 0H56V72H0Z');
+  });
+
+  it('notches every hole: a half circle per side hole and a quarter per corner', () => {
+    const d = stampOutline(56, 72, 8, 3);
+    const sideHoles = (perforationOffsets(56, 8).length - 2) * 2 + (perforationOffsets(72, 8).length - 2) * 2;
+    expect(d.match(/A/g)).toHaveLength(sideHoles + 4);
+    expect(d.startsWith('M3 0')).toBe(true);
+    expect(d.endsWith('A3 3 0 0 0 3 0Z')).toBe(true);
+  });
+
+  it('keeps every point on the frame or inside a notch', () => {
+    const d = stampOutline(30, 35, 4, 1.5);
+    const points = [...d.matchAll(/[ML]([\d.]+) ([\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    for (const [x, y] of points) {
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x).toBeLessThanOrEqual(30);
+      expect(y).toBeGreaterThanOrEqual(0);
+      expect(y).toBeLessThanOrEqual(35);
+      expect(x === 0 || x === 30 || y === 0 || y === 35).toBe(true);
+    }
   });
 });

@@ -32,6 +32,12 @@ interface SheetProps {
   actionDestructive?: boolean;
   /** Confirmation sheets put a full-width title above their body actions. */
   headerLayout?: 'inline' | 'stacked';
+  /**
+   * `fit` sizes the card to its content (up to 92%). `tall` (New trip, design
+   * 05) starts the card 9 pt under the status bar and runs it to the bottom,
+   * with the empty space under the content. Wide layouts keep the centred card.
+   */
+  size?: 'fit' | 'tall';
   children: ReactNode;
 }
 
@@ -48,6 +54,7 @@ export function Sheet({
   actionDisabled = false,
   actionDestructive = false,
   headerLayout = 'inline',
+  size = 'fit',
   children,
 }: SheetProps) {
   const { colors } = useTheme();
@@ -56,6 +63,7 @@ export function Sheet({
   const reducedMotion = useReducedMotion();
   const isFocused = useIsFocused();
   const isWide = width >= 720;
+  const tall = size === 'tall' && !isWide;
 
   const progress = useLazyAnimatedValue(0);
   const [mounted, setMounted] = useState(visible);
@@ -132,6 +140,9 @@ export function Sheet({
               transform: [{ translateY }],
             },
             isWide ? styles.cardWide : styles.cardSheet,
+            // The top stays put; with the keyboard up the host shrinks from the
+            // bottom, so the card's bottom rises with it.
+            tall ? [styles.cardTall, { marginTop: insets.top + TALL_TOP_GAP }] : styles.cardFit,
           ]}
         >
           {!isWide && <View style={[styles.grabber, { backgroundColor: colors.border }]} />}
@@ -185,6 +196,7 @@ export function Sheet({
             )}
           </View>
           <ScrollView
+            style={tall && styles.bodyTall}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             // Keep the focused field above the keyboard: iOS adjusts insets, and
@@ -207,6 +219,9 @@ export function Sheet({
   );
 }
 
+/** The tall card's top sits this far under the status bar (design 05: top 56 under a 47 pt bar). */
+const TALL_TOP_GAP = 9;
+
 const styles = StyleSheet.create({
   host: {
     flex: 1,
@@ -218,7 +233,12 @@ const styles = StyleSheet.create({
   },
   card: {
     paddingTop: 0,
+  },
+  cardFit: {
     maxHeight: '92%',
+  },
+  cardTall: {
+    flex: 1,
   },
   cardSheet: {
     borderTopLeftRadius: radius.sheet,
@@ -291,6 +311,10 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.bold,
     fontSize: 16,
     lineHeight: 20,
+  },
+  // Fills the tall card, so its content stays at the top.
+  bodyTall: {
+    flex: 1,
   },
   body: {
     gap: spacing.s6,
