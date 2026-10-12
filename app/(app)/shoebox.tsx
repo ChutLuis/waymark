@@ -69,7 +69,7 @@ function AlbumStamp({
       onPress={onOpen}
       style={({ pressed }) => [styles.cell, { width }, pressed && styles.pressed]}
     >
-      <Animated.View style={style}>
+      <Animated.View style={[styles.stamp, style]}>
         <PerforatedStamp width={STAMP.width} height={STAMP.height} size="sm">
           <View style={[styles.art, { backgroundColor: colors.stampInk }]}>
             {country ? (
@@ -81,21 +81,22 @@ function AlbumStamp({
             )}
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.stampPaper, opacity: WASH }]} />
           </View>
-          <View pointerEvents="none" style={[styles.ring, { borderColor: colors.cancelInk }]} />
-          <Svg width={LINES.width} height={LINES.height} style={styles.lines} pointerEvents="none">
-            {Array.from({ length: Math.ceil(LINES.height / LINES.pitch) }, (_, i) => (
-              <Line
-                key={i}
-                x1={0}
-                x2={LINES.width}
-                y1={i * LINES.pitch + LINES.stroke / 2}
-                y2={i * LINES.pitch + LINES.stroke / 2}
-                stroke={colors.cancelInk}
-                strokeWidth={LINES.stroke}
-              />
-            ))}
-          </Svg>
         </PerforatedStamp>
+        {/* Outside the stamp's mask: the postmark runs 4 and 10 pt onto the sheet. */}
+        <View pointerEvents="none" style={[styles.ring, { borderColor: colors.cancelInk }]} />
+        <Svg width={LINES.width} height={LINES.height} style={styles.lines} pointerEvents="none">
+          {Array.from({ length: Math.ceil(LINES.height / LINES.pitch) }, (_, i) => (
+            <Line
+              key={i}
+              x1={0}
+              x2={LINES.width}
+              y1={i * LINES.pitch + LINES.stroke / 2}
+              y2={i * LINES.pitch + LINES.stroke / 2}
+              stroke={colors.cancelInk}
+              strokeWidth={LINES.stroke}
+            />
+          ))}
+        </Svg>
       </Animated.View>
       {/* Printed on stamp paper: stampInk in both themes. */}
       <AppText role="tagLabel" numberOfLines={2} style={[styles.name, { color: colors.stampInk }]}>
@@ -254,6 +255,7 @@ const styles = StyleSheet.create({
   sheetHeading: { textAlign: 'center', lineHeight: 12, letterSpacing: 1.6 },
   grid: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', rowGap: GAP.row, columnGap: GAP.column },
   cell: { alignItems: 'center', gap: 6 },
+  stamp: { width: STAMP.width, height: STAMP.height },
   art: {
     position: 'absolute',
     left: STAMP.art,
