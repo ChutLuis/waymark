@@ -67,7 +67,7 @@ export function Shoebox({
   const latest = past[0];
   const country = matchDestination(latest.destination);
   const behind = past.slice(1, 3);
-  const sub = past.length === 1 ? `${monthYear(latest)} · postmarked` : moreLine(past);
+  const sub = past.length === 1 ? `${monthYear(latest)} · postmarked` : moreLine(past, new Date().getFullYear());
 
   return (
     <View style={styles.box}>

@@ -59,9 +59,14 @@ export function albumSummary<T extends PastTrip>(trips: T[]): string {
   return first === last ? `${count} · ${last}` : `${count} · ${first} to ${last}`;
 }
 
-/** Under the latest past trip on Home: "and 13 more, back to 2023". */
-export function moreLine<T extends PastTrip>(trips: T[]): string {
+/**
+ * Under the latest past trip on Home: "and 13 more, back to 2023", or "and 2
+ * more this year" when every past trip is from this year.
+ */
+export function moreLine<T extends PastTrip>(trips: T[], thisYear: number): string {
   const years = trips.map(postmarkYear).filter((y): y is number => y !== null);
   const more = trips.length - 1;
-  return years.length ? `and ${more} more, back to ${Math.min(...years)}` : `and ${more} more`;
+  if (years.length === 0) return `and ${more} more`;
+  if (years.length === trips.length && years.every((y) => y === thisYear)) return `and ${more} more this year`;
+  return `and ${more} more, back to ${Math.min(...years)}`;
 }

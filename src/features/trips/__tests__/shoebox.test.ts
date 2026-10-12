@@ -32,7 +32,12 @@ describe('shoebox lines', () => {
   });
 
   it('says how far back the rest go', () => {
-    expect(moreLine(past)).toBe('and 4 more, back to 2023');
+    expect(moreLine(past, 2026)).toBe('and 4 more, back to 2023');
+  });
+
+  it('says "this year" when every past trip is from this year', () => {
+    expect(moreLine(past.slice(0, 2), 2026)).toBe('and 1 more this year');
+    expect(moreLine(past.slice(0, 2), 2027)).toBe('and 1 more, back to 2026');
   });
 
   it('names the postmark month', () => {
