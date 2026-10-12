@@ -240,32 +240,29 @@ export default function TripsListScreen() {
           >
             {front ? (
               <View style={styles.stackWrap}>
-                {underTrip ? (
-                  <View style={styles.under} pointerEvents="none">
-                    <HomeCard
-                      key={`under-${underTrip.id}`}
-                      trip={underTrip}
-                      onNow={onNowIds.has(underTrip.id)}
-                      viewerId={userId}
-                      paperIndex={paperIndex(underTrip.id)}
-                      focused={false}
-                      collapsing={false}
-                      deal={null}
-                      onPress={() => {}}
-                    />
-                  </View>
-                ) : null}
-                <HomeCard
-                  key={front.id}
-                  trip={front}
-                  onNow={onNowIds.has(front.id)}
-                  viewerId={userId}
-                  paperIndex={paperIndex(front.id)}
-                  focused={isFocused}
-                  collapsing={collapsing}
-                  deal={frontDeal}
-                  onPress={(actions) => openFromCard(front, actions)}
-                />
+                {/* One keyed list, so the card being replaced stays mounted as it is. */}
+                {[underTrip, front].map((trip) => {
+                  if (!trip) return null;
+                  const isFront = trip.id === front.id;
+                  return (
+                    <View
+                      key={trip.id}
+                      style={isFront ? undefined : styles.under}
+                      pointerEvents={isFront ? 'auto' : 'none'}
+                    >
+                      <HomeCard
+                        trip={trip}
+                        onNow={onNowIds.has(trip.id)}
+                        viewerId={userId}
+                        paperIndex={paperIndex(trip.id)}
+                        focused={isFocused}
+                        collapsing={isFront && collapsing}
+                        deal={isFront ? frontDeal : null}
+                        onPress={(actions) => openFromCard(trip, actions)}
+                      />
+                    </View>
+                  );
+                })}
               </View>
             ) : null}
             {front && stack.length > 1 ? (
