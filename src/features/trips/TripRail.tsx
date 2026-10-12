@@ -92,11 +92,12 @@ function RailItem({
     });
   }, [picked, lift, ms]);
 
-  const liftStyle = useAnimatedStyle(() => ({ transform: [{ translateY: lift.value }] }));
-  const dropStyle = useAnimatedStyle(() => ({
+  // One transform for both: two styles setting transform on one view overwrite
+  // each other, and a re-render would reapply the drop's and drop the lift.
+  const stampStyle = useAnimatedStyle(() => ({
     opacity: sampleTrack(keys.opacity, drop.value, motion.easing.drop),
     transform: [
-      { translateY: sampleTrack(keys.translateY, drop.value, motion.easing.drop) },
+      { translateY: lift.value + sampleTrack(keys.translateY, drop.value, motion.easing.drop) },
       { rotate: `${sampleTrack(keys.rotate, drop.value, motion.easing.drop)}deg` },
     ],
   }));
@@ -109,7 +110,7 @@ function RailItem({
       onPress={onPick}
       style={styles.item}
     >
-      <Animated.View style={[liftStyle, dropStyle]}>
+      <Animated.View style={stampStyle}>
         <RailStamp trip={trip} />
       </Animated.View>
       <AppText
