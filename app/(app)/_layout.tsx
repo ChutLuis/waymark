@@ -45,6 +45,17 @@ export default function AppLayout() {
           contentStyle: { backgroundColor: colors.bg, flex: 1, minHeight: 0 },
         }}
       >
+        {/* The trip shell runs its own expand from the Home postcard (or a
+            push) and collapse, over Home, which stays visible underneath. */}
+        <Stack.Screen
+          name="trips/[tripId]"
+          options={{
+            presentation: 'transparentModal',
+            animation: 'none',
+            gestureEnabled: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
         {/* The create-trip sheet draws its own scrim over the list. */}
         <Stack.Screen
           name="trips/new"

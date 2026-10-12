@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { ChevronDown, ChevronLeft } from 'lucide-react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { type AnimatedStyle } from 'react-native-reanimated';
 import { AppText } from '@/components/AppText';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { iconStrokeWidth, radius, shadows, useTheme } from '@/theme';
@@ -17,7 +17,7 @@ interface ShellTopBarProps {
   overArt: boolean;
   onBack: () => void;
   onOpenTrip: () => void;
-  style?: StyleProp<ViewStyle>;
+  style?: StyleProp<AnimatedStyle<ViewStyle>>;
 }
 
 /** Tiny perforated stamps with each member's initial, in one glass pill. */

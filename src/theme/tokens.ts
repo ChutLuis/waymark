@@ -459,6 +459,8 @@ export const motion = {
       tabBase: 220,
       /** Collapse: the shell content fades before the clip shrinks. */
       collapseContent: 160,
+      /** The live scene crossfades over its still when it takes over. */
+      sceneFade: 150,
     },
     /** Shared · trip shell. */
     shell: {

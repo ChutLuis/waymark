@@ -358,6 +358,7 @@ export function cropTransform(
   W: number,
   H: number,
 ): { scale: number; left: number; top: number } {
+  'worklet';
   const scale = Math.max(W / crop.w, H / crop.h);
   const rawLeft = W / 2 - (crop.x + crop.w / 2) * scale;
   const rawTop = H / 2 - (crop.y + crop.h / 2) * scale;

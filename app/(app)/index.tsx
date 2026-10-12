@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View, useWindowDimensions, type ViewToken } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useIsFocused, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -9,23 +10,47 @@ import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { BrandMark } from '@/components/BrandMark';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { EmptyState, ErrorState } from '@/components/StateViews';
+import { sampleTrack, useEntrance } from '@/components/motion';
+import { greetingRise } from '@/components/motion/keyframes';
+import { haptic } from '@/lib/haptics';
 import { AvatarStamp } from '@/features/trips/SceneStamp';
-import { TripCard } from '@/features/trips/TripCard';
+import { MailStack, shouldDeal, type CardActions } from '@/features/trips/MailStack';
+import { Shoebox } from '@/features/trips/Shoebox';
 import { TripCardSkeleton } from '@/features/trips/TripCardSkeleton';
+import { homeCovered, isCollapsing, onCollapsingChange, setExpandOrigin } from '@/features/trips/expandStore';
+import { markShellOpening } from '@/features/trips/shellMotion';
+import { STACK_MAX } from '@/features/trips/stack';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { splitTrips } from '@/features/trips/sort';
 import { greetingFor } from '@/features/trips/destinations';
 import { useMyProfile } from '@/features/auth/hooks';
-import { spacing, useTheme } from '@/theme';
+import { useAuth } from '@/features/auth/AuthContext';
+import { motion, radius, shadows, spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
 
-type Row =
-  | { type: 'kicker'; label: string }
-  | { type: 'trip'; trip: TripListItem; variant: 'onNow' | 'upcoming' | 'past' };
+/** Home underneath an open trip: scaled to .93 about (50%, 45%), dimmed 12%. */
+const HOME_COVERED_SCALE = 0.07;
+const HOME_COVERED_DIM = 0.12;
 
 function isOnNow(trip: TripListItem, today: string): boolean {
   if (!trip.startDate || !trip.endDate) return false;
   return trip.startDate <= today && today <= trip.endDate;
+}
+
+function Greeting({ firstName, dealing }: { firstName: string; dealing: boolean }) {
+  const p = useEntrance(motion.duration.rise, 0, dealing);
+  const style = useAnimatedStyle(() => ({
+    opacity: sampleTrack(greetingRise.opacity, p.value, motion.easing.standard),
+    transform: [{ translateY: sampleTrack(greetingRise.translateY, p.value, motion.easing.standard) }],
+  }));
+  return (
+    <Animated.View style={[styles.titleBlock, style]}>
+      <AppText role="display">Your trips</AppText>
+      <AppText role="meta" tone="secondary" style={styles.greeting}>
+        {greetingFor(new Date(), firstName)}
+      </AppText>
+    </Animated.View>
+  );
 }
 
 export default function TripsListScreen() {
@@ -33,55 +58,57 @@ export default function TripsListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { userId } = useAuth();
+  const isFocused = useIsFocused();
   const trips = useTrips();
   const profile = useMyProfile();
+  const [collapsing, setCollapsingState] = useState(isCollapsing);
+  useEffect(() => onCollapsingChange(setCollapsingState), []);
 
   const isWide = width >= 720;
   const today = toDateOnly(new Date());
 
-  // Pause the on-now scene while its card is off-screen (README: Motion).
-  const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
-  const viewabilityConfig = useMemo(() => ({ itemVisiblePercentThreshold: 10 }), []);
-  const onViewableItemsChanged = useMemo(
-    () => ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      setVisibleIds(
-        new Set(
-          viewableItems
-            .map((v) =>
-              (v.item as Row | undefined)?.type === 'trip'
-                ? (v.item as { trip: TripListItem }).trip.id
-                : null,
-            )
-            .filter((id): id is string => id !== null),
-        ),
-      );
-    },
-    [],
-  );
-
-  const rows = useMemo<Row[]>(() => {
+  const { stack, onNowIds, overflow, past } = useMemo(() => {
     const all = trips.data ?? [];
     const { current, past } = splitTrips(all, today);
-    const onNow: TripListItem[] = [];
-    const upcoming: TripListItem[] = [];
-    for (const trip of current) (isOnNow(trip, today) ? onNow : upcoming).push(trip);
-
-    const result: Row[] = [];
-    if (onNow.length > 0 || upcoming.length > 0) result.push({ type: 'kicker', label: 'COMING UP' });
-    result.push(...onNow.map((trip): Row => ({ type: 'trip', trip, variant: 'onNow' })));
-    result.push(...upcoming.map((trip): Row => ({ type: 'trip', trip, variant: 'upcoming' })));
-    if (past.length > 0) {
-      result.push({ type: 'kicker', label: 'PAST TRIPS' });
-      result.push(...past.map((trip): Row => ({ type: 'trip', trip, variant: 'past' })));
-    }
-    return result;
+    const onNow = current.filter((t) => isOnNow(t, today));
+    const upcoming = current.filter((t) => !isOnNow(t, today));
+    const ordered = [...onNow, ...upcoming];
+    return {
+      stack: ordered.slice(0, STACK_MAX),
+      onNowIds: new Set(onNow.map((t) => t.id)),
+      overflow: ordered.slice(STACK_MAX),
+      past,
+    };
   }, [trips.data, today]);
 
   const firstName = (profile.data?.displayName ?? '').split(' ')[0] || 'traveler';
-  const hasTrips = rows.length > 0;
+  const hasTrips = stack.length > 0 || past.length > 0;
+  // Deal once per session, when the stack first shows with data.
+  const [dealing] = useState(shouldDeal);
+
+  const openOnNow = (trip: TripListItem, actions: CardActions) => {
+    haptic('selection');
+    actions.press();
+    actions.measure((rects) => {
+      if (rects) setExpandOrigin({ tripId: trip.id, ...rects, at: Date.now() });
+      markShellOpening();
+      router.push(`/trips/${trip.id}` as never);
+    });
+  };
+
+  const openTrip = (trip: TripListItem) => {
+    markShellOpening();
+    router.push(`/trips/${trip.id}` as never);
+  };
+
+  const coveredStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 - HOME_COVERED_SCALE * homeCovered.value }],
+  }));
+  const dimStyle = useAnimatedStyle(() => ({ opacity: homeCovered.value * HOME_COVERED_DIM }));
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
+    <Animated.View style={[styles.screen, { backgroundColor: colors.bg, paddingTop: insets.top }, coveredStyle]}>
       <ScreenStatusBar />
       <View style={[styles.column, isWide && styles.columnWide]}>
         <View style={styles.header}>
@@ -89,26 +116,40 @@ export default function TripsListScreen() {
             <BrandMark />
             <AppText role="wordmark">Waymark</AppText>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Profile and settings"
-            onPress={() => router.push('/profile')}
-            style={({ pressed }) => [styles.avatarTarget, pressed && styles.pressed]}
-          >
-            <AvatarStamp
-              size="sm"
-              initial={(firstName[0] ?? '?').toUpperCase()}
-              avatarPath={profile.data?.avatarPath ?? null}
-            />
-          </Pressable>
+          <View style={styles.headerActions}>
+            {hasTrips ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="New trip"
+                onPress={() => router.push('/trips/new')}
+                style={({ pressed }) => [
+                  styles.newTrip,
+                  { backgroundColor: colors.ink, boxShadow: shadows.pill },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Plus size={18} color={colors.paper} strokeWidth={2.4} />
+                <AppText role="pillLabel" style={{ color: colors.paper }}>
+                  New trip
+                </AppText>
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Profile and settings"
+              onPress={() => router.push('/profile')}
+              style={({ pressed }) => [styles.avatarTarget, pressed && styles.pressed]}
+            >
+              <AvatarStamp
+                size="sm"
+                initial={(firstName[0] ?? '?').toUpperCase()}
+                avatarPath={profile.data?.avatarPath ?? null}
+              />
+            </Pressable>
+          </View>
         </View>
 
-        <View style={styles.titleBlock}>
-          <AppText role="display">Your trips</AppText>
-          <AppText role="meta" tone="secondary" style={styles.greeting}>
-            {greetingFor(new Date(), firstName)}
-          </AppText>
-        </View>
+        <Greeting firstName={firstName} dealing={dealing && hasTrips} />
 
         <OfflineBanner />
 
@@ -137,103 +178,87 @@ export default function TripsListScreen() {
             />
           </EmptyState>
         ) : (
-          <FlatList
-            data={rows}
-            keyExtractor={(row, index) => (row.type === 'trip' ? row.trip.id : `kicker-${index}`)}
-            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 120 }]}
+          <ScrollView
+            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + spacing.s12 }]}
             showsVerticalScrollIndicator={false}
-            viewabilityConfig={viewabilityConfig}
-            onViewableItemsChanged={onViewableItemsChanged}
-            renderItem={({ item: row }) =>
-              row.type === 'kicker' ? (
-                <AppText role="kicker" tone="secondary" style={styles.sectionKicker}>
-                  {row.label}
+          >
+            {stack.length > 0 ? (
+              <View style={styles.stackWrap}>
+                <MailStack
+                  trips={stack}
+                  onNowIds={onNowIds}
+                  viewerId={userId}
+                  focused={isFocused}
+                  collapsing={collapsing}
+                  dealing={dealing}
+                  onOpenOnNow={openOnNow}
+                  onOpenTrip={openTrip}
+                />
+              </View>
+            ) : null}
+            <Shoebox past={past} overflow={overflow} dealing={dealing} onOpen={openTrip} />
+            <View style={styles.inviteRow}>
+              <AppText role="bodySm" tone="secondary">
+                Have an invite code?
+              </AppText>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Enter an invite code"
+                onPress={() => router.push('/join')}
+                hitSlop={12}
+              >
+                <AppText role="link" style={styles.inviteLink}>
+                  Enter it
                 </AppText>
-              ) : (
-                <View style={[styles.cardWrap, row.variant === 'past' && styles.cardWrapPast]}>
-                  <TripCard
-                    trip={row.trip}
-                    variant={row.variant}
-                    paused={row.variant === 'onNow' && !visibleIds.has(row.trip.id)}
-                    onPress={() => router.push(`/trips/${row.trip.id}` as never)}
-                  />
-                </View>
-              )
-            }
-          />
+              </Pressable>
+            </View>
+          </ScrollView>
         )}
       </View>
-
-      {!trips.isPending && hasTrips ? (
-        <View
-          style={[
-            styles.actionBar,
-            {
-              backgroundColor: colors.bg,
-              paddingBottom: insets.bottom + spacing.s7,
-              borderTopColor: colors.divider,
-            },
-          ]}
-        >
-          <View style={styles.actionCol}>
-            <Button
-              label="New trip"
-              size="lg"
-              leading={<Plus size={20} color={colors.paper} strokeWidth={2.4} />}
-              onPress={() => router.push('/trips/new')}
-            />
-          </View>
-          <View style={styles.actionCol}>
-            <Button
-              label="Join with a code"
-              variant="secondary"
-              size="lg"
-              onPress={() => router.push('/join')}
-              style={styles.joinButton}
-              labelStyle={[styles.joinLabel, width < 390 && styles.joinLabelNarrow]}
-              labelLines={1}
-            />
-          </View>
-        </View>
-      ) : null}
-    </View>
+      <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.ink }, dimStyle]} />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, transformOrigin: '50% 45%' },
   column: { flex: 1 },
   columnWide: { width: '100%', maxWidth: 680, alignSelf: 'center' },
-  header: { height: 52, paddingLeft: spacing.gutter, paddingRight: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  header: {
+    height: 52,
+    paddingLeft: 22,
+    paddingRight: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  newTrip: {
+    height: 40,
+    paddingLeft: 10,
+    paddingRight: 14,
+    borderRadius: radius.codeBox,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   avatarTarget: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.7 },
   titleBlock: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   greeting: { marginTop: 2, fontSize: 17, lineHeight: 22 },
   list: { paddingHorizontal: spacing.cardGutter, paddingTop: spacing.s7 },
   skeletonGap: { height: spacing.s5 },
-  listContent: { paddingTop: 0, paddingHorizontal: spacing.cardGutter },
-  sectionKicker: { paddingTop: spacing.s8, paddingBottom: spacing.s4, paddingHorizontal: spacing.s4 },
-  cardWrap: { marginBottom: spacing.s5 },
-  cardWrapPast: { marginBottom: spacing.s3 },
+  listContent: { paddingTop: spacing.s10 },
+  stackWrap: { marginHorizontal: spacing.cardGutter },
   emptySecondary: { marginTop: spacing.s3 },
-  actionBar: {
-    // Overlay the list, but stay inside the centred content column on web
-    // (left/right:0 alone spanned the whole window at 1280 — N22).
-    position: 'absolute',
-    bottom: 0,
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 680,
+  inviteRow: {
     flexDirection: 'row',
-    gap: spacing.s4,
-    paddingTop: spacing.s7,
-    paddingHorizontal: spacing.s7,
-    borderTopWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'baseline',
+    gap: 6,
+    paddingTop: spacing.s12,
   },
-  actionCol: { flex: 1 },
-  joinButton: { paddingHorizontal: 0 },
-  joinLabel: { fontSize: 17, lineHeight: 22 },
-  // Drop a step below 390 so "Join with a code" keeps one line (item 8).
-  joinLabelNarrow: { fontSize: 15, lineHeight: 20 },
+  inviteLink: { textDecorationLine: 'underline' },
+  dim: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
 });

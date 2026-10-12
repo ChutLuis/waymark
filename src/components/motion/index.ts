@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import {
   Easing,
   cancelAnimation,
+  withRepeat,
   useSharedValue,
   withDelay,
   withTiming,
@@ -87,4 +88,23 @@ export function useEntrance(duration: number, delay: number, enabled = true): Sh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return timeline.p;
+}
+
+/**
+ * An idle loop (stripe crawl, blinking dot, plane bob, marching dashes):
+ * 0 → 1 linearly every `period` ms, repeating while `active`. Off with reduced
+ * motion, and parked at 0 when the screen loses focus, the app backgrounds or
+ * the element leaves view (the caller folds those into `active`).
+ */
+export function useLoop(period: number, active: boolean): SharedValue<number> {
+  const { reduced } = useMotion();
+  const t = useSharedValue(0);
+  useEffect(() => {
+    cancelAnimation(t);
+    t.value = 0;
+    if (!active || reduced) return;
+    t.value = withRepeat(withTiming(1, { duration: period, easing: Easing.linear }), -1);
+    return () => cancelAnimation(t);
+  }, [active, reduced, period, t]);
+  return t;
 }

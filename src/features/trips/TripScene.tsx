@@ -3,9 +3,10 @@ import { AppState, Platform, StyleSheet, View, type AppStateStatus, type StylePr
 import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
 import { useIsFocused } from 'expo-router';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, type AnimatedStyle } from 'react-native-reanimated';
 import { useReducedMotion } from '@/components/useReducedMotion';
 import { useSignedUrl } from '@/lib/supabase/storage';
-import { useTheme } from '@/theme';
+import { motion, useTheme } from '@/theme';
 import { DESTINATION_ART } from './destinationArt';
 import { SCENE_FRAMES, sceneFrameAt } from './sceneClock';
 import { cropTransform, CROPS, SCENE_HEIGHT, SCENE_WIDTH, type CountryKey, type SceneCrop } from './destinations';
@@ -20,8 +21,20 @@ interface TripSceneProps {
   height: number;
   /** Play the Lottie (only one scene per screen may play). */
   live?: boolean;
-  /** Pause the Lottie while off-screen. */
+  /** Pause the Lottie while off-screen or behind other cards. */
   paused?: boolean;
+  /**
+   * Overrides the screen-focus check: the Home card's scene picks up while the
+   * trip collapses back onto it, before Home regains focus.
+   */
+  active?: boolean;
+  /** Fill the parent instead of a fixed width × height (an animated frame). */
+  fill?: boolean;
+  /**
+   * An animated art box (the 800 × 500 canvas's size and offset) that replaces
+   * the static crop, so a growing frame keeps a cover crop all the way.
+   */
+  artStyle?: AnimatedStyle<ViewStyle>;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -31,7 +44,9 @@ interface TripSceneProps {
  * covers the window, centred, never showing outside.
  *
  * The Lottie stays mounted and is paused/resumed rather than unmounted, so the
- * art never flashes back to the placeholder and the scene isn't re-parsed.
+ * art never flashes back to the placeholder and the scene isn't re-parsed. A
+ * paused scene holds its frame; the live scene crossfades over the still the
+ * first time it takes over.
  *
  * Playback is phase-locked to the shared scene clock: whenever a scene starts
  * or resumes it seeks to the clock's frame, so two scenes of the same trip
@@ -46,6 +61,9 @@ export function TripScene({
   height,
   live = false,
   paused = false,
+  active,
+  fill = false,
+  artStyle,
   style,
 }: TripSceneProps) {
   const { colors } = useTheme();
@@ -66,8 +84,11 @@ export function TripScene({
   const art = country ? DESTINATION_ART[country] : null;
   const { scale, left, top } = cropTransform(CROPS[crop], width, height);
 
-  const showLive = live && !reducedMotion && !paused && isFocused && appActive;
+  const onScreen = active ?? isFocused;
+  const showLive = live && !reducedMotion && !paused && onScreen && appActive;
   const lottieReady = art !== null && loadedSource === art.scene;
+  // Shown once loaded unless the scene must hold the frame-0 still.
+  const lottieShown = live && !reducedMotion && lottieReady;
 
   const playing = showLive && lottieReady;
   const playingRef = useRef(playing);
@@ -94,7 +115,15 @@ export function TripScene({
     ref.current?.play(0, SCENE_FRAMES);
   };
 
-  const artStyle = {
+  const lottieOpacity = useSharedValue(0);
+  useEffect(() => {
+    lottieOpacity.value = withTiming(lottieShown ? 1 : 0, {
+      duration: lottieShown && !reducedMotion ? motion.choreo.expand.sceneFade : 0,
+    });
+  }, [lottieShown, reducedMotion, lottieOpacity]);
+  const lottieStyle = useAnimatedStyle(() => ({ opacity: lottieOpacity.value }));
+
+  const staticArt = {
     position: 'absolute' as const,
     width: SCENE_WIDTH * scale,
     height: SCENE_HEIGHT * scale,
@@ -103,14 +132,29 @@ export function TripScene({
   };
 
   return (
-    <View style={[{ width, height, backgroundColor: colors.artPlaceholder }, styles.window, style]}>
+    <View
+      style={[
+        fill ? StyleSheet.absoluteFill : { width, height },
+        { backgroundColor: colors.artPlaceholder },
+        styles.window,
+        style,
+      ]}
+    >
       {coverImagePath && coverUrl.data ? (
-        <Image source={{ uri: coverUrl.data }} style={artStyle} contentFit="cover" transition={150} accessibilityLabel="Trip cover photo" />
+        <Animated.View style={artStyle ?? staticArt}>
+          <Image
+            source={{ uri: coverUrl.data }}
+            style={styles.fill}
+            contentFit="cover"
+            transition={150}
+            accessibilityLabel="Trip cover photo"
+          />
+        </Animated.View>
       ) : art ? (
-        <>
+        <Animated.View style={artStyle ?? staticArt} pointerEvents="none">
           {/* The still sits under the Lottie and covers the load gap. */}
-          <Image source={art.sceneStill} style={artStyle} contentFit="cover" transition={0} />
-          <View style={artStyle} pointerEvents="none">
+          <Image source={art.sceneStill} style={styles.fill} contentFit="cover" transition={0} />
+          <Animated.View style={[styles.fill, lottieStyle]}>
             <LottieView
               ref={ref}
               source={art.scene}
@@ -118,10 +162,10 @@ export function TripScene({
               autoPlay={false}
               onAnimationLoaded={() => setLoadedSource(art.scene)}
               onAnimationFinish={onFinish}
-              style={[styles.lottie, playing ? null : styles.hidden]}
+              style={styles.fill}
             />
-          </View>
-        </>
+          </Animated.View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -131,11 +175,11 @@ const styles = StyleSheet.create({
   window: {
     overflow: 'hidden',
   },
-  lottie: {
-    width: '100%',
-    height: '100%',
-  },
-  hidden: {
-    opacity: 0,
+  fill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
   },
 });
