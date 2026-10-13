@@ -146,8 +146,16 @@ export function TripScene({
         </Animated.View>
       ) : art ? (
         <Animated.View style={artStyle ?? staticArt} pointerEvents="none">
-          {/* The still sits under the Lottie and covers the load gap. */}
-          <Image source={art.sceneStill} style={styles.fill} contentFit="cover" transition={0} />
+          {/* The still sits under the Lottie and covers the load gap. Decoded
+              at full size, so the Home card and the trip header share one
+              cached bitmap and the header has it on its first frame. */}
+          <Image
+            source={art.sceneStill}
+            style={styles.fill}
+            contentFit="cover"
+            transition={0}
+            allowDownscaling={false}
+          />
           <Animated.View style={[styles.fill, lottieStyle]}>
             <LottieView
               ref={ref}
