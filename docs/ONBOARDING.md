@@ -36,10 +36,12 @@ nvm use
 corepack pnpm install
 cp .env.example .env
 supabase start
-pnpm start
+pnpm android                      # dev client, app.waymark.dev
+adb reverse tcp:54321 tcp:54321
+pnpm start:dev-client
 ```
 
-`supabase start` prints the local API URL and anonymous key. Those values populate `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `.env` before the app connects. `.env.example` permits only the public anonymous key; no service-role key belongs in the client.
+`supabase start` prints the local API URL and anonymous key. Those values populate `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `.env` before the app connects. `.env.example` permits only the public anonymous key; no service-role key belongs in the client. The app uses native modules Expo Go does not ship, so it runs as a development build. Release-like builds are covered in [Builds](./BUILDS.md).
 
 ## 5. Quality gates
 
@@ -78,8 +80,9 @@ Schema changes are additive and test-backed:
 - nvm installs global CLIs per Node version. `eas-cli` must be installed under the Node version selected by `nvm use`.
 - pnpm is invoked through Corepack; this repository does not declare a `packageManager` field.
 - Supabase local development runs in Docker.
-- `app.config.ts` reads `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. EAS environments selected by `eas.json` must provide both values.
-- The `development` EAS profile sets `developmentClient: true`. Development-client builds require `expo-dev-client`; it is not a direct dependency in the current `package.json`, so it must be added before producing that profile's development-client build.
+- `app.config.ts` reads `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. Development takes them from the local `.env` through Metro; `test` and `production` builds take them only from the EAS environment (`preview`, `production`), never from `.env` files.
+- `eas build --local` merges the shell environment over the EAS environment. Do not export `EXPO_PUBLIC_*` in a shell that runs a release build.
+- `APP_VARIANT` changes the Android package, so an `android/` directory from an older prebuild needs `pnpm expo prebuild --clean --platform android` before `pnpm android`.
 
 ## 8. Where to look next
 
@@ -87,3 +90,4 @@ Schema changes are additive and test-backed:
 - [Architecture](./ARCHITECTURE.md) records the stack, data model, access patterns, and testing strategy.
 - [Security](./SECURITY.md) records the authentication, grants, RLS policies, helper functions, and privacy test matrix.
 - [Design decisions](./DESIGN_DECISIONS.md) records the shipped visual system and component decisions.
+- [Builds](./BUILDS.md) records the build profiles, signing, versions, and local build commands.

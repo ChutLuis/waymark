@@ -17,7 +17,7 @@
 | Package manager | pnpm 11 via Corepack | Node 24 |
 | Unit tests | Vitest + React Native Testing Library | Logic and component-state tests |
 | DB policy tests | pgTAP via Supabase CLI | Adversarial RLS tests |
-| Builds | EAS Build | Development, preview, and production profiles |
+| Builds | EAS Build (`--local`) | Development, test, and production profiles |
 
 ## 2. Principles
 
@@ -226,21 +226,27 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
   `create_trip` and `accept_trip_invite` PostgreSQL security-definer RPCs; v1
   has no edge functions.
 - Environments: local (Supabase CLI), a hosted staging project for shared builds,
-  and production. EAS build profiles bind development, preview, and production
-  to their EAS environments.
+  and production. The `development` profile embeds no values (Metro serves the
+  bundle with the local `.env`); `test` reads the `preview` EAS environment
+  and `production` the `production` one. `.easignore` keeps local `.env`
+  files out of every build.
 
 ## 11. Build and release (EAS)
 
-- EAS is configured for the `@chutluis/waymark` project. `app.config.ts` sets
-  `owner: 'chutluis'`, the iOS bundle identifier and Android package to
-  `app.waymark`, and `extra.eas.projectId`.
-- `development` is an internal-distribution development-client profile bound to
-  the `development` EAS environment. `preview` is an internal-distribution
-  profile bound to `preview`; `production` is store-ready and bound to
-  `production`.
-- Builds have not run. They require EAS environment values for
-  `EXPO_PUBLIC_SUPABASE_*`; the development profile also requires
-  `expo-dev-client`.
+- EAS is configured for the `@chutluis/waymark` project (`owner: 'chutluis'`,
+  `extra.eas.projectId`). Builds run locally with `eas build --local`.
+- `APP_VARIANT` (set per profile in `eas.json`) selects the application id,
+  name and URL scheme: `development` → `app.waymark.dev`, `test` →
+  `app.waymark.test`, `production` → `app.waymark`. Unset means development.
+- `development` is a debug dev-client APK signed with the template debug key.
+  `test` (APK), `production` (AAB) and `production-apk` are release builds
+  with R8, resource shrinking, Hermes, no cleartext traffic and no dev client,
+  signed with the owner's keystore through `credentials.json`.
+- Versions are local (`appVersionSource: "local"`): `VERSION` and `BUILD` in
+  `app.config.ts` derive `versionCode` and `buildNumber`.
+- Inside an EAS build, `app.config.ts` refuses a `test` or `production` build
+  whose Supabase URL is missing, not HTTPS, or a loopback host.
+- Profiles, signing, versions and commands are documented in `BUILDS.md`.
 - Expo web runs as a supported target. Notifications no-op and the Supabase
   session uses browser storage on web; no live web deployment is pursued.
 

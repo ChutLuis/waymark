@@ -48,6 +48,9 @@ example
 /ios
 /android
 
+# local EAS build artefacts (eas build --local --output build/…)
+/build/
+
 # Supabase CLI local state (redundant safety net; also in supabase/.gitignore)
 supabase/.temp
 supabase/.branches

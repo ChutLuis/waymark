@@ -45,9 +45,11 @@ its centre is cut into the trip's stamp — and stop status follows a letter's
 life (planned slot, stamped, postmarked). See `docs/DESIGN_DECISIONS.md` and
 `design_handoff_airmail_v3/README.md`.
 
-The remaining portfolio and release work is listed in the roadmap below. EAS is
-configured for the `@chutluis/waymark` project with development, preview, and
-production profiles; builds have not yet run.
+The remaining portfolio and release work is listed in the roadmap below.
+Android builds run locally with `eas build --local` in three variants that
+install side by side: `development` (dev client, `app.waymark.dev`), `test`
+(release-like APK, `app.waymark.test`) and `production` (Play AAB, or an APK
+for sideloading, `app.waymark`). See `docs/BUILDS.md`.
 
 ### Running
 
@@ -55,11 +57,26 @@ production profiles; builds have not yet run.
 cp .env.example .env   # fill with local values printed by `supabase start`
 supabase start         # local Postgres + Auth + Storage
 pnpm install
-pnpm start             # Expo dev server (press i / a / w)
+pnpm android           # build + install the dev client (app.waymark.dev)
+adb reverse tcp:54321 tcp:54321   # device reaches the local Supabase
+pnpm start:dev-client  # Metro for the installed dev client
+pnpm web               # Expo web
 pnpm typecheck         # TypeScript
 pnpm lint              # ESLint
 pnpm test              # Vitest (pure logic)
 supabase test db       # pgTAP RLS suite
+```
+
+The app uses native modules Expo Go does not ship, so it runs as a
+development build. Local EAS builds need `eas login`, JDK 17, `ANDROID_HOME`
+and NDK 27.1.12297006; release profiles also need `credentials.json` and the
+`EXPO_PUBLIC_SUPABASE_*` variables in the profile's EAS environment:
+
+```
+eas build --platform android --profile development    --local --output build/waymark-dev.apk
+eas build --platform android --profile test           --local --output build/waymark-test.apk
+eas build --platform android --profile production     --local --output build/waymark.aab
+eas build --platform android --profile production-apk --local --output build/waymark.apk
 ```
 
 ## Roadmap
@@ -67,8 +84,9 @@ supabase test db       # pgTAP RLS suite
 ### Done
 
 - Storage RLS tests S18-S20.
-- EAS configuration for `@chutluis/waymark`, including development, preview,
-  and production profiles bound to EAS environments.
+- EAS configuration for `@chutluis/waymark`: development, test and production
+  profiles that build locally, install side by side, and sign releases with
+  the owner's keystore.
 
 ### Remaining
 
@@ -76,10 +94,8 @@ supabase test db       # pgTAP RLS suite
   30 fps on a low-end Android, and Reduce Motion suppressing all animation.
   Web export and the auth screens were checked; a device pass is outstanding.
 - Portfolio screenshots.
-- EAS builds: validate a development build on a device, then distribute preview
-  builds through TestFlight and Play internal testing. The development profile
-  requires EAS environment values for `EXPO_PUBLIC_SUPABASE_*` and
-  `expo-dev-client`.
+- Distribute test builds through Play internal testing and TestFlight (iOS
+  builds need macOS).
 - Demo video.
 - Minor iOS date-picker polish: tapping outside the picker sheet should commit
   the selection.
@@ -102,6 +118,8 @@ supabase test db       # pgTAP RLS suite
   behind it.
 - `docs/ONBOARDING.md` - developer orientation: mental model, repo tour, setup,
   and change workflow.
+- `docs/BUILDS.md` - build profiles, versions, environment values, signing,
+  and local build and install commands.
 
 ## Prerequisites
 

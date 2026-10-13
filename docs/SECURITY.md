@@ -28,6 +28,11 @@ a private note can be read only by the member who wrote it.
 - Auth uses the PKCE flow.
 - The TanStack Query cache is cleared whenever the authenticated user changes,
   preventing cross-user data bleed on shared devices.
+- Release builds (`test`, `production`) are not debuggable, ship no dev
+  client, block cleartext HTTP, and run R8 with Hermes bytecode. The only
+  bundled configuration is the Supabase URL and anon key, from the profile's
+  EAS environment; the build fails on a missing, non-HTTPS or loopback URL.
+  See `BUILDS.md`.
 
 ## 3. Principles
 

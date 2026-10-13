@@ -1,21 +1,50 @@
 {
   "cli": {
     "version": ">= 16.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "environment": "development"
+      "environment": "development",
+      "withoutCredentials": true,
+      "env": {
+        "APP_VARIANT": "development"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug"
+      }
     },
-    "preview": {
+    "test": {
       "distribution": "internal",
-      "environment": "preview"
+      "environment": "preview",
+      "credentialsSource": "local",
+      "env": {
+        "APP_VARIANT": "test"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
-      "autoIncrement": true,
-      "environment": "production"
+      "distribution": "store",
+      "environment": "production",
+      "credentialsSource": "local",
+      "env": {
+        "APP_VARIANT": "production"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "production-apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
