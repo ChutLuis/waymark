@@ -6,24 +6,35 @@ import {
   useSharedValue,
   withDelay,
   withTiming,
-  type EasingFunctionFactory,
+  type EasingFunction,
   type SharedValue,
 } from 'react-native-reanimated';
 import { useReducedMotion } from '@/components/useReducedMotion';
 import { motion, type EasingName } from '@/theme';
-import { motionMs } from './curves';
+import { bezierAt, motionMs } from './curves';
 
 export { bezierAt, clamp, sampleTrack, window01, type Track } from './curves';
 
+/**
+ * Each token as a worklet over `bezierAt`, which clamps progress to [0, 1].
+ * Reanimated stamps an animation's start when it is assigned, mid-frame, and
+ * the next frame's vsync time can be earlier, so the first sample can have a
+ * slightly negative progress; `Easing.bezier` extrapolates there, and on a
+ * steep start like `standard` (slope 4) the first frame stepped backwards.
+ */
 const EASINGS = Object.fromEntries(
   (Object.keys(motion.easing) as EasingName[]).map((name) => {
-    const [a, b, c, d] = motion.easing[name];
-    return [name, Easing.bezier(a, b, c, d)];
+    const curve = motion.easing[name];
+    const fn: EasingFunction = (t: number) => {
+      'worklet';
+      return bezierAt(curve, t);
+    };
+    return [name, fn];
   }),
-) as Record<EasingName, EasingFunctionFactory>;
+) as Record<EasingName, EasingFunction>;
 
 /** An easing token as a Reanimated easing for `withTiming`. */
-export function easing(name: EasingName): EasingFunctionFactory {
+export function easing(name: EasingName): EasingFunction {
   return EASINGS[name];
 }
 
