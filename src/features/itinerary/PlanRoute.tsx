@@ -301,7 +301,10 @@ function RouteStop({
           accessibilityLabel={stampLabel}
           hitSlop={4}
           onPress={() => (nextStatus ? advance() : onEdit(live))}
-          style={({ pressed }) => pressed && styles.pressed}
+          // No dim when the tap advances the stamp: its segment starts on
+          // release and the dim would cover its first frames, then lift in one
+          // step. A done stamp's tap opens the editor and keeps it.
+          style={({ pressed }) => pressed && !nextStatus && styles.pressed}
         >
           <StopStamp
             status={status}
