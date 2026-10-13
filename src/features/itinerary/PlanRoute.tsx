@@ -22,7 +22,7 @@ import {
 } from '@/components/motion/keyframes';
 import { StopStamp, STOP_STAMP_HEIGHT, STOP_STAMP_WIDTH } from '@/features/trips/StopStamp';
 import { countdownLabel, freeTimeLabel, type CountryKey } from '@/features/trips/destinations';
-import { formatTime, formatTimePadded } from '@/lib/format/date';
+import { formatTimePadded } from '@/lib/format/date';
 import { motion, radius, shadows, useTheme } from '@/theme';
 import type { ItineraryItem } from '@/lib/types';
 import { minutesUntil, statusLabel, type DayRow } from './group';
@@ -547,7 +547,7 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
             style={[styles.nowTag, { height: NOW_SLOT.tag, backgroundColor: colors.airmailBlue }, nowTagStyle]}
           >
             <AppText role="tag" style={{ color: colors.paper, letterSpacing: 0.6 }}>
-              NOW {formatTime(now.toISOString())}
+              NOW {formatTimePadded(now.toISOString())}
             </AppText>
           </Animated.View>
         </>
