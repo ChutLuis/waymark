@@ -109,7 +109,9 @@ function MiniRoute({ stops, active }: { stops: ItineraryItem[]; active: boolean 
               bobStyle,
             ]}
           >
-            <Plane size={12} color={colors.paper} strokeWidth={iconStrokeWidth} style={styles.planeIcon} />
+            <View style={styles.planeIcon}>
+              <Plane size={12} color={colors.paper} strokeWidth={iconStrokeWidth} />
+            </View>
           </Animated.View>
           {labels.map((l) => (
             <AppText key={`${l.text}-${l.x}`} role="monoXs" tone={l.tone} style={[styles.miniLabel, { left: l.x - 2 }]}>

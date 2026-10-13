@@ -536,7 +536,11 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
               planeStyle,
             ]}
           >
-            <Plane size={15} color={colors.paper} strokeWidth={2} style={styles.planeIcon} />
+            {/* A View turns about its centre; the Svg's own transform turned it about
+                its corner and out of the disc. */}
+            <View style={styles.planeIcon}>
+              <Plane size={15} color={colors.paper} strokeWidth={2} />
+            </View>
           </Animated.View>
           <Animated.View
             pointerEvents="none"
