@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import Animated, {
-  LinearTransition,
+  type SharedValue,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
@@ -59,8 +59,20 @@ const GEO = {
   freeLabel: 18,
 } as const;
 
-/** Reflow when the NOW slot moves (README 02 v4.1.1). */
-type Reflow = LinearTransition | undefined;
+/**
+ * A position on the route that rides the reflow (README 02): placed at once,
+ * then every change animates over 300 ms `standard` from where it is toward its
+ * new value, like the plane, so nothing heads away from its end. Placed at once
+ * until the rows are measured, and under reduced motion.
+ */
+function useReflow(value: number, on: boolean): SharedValue<number> {
+  const v = useSharedValue(value);
+  useEffect(() => {
+    v.value = on ? withTiming(value, { duration: motion.choreo.plan.nowSlot, easing: easing('standard') }) : value;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return v;
+}
 
 /** First-pass heights before rows are measured. */
 const ESTIMATE = { compact: STOP_STAMP_HEIGHT, block: 76, ticket: 104 } as const;
@@ -147,7 +159,8 @@ function RouteStop({
   onAdvance: (item: ItineraryItem, onFail: () => void) => void;
   onEdit: (item: ItineraryItem) => void;
   onMeasure: (id: string, height: number) => void;
-  reflow: Reflow;
+  /** Positions animate to their new values (see useReflow). */
+  reflow: boolean;
 }) {
   const { colors } = useTheme();
   // The status the stamp's contact delivered: only that tag stamps in.
@@ -168,6 +181,10 @@ function RouteStop({
   const kind: RowKind = layoutKind === 'ticket' ? 'ticket' : shown === 'done' ? 'compact' : 'block';
   const stampTop = top + (kind === 'ticket' ? GEO.ticketLift : 0);
   const done = item.status === 'done';
+  const rowTop = useReflow(kind === 'ticket' ? top : kind === 'compact' ? stampTop + GEO.compactTextTop : stampTop, reflow);
+  const stampY = useReflow(stampTop, reflow);
+  const rowTopStyle = useAnimatedStyle(() => ({ top: rowTop.value }));
+  const stampTopStyle = useAnimatedStyle(() => ({ top: stampY.value }));
 
   const pop = useEntrance(
     motion.duration.pop2,
@@ -215,10 +232,10 @@ function RouteStop({
     <>
       {kind === 'ticket' ? (
         <Animated.View
-          layout={reflow}
           style={[
             styles.ticket,
-            { top, backgroundColor: colors.paper, boxShadow: shadows.nextTicket },
+            { backgroundColor: colors.paper, boxShadow: shadows.nextTicket },
+            rowTopStyle,
             ticketStyle,
           ]}
           onLayout={(e) => measure(e.nativeEvent.layout.height)}
@@ -252,9 +269,8 @@ function RouteStop({
         </Animated.View>
       ) : (
         <Animated.View
-          layout={reflow}
           onLayout={(e) => measure(e.nativeEvent.layout.height)}
-          style={[styles.rowText, { top: kind === 'compact' ? stampTop + GEO.compactTextTop : stampTop }]}
+          style={[styles.rowText, rowTopStyle]}
         >
           <Pressable
             accessibilityRole="button"
@@ -295,7 +311,7 @@ function RouteStop({
           </Pressable>
         </Animated.View>
       )}
-      <Animated.View layout={reflow} style={[styles.stamp, { top: stampTop }, popStyle]}>
+      <Animated.View style={[styles.stamp, stampTopStyle, popStyle]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={stampLabel}
@@ -323,21 +339,37 @@ function RouteStop({
   );
 }
 
+/** A "6 h 30 free" label in a gap, riding the reflow. */
+function FreeLabel({ top, minutes, reflow }: { top: number; minutes: number; reflow: boolean }) {
+  const y = useReflow(top, reflow);
+  const style = useAnimatedStyle(() => ({ top: y.value }));
+  return (
+    <Animated.View style={[styles.free, style]}>
+      <AppText role="metaSm" tone="muted">
+        {freeTimeLabel(minutes)}
+      </AppText>
+    </Animated.View>
+  );
+}
+
 /**
  * The dashed line ahead of the plane, marching downward. An idle loop: off
  * with reduced motion, and parked while the screen is out of focus (Plan
  * stays mounted under the Trip page) or the app is in the background.
  */
-function MarchingDashes({ top, height, reflow }: { top: number; height: number; reflow: Reflow }) {
+function MarchingDashes({ top, height, reflow }: { top: number; height: number; reflow: boolean }) {
   const { colors } = useTheme();
   const isFocused = useIsFocused();
   const appActive = useAppActive();
   const march = useLoop(motion.choreo.plan.routeMarch, isFocused && appActive);
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: march.value * GEO.dashPitch }] }));
+  const y = useReflow(top, reflow);
+  const h = useReflow(height, reflow);
+  const boxStyle = useAnimatedStyle(() => ({ top: y.value, height: Math.max(0, h.value) }));
   const count = Math.ceil(height / GEO.dashPitch) + 2;
   if (height <= 0) return null;
   return (
-    <Animated.View layout={reflow} style={[styles.dashClip, { top, height }]} pointerEvents="none">
+    <Animated.View style={[styles.dashClip, boxStyle]} pointerEvents="none">
       <Animated.View style={[styles.dashColumn, style]}>
         {Array.from({ length: count }, (_, i) => (
           <View key={i} style={[styles.dash, { backgroundColor: colors.ink3 }]} />
@@ -420,13 +452,7 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
 
   // Rows reflow with the slot, once measured: before that, a height settling
   // on the first frames would slide the rows instead of placing them.
-  const reflow: Reflow = useMemo(
-    () =>
-      measured && !reduced
-        ? LinearTransition.duration(motion.choreo.plan.nowSlot).easing(easing('standard'))
-        : undefined,
-    [measured, reduced],
-  );
+  const reflow = measured && !reduced;
 
   // The plane, the ink behind it and the NOW tag share one value: the plane's centre y.
   const planeY = useSharedValue(startY ?? firstY);
@@ -500,17 +526,14 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
         const gap = laidTops[i] - prevBottom;
         if (gap < GEO.freeLabel + 8) return null;
         return (
-          <Animated.View
+          <FreeLabel
             // Keyed by the stop below the gap, so a label keeps its text and
             // slides when the slot moves in or out of its gap.
             key={`free-${stops[slotAt !== null && i > slotAt ? i - 1 : i].item.id}`}
-            layout={reflow}
-            style={[styles.free, { top: prevBottom + (gap - GEO.freeLabel) / 2 }]}
-          >
-            <AppText role="metaSm" tone="muted">
-              {freeTimeLabel(minutes)}
-            </AppText>
-          </Animated.View>
+            top={prevBottom + (gap - GEO.freeLabel) / 2}
+            minutes={minutes}
+            reflow={reflow}
+          />
         );
       })}
 
