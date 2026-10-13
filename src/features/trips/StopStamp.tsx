@@ -53,7 +53,7 @@ interface StopStampProps {
  * the current status without playing on mount; plays the transition when the
  * status changes forward; seeks instantly when it moves backwards. Haptics fire
  * on contact (README 03/04): the stamp lands 300 ms into `confirm` (light),
- * the postmark hits 330 ms into `done` (medium) and the stamp squashes.
+ * the postmark bottoms out 200 ms into `done` (medium) and the stamp squashes.
  *
  * Seeking uses the imperative `play(start, end)`; `play(f, f)` jumps to a frame.
  */

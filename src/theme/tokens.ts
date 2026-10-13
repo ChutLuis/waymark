@@ -497,7 +497,8 @@ export const motion = {
       routeMarch: 1200,
     },
     /** 03/04 · Stop stamp contact frames (ms after play starts). */
-    stamp: { confirmContact: 300, doneContact: 330, squash: 220 },
+    /** v4.1.3: done lands at 200 ms, when the postmark bottoms out (frame 23 of play(17, 35)). */
+    stamp: { confirmContact: 300, doneContact: 200, squash: 220 },
     /** 05 · Sheet of stamps. Offsets from d0 unless noted. */
     sheet: {
       d0: 380,
