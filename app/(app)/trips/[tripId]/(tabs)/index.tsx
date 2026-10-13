@@ -258,9 +258,9 @@ export default function PlanScreen() {
               day={routeDay}
               base={base}
               entering={entering}
-              onAdvance={(item) => {
+              onAdvance={(item, onFail) => {
                 const target = NEXT_STATUS[item.status];
-                if (target) setStatus.mutate({ itemId: item.id, status: target });
+                if (target) setStatus.mutate({ itemId: item.id, status: target }, { onError: onFail });
               }}
               onEdit={openEditor}
             />

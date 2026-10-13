@@ -79,7 +79,8 @@ interface PlanRouteProps {
   base: number;
   /** True while the tab's entrance is still due (rows mounting later sit still). */
   entering: boolean;
-  onAdvance: (item: ItineraryItem) => void;
+  /** Advance a stop's status; `onFail` runs if the change doesn't stick. */
+  onAdvance: (item: ItineraryItem, onFail: () => void) => void;
   onEdit: (item: ItineraryItem) => void;
 }
 
@@ -142,7 +143,8 @@ function RouteStop({
   now: Date;
   base: number;
   entering: boolean;
-  onAdvance: (item: ItineraryItem) => void;
+  /** Advance a stop's status; `onFail` runs if the change doesn't stick. */
+  onAdvance: (item: ItineraryItem, onFail: () => void) => void;
   onEdit: (item: ItineraryItem) => void;
   onMeasure: (id: string, height: number) => void;
   reflow: Reflow;
@@ -154,8 +156,13 @@ function RouteStop({
   // The row keeps showing the previous status, tag and style, while the stamp
   // is in the air (README 03/04); it swaps on the stamp's contact frame, and
   // at once when the status moves backwards.
-  const [shown, setShown] = useState(live.status);
-  if (shown !== live.status && STATUS_RANK[live.status] < STATUS_RANK[shown]) setShown(live.status);
+  // The press drives the stamp (README 03 v4.1.2): a tapped status is pending
+  // until the data catches up, so the segment starts on the next frame.
+  const [pending, setPending] = useState<ItineraryItem['status'] | null>(null);
+  if (pending !== null && live.status === pending) setPending(null);
+  const status = pending ?? live.status;
+  const [shown, setShown] = useState(status);
+  if (shown !== status && STATUS_RANK[status] < STATUS_RANK[shown]) setShown(status);
   const item = shown === live.status ? live : { ...live, status: shown };
   const kind: RowKind = layoutKind === 'ticket' ? 'ticket' : shown === 'done' ? 'compact' : 'block';
   const stampTop = top + (kind === 'ticket' ? GEO.ticketLift : 0);
@@ -184,7 +191,13 @@ function RouteStop({
     ],
   }));
 
-  const nextStatus = live.status === 'planned' ? 'confirmed' : live.status === 'confirmed' ? 'done' : null;
+  const nextStatus = status === 'planned' ? 'confirmed' : status === 'confirmed' ? 'done' : null;
+  const advance = () => {
+    if (!nextStatus) return;
+    setPending(nextStatus);
+    // A change that fails seeks the stamp back to the stored status.
+    onAdvance({ ...live, status }, () => setPending(null));
+  };
   const stampLabel = nextStatus
     ? `Mark ${item.title} ${statusLabel(nextStatus).toLowerCase()}`
     : `Edit ${item.title}`;
@@ -285,11 +298,11 @@ function RouteStop({
           accessibilityRole="button"
           accessibilityLabel={stampLabel}
           hitSlop={4}
-          onPress={() => (nextStatus ? onAdvance(live) : onEdit(live))}
+          onPress={() => (nextStatus ? advance() : onEdit(live))}
           style={({ pressed }) => pressed && styles.pressed}
         >
           <StopStamp
-            status={live.status}
+            status={status}
             country={country}
             onContact={(landed) => {
               // One commit swaps the text and mounts the new tag hidden, so it
