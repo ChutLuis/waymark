@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { PixelRatio, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -99,7 +99,7 @@ function AlbumStamp({
         </Svg>
       </Animated.View>
       {/* Printed on stamp paper: stampInk in both themes. */}
-      <AppText role="tagLabel" numberOfLines={2} style={[styles.name, { color: colors.stampInk }]}>
+      <AppText role="tagLabel" numberOfLines={3} style={[styles.name, { color: colors.stampInk }]}>
         {trip.name}
       </AppText>
       <AppText role="monoXs" style={[styles.month, styles.printed, { color: colors.stampInk }]}>
@@ -169,7 +169,13 @@ export default function ShoeboxScreen() {
     router.push(`/trips/${trip.id}` as never);
   };
 
-  const cellWidth = sheetWidth > 0 ? (sheetWidth - 2 * SHEET_PAD.x - (COLUMNS - 1) * GAP.column) / COLUMNS : STAMP.width;
+  // Floored to a physical pixel: an exact quarter, rounded up by layout, can
+  // overflow the row by a fraction of a pixel and wrap the fourth stamp.
+  const scale = PixelRatio.get();
+  const cellWidth =
+    sheetWidth > 0
+      ? Math.floor(((sheetWidth - 2 * SHEET_PAD.x - (COLUMNS - 1) * GAP.column) / COLUMNS) * scale) / scale
+      : STAMP.width;
   // Only the sheets on screen at open print in.
   let estimatedTop = ESTIMATE.header;
 
@@ -278,7 +284,9 @@ const styles = StyleSheet.create({
   },
   lines: { position: 'absolute', left: LINES.left, top: LINES.top },
   name: { fontSize: 13, lineHeight: 16, textAlign: 'center' },
-  month: { lineHeight: 11, letterSpacing: 0.8 },
+  // Cells in a row stretch to the tallest name; the months sit at the bottom,
+  // sharing a baseline.
+  month: { marginTop: 'auto', lineHeight: 11, letterSpacing: 0.8 },
   printed: { opacity: 0.72 },
   pressed: { opacity: 0.7 },
 });
