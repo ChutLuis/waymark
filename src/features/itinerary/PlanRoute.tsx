@@ -428,22 +428,19 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
   const nowTag = useTimeline(entering ? 0 : 1);
   const mountedAt = useRef(Date.now());
   const flown = useRef(false);
-  const lastSlot = useRef(slotAt);
-  /** End of a slot slide: a re-measure during it continues the slide. */
-  const slideUntil = useRef(0);
 
   useEffect(() => {
     if (nowY === null) return;
     if (flown.current || !entering) {
+      // Placed at once the first time; after that the slot only moves with the
+      // rows (now passing a stop, or a row changing height at contact), so the
+      // plane, the tag and the ink ride the same 300 ms reflow (README 02 v4.1.2).
+      const placed = flown.current;
       flown.current = true;
       nowTag.set(1);
       cancelAnimation(planeY);
-      // Passing a stop slides the slot to the next gap with the rows; otherwise
-      // the plane is placed without animation.
-      const moved = lastSlot.current !== null && lastSlot.current !== slotAt;
-      if (moved && !reduced) slideUntil.current = Date.now() + motion.choreo.plan.nowSlot;
-      const left = slideUntil.current - Date.now();
-      planeY.value = left > 0 ? withTiming(nowY, { duration: left, easing: easing('standard') }) : nowY;
+      planeY.value =
+        placed && !reduced ? withTiming(nowY, { duration: motion.choreo.plan.nowSlot, easing: easing('standard') }) : nowY;
       return;
     }
     // Fly once the rows have been measured, keeping the entrance's clock.
@@ -458,17 +455,16 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
     }
     nowTag.run(motion.choreo.plan.nowTag, delay + ms(motion.choreo.plan.nowTagAfterPlane));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nowY, measured, startY, slotAt]);
+  }, [nowY, measured, startY]);
 
+  // The line's top moves with the rows too (the slot leaving the top of the day).
   useEffect(() => {
-    const moved = lastSlot.current !== slotAt;
-    lastSlot.current = slotAt;
     routeTop.value =
-      moved && measured && !reduced
+      measured && !reduced
         ? withTiming(firstY, { duration: motion.choreo.plan.nowSlot, easing: easing('standard') })
         : firstY;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firstY, slotAt]);
+  }, [firstY]);
 
   const inkEnd = day === 'past' ? lastY : day === 'today' ? null : firstY;
   const inkStyle = useAnimatedStyle(() => ({
