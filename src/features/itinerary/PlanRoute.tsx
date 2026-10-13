@@ -173,6 +173,9 @@ function RouteStop({
   // until the data catches up, so the segment starts on the next frame.
   const [pending, setPending] = useState<ItineraryItem['status'] | null>(null);
   const pressedAt = useRef<number | null>(null);
+  // Whether the current press advances the stamp, fixed when it starts: the
+  // tap itself makes a done stamp, which would otherwise dim mid-press.
+  const [pressAdvances, setPressAdvances] = useState(false);
   if (pending !== null && live.status === pending) setPending(null);
   const status = pending ?? live.status;
   const [shown, setShown] = useState(status);
@@ -316,11 +319,12 @@ function RouteStop({
           accessibilityRole="button"
           accessibilityLabel={stampLabel}
           hitSlop={4}
+          onPressIn={() => setPressAdvances(nextStatus !== null)}
           onPress={() => (nextStatus ? advance() : onEdit(live))}
           // No dim when the tap advances the stamp: its segment starts on
           // release and the dim would cover its first frames, then lift in one
           // step. A done stamp's tap opens the editor and keeps it.
-          style={({ pressed }) => pressed && !nextStatus && styles.pressed}
+          style={({ pressed }) => pressed && !pressAdvances && styles.pressed}
         >
           <StopStamp
             status={status}
