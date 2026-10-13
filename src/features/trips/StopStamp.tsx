@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
@@ -40,6 +40,11 @@ interface StopStampProps {
    * postmark hitting), so the row's status tag can stamp in on the same frame.
    */
   onContact?: (status: ItineraryStatus) => void;
+  /**
+   * When the press that set `status` happened (ms since epoch): contact times
+   * run from the tap, not from when the change reached the stamp (README 03).
+   */
+  pressedAt?: number | null;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -58,6 +63,7 @@ export function StopStamp({
   width = STOP_STAMP_WIDTH,
   height = STOP_STAMP_HEIGHT,
   onContact,
+  pressedAt = null,
   style,
 }: StopStampProps) {
   const { reduced, ms } = useMotion();
@@ -68,11 +74,15 @@ export function StopStamp({
   const squash = useTimeline(1);
   const contactRef = useRef(onContact);
   contactRef.current = onContact;
+  const pressedRef = useRef(pressedAt);
+  pressedRef.current = pressedAt;
 
   const source = country ? DESTINATION_ART[country].stopStamp : NEUTRAL_STOP_STAMP;
   const targetFrame = STATUS_FRAME[status];
 
-  useEffect(() => {
+  // A layout effect, so the segment starts in the commit that carries the
+  // change rather than after it paints.
+  useLayoutEffect(() => {
     const from = prevFrame.current;
     prevFrame.current = targetFrame;
     // Static seek: play(f, f) jumps to the frame; pause() then holds it (the web
@@ -110,13 +120,15 @@ export function StopStamp({
       ref.current?.play(from, targetFrame);
     }
 
+    // Time already spent since the tap comes off every contact.
+    const lag = pressedRef.current === null ? 0 : Math.max(0, Date.now() - pressedRef.current);
     const timers = contacts.map(({ status: landed, at }) =>
       setTimeout(() => {
         // Haptics still fire under Reduce Motion; the frame jumps to the end.
         haptic(landed === 'done' ? 'medium' : 'light');
         if (landed === 'done') squash.run(motion.choreo.stamp.squash);
         contactRef.current?.(landed);
-      }, ms(Math.max(0, at))),
+      }, Math.max(0, ms(at) - lag)),
     );
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps

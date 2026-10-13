@@ -159,6 +159,7 @@ function RouteStop({
   // The press drives the stamp (README 03 v4.1.2): a tapped status is pending
   // until the data catches up, so the segment starts on the next frame.
   const [pending, setPending] = useState<ItineraryItem['status'] | null>(null);
+  const pressedAt = useRef<number | null>(null);
   if (pending !== null && live.status === pending) setPending(null);
   const status = pending ?? live.status;
   const [shown, setShown] = useState(status);
@@ -194,6 +195,7 @@ function RouteStop({
   const nextStatus = status === 'planned' ? 'confirmed' : status === 'confirmed' ? 'done' : null;
   const advance = () => {
     if (!nextStatus) return;
+    pressedAt.current = Date.now();
     setPending(nextStatus);
     // A change that fails seeks the stamp back to the stored status.
     onAdvance({ ...live, status }, () => setPending(null));
@@ -303,6 +305,7 @@ function RouteStop({
         >
           <StopStamp
             status={status}
+            pressedAt={pending !== null ? pressedAt.current : null}
             country={country}
             onContact={(landed) => {
               // One commit swaps the text and mounts the new tag hidden, so it
