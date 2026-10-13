@@ -7,6 +7,7 @@ import Animated, {
   interpolateColor,
   runOnJS,
   useAnimatedStyle,
+  useFrameCallback,
   useSharedValue,
   withDelay,
   withTiming,
@@ -14,7 +15,7 @@ import Animated, {
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ErrorState, LoadingState } from '@/components/StateViews';
 import { PatternBand } from '@/components/airmail/PatternBand';
-import { easing, sampleTrack, useMotion, useTimeline } from '@/components/motion';
+import { bezierAt, easing, sampleTrack, useMotion, useTimeline } from '@/components/motion';
 import { tabBarRise, topBarSettle } from '@/components/motion/keyframes';
 import { haptic } from '@/lib/haptics';
 import { ShellTopBar } from '@/features/trips/ShellTopBar';
@@ -49,6 +50,8 @@ import { motion, radius, useTheme } from '@/theme';
 /** Under the Trip page the shell slides 80 pt left and dims to 86%. */
 const SHEET_SHIFT = 80;
 const SHEET_DIM = 0.14;
+/** The expand clock's largest step per drawn frame: one 60 Hz frame. */
+const MAX_EXPAND_STEP = 1000 / 60;
 
 function lerp(a: number, b: number, t: number): number {
   'worklet';
@@ -75,7 +78,7 @@ export default function TripTabsLayout() {
   const pathname = usePathname();
   const isFocused = useIsFocused();
   const { width: winW, height: winH } = useWindowDimensions();
-  const { ms } = useMotion();
+  const { ms, reduced } = useMotion();
 
   const trip = useTrip(tripId);
   const members = useTripMembers(tripId);
@@ -140,25 +143,59 @@ export default function TripTabsLayout() {
   const bandIn = useTimeline(origin ? 0 : 1);
   const tabBarIn = useTimeline(origin ? 0 : 1);
 
-  // The transition starts on the shell's first layout rather than on mount,
-  // so a slow first paint can't eat the expand: Home primed its first frame
-  // at the card (or off-screen right).
+  // The expand runs on its own clock that advances at most one 60 Hz frame per
+  // drawn frame. Building the trip's views stalls drawing right after the
+  // expand starts (~150 ms on the emulator, ~200 ms on a phone); a wall-clock
+  // animation ran through those frames and was mostly over by the next one
+  // drawn. On this clock a stall pauses the expand instead of skipping it.
+  // Every part of the expand reads the same clock, so they stay in step.
+  const expandClock = useSharedValue(0);
+  const expandEnd = Math.max(
+    motion.duration.expand,
+    motion.choreo.expand.contentAt + motion.choreo.expand.content,
+    motion.choreo.expand.topBarAt + motion.choreo.expand.topBar,
+    motion.choreo.expand.bandAt + motion.choreo.expand.band,
+    motion.choreo.expand.tabBarAt + motion.choreo.expand.tabBar,
+  );
+  const stopDriver = () => driver.setActive(false);
+  const driver = useFrameCallback((frame) => {
+    'worklet';
+    const { expand } = motion.choreo;
+    const step = Math.min(frame.timeSincePreviousFrame ?? 0, MAX_EXPAND_STEP);
+    const t = Math.min(expandEnd, expandClock.value + step);
+    expandClock.value = t;
+    const part = (at: number, duration: number) => Math.min(1, Math.max(0, (t - at) / duration));
+    const e = bezierAt(motion.easing.standard, part(0, motion.duration.expand));
+    reveal.value = e;
+    homeCovered.value = e;
+    shellContent.value = part(expand.contentAt, expand.content);
+    topBarIn.p.value = part(expand.topBarAt, expand.topBar);
+    bandIn.p.value = part(expand.bandAt, expand.band);
+    tabBarIn.p.value = part(expand.tabBarAt, expand.tabBar);
+    if (t >= expandEnd) runOnJS(stopDriver)();
+  }, false);
+
+  // Starts on the shell's first layout; Home primed the first frame at the
+  // card (or off-screen right).
   const started = useRef(false);
   const startOpening = () => {
     if (started.current) return;
     started.current = true;
-    const { expand } = motion.choreo;
     if (origin) {
-      const config = { duration: ms(motion.duration.expand), easing: easing('standard') };
       reveal.value = 0;
       shellContent.value = 0;
       shellPush.value = 1;
-      reveal.value = withTiming(1, config);
-      homeCovered.value = withTiming(1, config);
-      shellContent.value = withDelay(ms(expand.contentAt), withTiming(1, { duration: ms(expand.content) }));
-      topBarIn.run(expand.topBar, expand.topBarAt);
-      bandIn.run(expand.band, expand.bandAt);
-      tabBarIn.run(expand.tabBar, expand.tabBarAt);
+      if (reduced) {
+        reveal.value = 1;
+        homeCovered.value = 1;
+        shellContent.value = 1;
+        topBarIn.set(1);
+        bandIn.set(1);
+        tabBarIn.set(1);
+        return;
+      }
+      expandClock.value = 0;
+      driver.setActive(true);
     } else {
       reveal.value = 1;
       shellContent.value = 1;
@@ -171,6 +208,8 @@ export default function TripTabsLayout() {
   useEffect(
     () =>
       registerShellCloser((finish) => {
+        // A collapse mid-expand takes over from the expand's clock.
+        driver.setActive(false);
         haptic('selection');
         const done = () => {
           finish();

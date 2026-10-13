@@ -94,7 +94,12 @@ export function useTimeline(initial = 1): Timeline {
 export function useEntrance(duration: number, delay: number, enabled = true): SharedValue<number> {
   const timeline = useTimeline(enabled ? 0 : 1);
   useEffect(() => {
-    if (enabled) timeline.run(duration, delay);
+    if (!enabled) return;
+    // From the first frame after mount, not the mount: a screen that takes a
+    // while to build draws nothing meanwhile, and a clock started earlier would
+    // run its delay and part of its motion through frames that never show.
+    const id = requestAnimationFrame(() => timeline.run(duration, delay));
+    return () => cancelAnimationFrame(id);
     // Mount only: an entrance never replays on re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

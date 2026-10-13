@@ -111,7 +111,9 @@ export default function TripsListScreen() {
       if (rects) setExpandOrigin({ tripId: trip.id, ...rects, at: Date.now() });
       primeShell(rects !== null);
       markShellOpening();
-      router.push(`/trips/${trip.id}` as never);
+      // On the next frame, so the card shows its press before building the
+      // trip's views holds off drawing.
+      requestAnimationFrame(() => router.push(`/trips/${trip.id}` as never));
     });
   };
 

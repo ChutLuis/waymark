@@ -463,6 +463,13 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
   const routeTop = useSharedValue(firstY);
   const nowTag = useTimeline(entering ? 0 : 1);
   const mountedAt = useRef(Date.now());
+  // The entrance's clock, like useEntrance's, starts on the first frame.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      mountedAt.current = Date.now();
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
   const flown = useRef(false);
 
   useEffect(() => {
