@@ -2,19 +2,20 @@ import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Mail } from 'lucide-react-native';
+import { Mail } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { ScreenStatusBar } from '@/components/ScreenStatusBar';
-import { fontFamilies, iconStrokeWidth, spacing, useTheme } from '@/theme';
+import { hitTargetMin, iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
+import { SUPPORT_EMAIL } from '@/lib/legal';
 
 /**
  * Public account-deletion page for the web build (Google Play asks for a web
- * route where people can request deletion). The app itself deletes in place
- * from Profile → Delete account; this page explains that path and offers an
- * email fallback for anyone without the app installed.
+ * route where people can request deletion; the static copy lives at
+ * ACCOUNT_DELETION_URL). The app itself deletes in place from Profile →
+ * Delete account; this page explains that path and offers an email fallback
+ * for anyone without the app installed.
  */
-const SUPPORT_EMAIL = 'support@waymark.app';
-
 export default function DeleteAccountPage() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -32,52 +33,47 @@ export default function DeleteAccountPage() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <ScreenStatusBar />
-      {/* Pin a page-coloured bar over the status-bar area (N18). */}
-      <View style={[styles.statusBar, { height: insets.top, backgroundColor: colors.bg }]} />
+      <ScreenStatusBar band />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          // Google Play opens this page cold, so there is nothing to go back to.
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
-        >
-          <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
-          <AppText style={styles.backLabel}>Back</AppText>
-        </Pressable>
+        {/* Google Play opens this page cold; with no history, Back goes Home. */}
+        <BackButton style={styles.back} />
 
         <View style={styles.body}>
           <AppText role="kicker" tone="secondary">YOUR ACCOUNT</AppText>
-          <AppText role="title" style={styles.title}>Delete your account</AppText>
+          <AppText role="title" style={styles.title} accessibilityRole="header">
+            Delete your account
+          </AppText>
           <AppText role="body" tone="secondary" style={styles.intro}>
             Deleting your Waymark account is permanent. Here is what happens, and how to
             do it.
           </AppText>
 
           <View style={styles.section}>
-            <AppText role="rowTitle">In the app</AppText>
+            <AppText role="rowTitle" accessibilityRole="header">In the app</AppText>
             <AppText role="body" tone="secondary" style={styles.sectionBody}>
               Open your profile, scroll to the bottom, and tap Delete account. Confirm the
-              sheet and your account is removed straight away.
+              sheet and your account is removed straight away. If it stops part-way, try
+              again: it picks up where it left off.
             </AppText>
           </View>
 
           <View style={styles.section}>
-            <AppText role="rowTitle">What gets deleted</AppText>
+            <AppText role="rowTitle" accessibilityRole="header">What gets deleted</AppText>
             <AppText role="body" tone="secondary" style={styles.sectionBody}>
-              Your profile, photo and notes, plus any trip no one else is on (with its
-              itinerary, packing list and notes). A trip you own that other people are on
-              stays with them: it passes to the member who joined first, and the plan and
-              packing items you added stay in it.
+              Your account, profile, photo and every note you wrote, sealed or shared, plus
+              any trip no one else is on (with its itinerary, packing list and notes). A trip
+              you own that other people are on stays with them: it passes to the member who
+              joined first. The plan and packing items you added to shared trips stay in
+              them, without your name. Your reminders are removed from the device you
+              delete from.
             </AppText>
           </View>
 
           <View style={styles.section}>
-            <AppText role="rowTitle">By email</AppText>
+            <AppText role="rowTitle" accessibilityRole="header">By email</AppText>
             <AppText role="body" tone="secondary" style={styles.sectionBody}>
               Don&apos;t have the app installed? Email us from the address on your account
               and we&apos;ll delete it for you.
@@ -97,6 +93,16 @@ export default function DeleteAccountPage() {
               </AppText>
             ) : null}
           </View>
+
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.push('/privacy')}
+            style={({ pressed }) => [styles.policyLink, pressed && styles.pressed]}
+          >
+            <AppText role="link" style={styles.policyLabel}>
+              Read the privacy policy
+            </AppText>
+          </Pressable>
         </View>
       </ScrollView>
     </View>
@@ -105,11 +111,9 @@ export default function DeleteAccountPage() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  statusBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   content: { paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 680, alignSelf: 'center' },
-  backRow: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 8, marginTop: 6 },
-  backLabel: { fontFamily: fontFamilies.semibold, fontSize: 16, lineHeight: 20 },
+  back: { marginTop: spacing.s2 },
   pressed: { opacity: 0.7 },
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   title: { marginTop: spacing.s3 },
@@ -119,12 +123,14 @@ const styles = StyleSheet.create({
   emailButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.s4,
     alignSelf: 'flex-start',
     marginTop: spacing.s5,
     minHeight: 48,
-    paddingHorizontal: 18,
-    borderRadius: 999,
+    paddingHorizontal: spacing.s8,
+    borderRadius: radius.pill,
     borderWidth: 2,
   },
+  policyLink: { minHeight: hitTargetMin, justifyContent: 'center', alignSelf: 'flex-start', marginTop: spacing.s9 },
+  policyLabel: { textDecorationLine: 'underline' },
 });

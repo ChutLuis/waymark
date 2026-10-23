@@ -11,17 +11,23 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronLeft, Users } from 'lucide-react-native';
+import { Users } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { AvatarStamp, StampStill } from '@/features/trips/SceneStamp';
 import { useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
+import { failureMessage } from '@/features/trips/errors';
 import { pickImage, type PickedImage } from '@/lib/images';
-import { fontFamilies, radius, spacing, useTheme } from '@/theme';
+import { fontFamilies, hitTargetMin, radius, shadows, spacing, useTheme } from '@/theme';
 import { profileSchema, type ProfileForm } from '@/lib/validation/schemas';
+
+/** The Add photo link's 28 pt box, grown to a 44 pt target without moving anything. */
+const ADD_PHOTO_HIT_SLOP = (hitTargetMin - 28) / 2;
 
 /** The one onboarding step: the name that signs every postcard. */
 export default function OnboardingScreen() {
@@ -33,29 +39,39 @@ export default function OnboardingScreen() {
   const uploadAvatar = useUploadAvatar();
   const signOut = useSignOut();
   const [photo, setPhoto] = useState<PickedImage | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const isWide = width >= 720;
 
-  const { control, handleSubmit, watch } = useForm<ProfileForm>({
+  const { control, handleSubmit } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: { displayName: '' },
   });
 
-  const name = watch('displayName');
+  const name = useWatch({ control, name: 'displayName' });
   const initial = (name.trim()[0] ?? '?').toUpperCase();
 
   const onPickPhoto = async () => {
-    const picked = await pickImage([1, 1]);
-    if (picked) setPhoto(picked);
+    try {
+      const picked = await pickImage([1, 1]);
+      if (picked) setPhoto(picked);
+    } catch (e) {
+      setError(failureMessage(e, "Couldn't open your photos. Try again."));
+    }
   };
 
   // Back leaves onboarding. With nothing behind it (the usual first run), sign
   // out: the account stays, and the auth gate returns to Sign in.
   const onBack = () => {
+    if (signOut.isPending) return;
     if (router.canGoBack()) router.back();
     else signOut.mutate();
   };
 
+  // The photo upload is best-effort: a failure there still saves the name. The
+  // name itself is required, so a failure keeps the person here with what they
+  // typed, and Continue simply retries.
   const onContinue = handleSubmit(async (form) => {
+    setError(null);
     let avatarPath: string | undefined;
     if (photo) {
       try {
@@ -64,8 +80,12 @@ export default function OnboardingScreen() {
         // The photo is optional; the name still goes through.
       }
     }
-    await upsertProfile.mutateAsync({ displayName: form.displayName, avatarPath });
-    router.replace('/');
+    try {
+      await upsertProfile.mutateAsync({ displayName: form.displayName, avatarPath });
+      router.replace('/');
+    } catch (e) {
+      setError(failureMessage(e, "Couldn't save your name. Try again."));
+    }
   });
 
   return (
@@ -83,15 +103,7 @@ export default function OnboardingScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={onBack}
-          disabled={signOut.isPending}
-          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-        >
-          <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
-        </Pressable>
+        <BackButton onPress={onBack} />
       </View>
 
       <View style={styles.body}>
@@ -99,6 +111,11 @@ export default function OnboardingScreen() {
         <AppText role="body" tone="secondary" style={styles.subtitle}>
           It goes on everything you add, like the sender on a letter.
         </AppText>
+        {error ? (
+          <View style={styles.bannerWrap}>
+            <ErrorBanner message={error} />
+          </View>
+        ) : null}
 
         <View style={[styles.envelopeCard, { backgroundColor: colors.paper }]}>
           <View style={styles.avatarBlock}>
@@ -112,6 +129,8 @@ export default function OnboardingScreen() {
               accessibilityRole="button"
               accessibilityLabel={photo ? 'Change photo' : 'Add a photo, optional'}
               onPress={onPickPhoto}
+              disabled={uploadAvatar.isPending}
+              hitSlop={{ top: ADD_PHOTO_HIT_SLOP, bottom: ADD_PHOTO_HIT_SLOP }}
               style={({ pressed }) => [styles.addPhoto, pressed && styles.pressed]}
             >
               <AppText role="link" style={styles.underlineLink}>Add photo</AppText>
@@ -139,7 +158,7 @@ export default function OnboardingScreen() {
                   />
                 </View>
                 {fieldState.error?.message ? (
-                  <AppText role="bodySm" style={{ color: colors.wax, marginTop: spacing.s2 }}>
+                  <AppText role="bodySm" style={{ color: colors.danger, marginTop: spacing.s2 }}>
                     {fieldState.error.message}
                   </AppText>
                 ) : null}
@@ -188,19 +207,19 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
   header: { height: 48, justifyContent: 'center' },
-  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   pressed: { opacity: 0.7 },
   underlineLink: { textDecorationLine: 'underline' },
   body: { paddingTop: spacing.s7, paddingHorizontal: spacing.gutter },
   title: { letterSpacing: -0.5 },
   subtitle: { marginTop: spacing.s5, fontSize: 18, lineHeight: 26 },
+  bannerWrap: { marginTop: spacing.s7 },
   envelopeCard: {
     marginTop: spacing.s11,
     borderRadius: radius.card,
     paddingTop: spacing.s8,
     paddingHorizontal: spacing.s8,
     paddingBottom: spacing.s9,
-    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 12px 24px -12px rgba(21,34,59,0.4)',
+    boxShadow: shadows.cardRaised,
   },
   avatarBlock: { position: 'absolute', right: 18, top: 18, alignItems: 'center', gap: 6 },
   addPhoto: { height: 28, justifyContent: 'center' },
@@ -216,7 +235,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 14,
     paddingHorizontal: 16,
-    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
+    boxShadow: shadows.card,
   },
   // The stamp sits in the corner, outside the text flow, so it doesn't set
   // the header row's height. The header (which carries the typed name) keeps

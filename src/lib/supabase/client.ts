@@ -18,10 +18,14 @@ import type { Database } from './database.types';
  */
 const CHUNK_SIZE = 1800; // safely under SecureStore's ~2KB per-entry ceiling
 
-// AFTER_FIRST_UNLOCK keeps tokens unreadable before the first post-boot unlock
-// and out of plaintext device backups, while still allowing background refresh.
+// iOS: tokens stay unreadable until the first unlock after boot (background
+// refresh still works) and are bound to this device, so a backup restored onto
+// another phone doesn't bring the session along. Reads ignore the attribute,
+// so sessions saved under the old AFTER_FIRST_UNLOCK setting still load; each
+// write re-adds the token chunks with this one. Android ignores the option: its
+// values are encrypted with a Keystore key that never leaves the device.
 const keychainOptions = {
-  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
 };
 
 async function chunkCount(key: string): Promise<number | null> {

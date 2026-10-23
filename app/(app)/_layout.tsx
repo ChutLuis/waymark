@@ -3,7 +3,14 @@ import { Redirect, Stack, usePathname } from 'expo-router';
 import { ErrorState, LoadingState } from '@/components/StateViews';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useMyProfile } from '@/features/auth/hooks';
+import { useReminderReconcile } from '@/features/reminders/hooks';
 import { useTheme } from '@/theme';
+
+/** Cancels reminders for trips the person can no longer open (left, removed, deleted). */
+function ReminderReconcile() {
+  useReminderReconcile();
+  return null;
+}
 
 /**
  * First-run users without a profile row are routed to onboarding before
@@ -15,7 +22,19 @@ function OnboardingGate({ children }: { children: ReactNode }) {
   const profile = useMyProfile();
   const pathname = usePathname();
 
-  if (profile.isPending) return <LoadingState message="Getting your trips…" />;
+  if (profile.isPending) {
+    // Nothing is cached across launches, so a cold start offline waits here
+    // until the connection returns; say so rather than spin silently.
+    return (
+      <LoadingState
+        message={
+          profile.fetchStatus === 'paused'
+            ? 'You’re offline. Your trips will load when you’re back online.'
+            : 'Getting your trips…'
+        }
+      />
+    );
+  }
   if (profile.isError) {
     return <ErrorState title="That didn't work" onRetry={() => profile.refetch()} />;
   }
@@ -39,6 +58,7 @@ export default function AppLayout() {
 
   return (
     <OnboardingGate>
+      <ReminderReconcile />
       <Stack
         screenOptions={{
           headerShown: false,

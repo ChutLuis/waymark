@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { STRENGTH_LABELS, strengthOf } from '../passwordStrength';
+import { LENGTH_HINT, MIN_PASSWORD_LENGTH, STRENGTH_LABELS, strengthOf } from '../passwordStrength';
+import { MIN_PASSWORD_LENGTH as SCHEMA_MIN } from '@/lib/validation/schemas';
 
 describe('strengthOf', () => {
   it('is 0 only when empty', () => {
     expect(strengthOf('')).toBe(0);
     expect(STRENGTH_LABELS[0]).toBe('');
+  });
+
+  it('uses the form schemas’ minimum, and says it before anything is typed', () => {
+    expect(MIN_PASSWORD_LENGTH).toBe(SCHEMA_MIN);
+    expect(LENGTH_HINT).toBe('8+ CHARACTERS');
   });
 
   it('stays at the lowest level below the minimum length', () => {

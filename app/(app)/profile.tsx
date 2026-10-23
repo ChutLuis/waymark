@@ -4,9 +4,11 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react-native';
+import { ChevronRight, Trash2 } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { Sheet } from '@/components/Sheet';
 import { ScreenStatusBar } from '@/components/ScreenStatusBar';
@@ -15,12 +17,15 @@ import { Toggle } from '@/components/Toggle';
 import { Postmark } from '@/components/airmail/Postmark';
 import { EmptyStampSlot, ErrorState, LoadingState } from '@/components/StateViews';
 import { AvatarStamp, DestinationStamp, SceneStamp } from '@/features/trips/SceneStamp';
-import { DESTINATION_INFO, matchDestination, stampName, tripDays } from '@/features/trips/destinations';
+import { findCountry } from '@/features/trips/countries';
+import { DESTINATION_INFO, matchDestination, tripDays } from '@/features/trips/destinations';
+import { postmarkCity } from '@/features/trips/shoebox';
+import { failureMessage } from '@/features/trips/errors';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useDeleteAccount, useMyProfile, useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
 import { hydrateReminderPreference, setRemindersEnabled, useRemindersEnabled } from '@/features/reminders/preference';
-import { fontFamilies, hairlineWidth, iconStrokeWidth, radius, spacing, useTheme, type ThemePreference } from '@/theme';
+import { hairlineWidth, hitTargetMin, iconStrokeWidth, radius, shadows, spacing, useTheme, type ThemePreference } from '@/theme';
 import { pickImage } from '@/lib/images';
 import { toDateOnly } from '@/lib/format/date';
 import { profileSchema, type ProfileForm } from '@/lib/validation/schemas';
@@ -47,14 +52,25 @@ function EditNameSheet({
   });
 
   const [prevVisible, setPrevVisible] = useState(visible);
+  const [error, setError] = useState<string | null>(null);
   if (visible !== prevVisible) {
     setPrevVisible(visible);
-    if (visible) reset({ displayName: currentName });
+    if (visible) {
+      reset({ displayName: currentName });
+      setError(null);
+    }
   }
 
+  // On failure the sheet stays open with the typed name in the field, so Save
+  // can simply be tapped again.
   const onSave = handleSubmit(async (form) => {
-    await upsertProfile.mutateAsync({ displayName: form.displayName });
-    onClose();
+    setError(null);
+    try {
+      await upsertProfile.mutateAsync({ displayName: form.displayName });
+      onClose();
+    } catch (e) {
+      setError(failureMessage(e, "Couldn't save your name. Try again."));
+    }
   });
 
   return (
@@ -66,6 +82,11 @@ function EditNameSheet({
       onAction={onSave}
       actionDisabled={upsertProfile.isPending}
     >
+      {error ? (
+        <View style={styles.sheetBanner}>
+          <ErrorBanner message={error} />
+        </View>
+      ) : null}
       <Controller
         control={control}
         name="displayName"
@@ -76,6 +97,7 @@ function EditNameSheet({
             onChangeText={field.onChange}
             onBlur={field.onBlur}
             error={fieldState.error?.message}
+            editable={!upsertProfile.isPending}
             autoFocus
           />
         )}
@@ -103,10 +125,13 @@ function DeleteAccountSheet({
     setError(null);
     try {
       await del.mutateAsync();
-      // The session is gone; the (app) guard sends the person to sign-in.
+      // Only a real deletion gets here; the session is gone and the (app) guard
+      // sends the person to sign-in.
       onClose();
-    } catch {
-      setError("Couldn't delete your account. Try again.");
+    } catch (e) {
+      // useDeleteAccount throws with a user-facing message and keeps the user
+      // signed in, so the sheet stays put and the message is shown as-is.
+      setError((e as Error).message || "Couldn't delete your account. Try again.");
     }
   };
 
@@ -121,7 +146,7 @@ function DeleteAccountSheet({
         first — with the plan and packing items you added left in place.
       </AppText>
       {error ? (
-        <AppText role="bodySm" style={[styles.sheetError, { color: colors.wax }]}>
+        <AppText role="bodySm" style={[styles.sheetError, { color: colors.danger }]}>
           {error}
         </AppText>
       ) : null}
@@ -158,33 +183,31 @@ function AlbumCell({ trip, today }: { trip: TripListItem; today: string }) {
   return (
     <View style={styles.albumCell}>
       <View style={styles.albumStampWrap}>
-        {noDates ? (
-          <EmptyStampSlot width={80} height={96} />
-        ) : country ? (
+        {country ? (
           <DestinationStamp country={country} band="sm" days={days} />
+        ) : noDates ? (
+          <EmptyStampSlot width={80} height={96} />
         ) : (
-          <SceneStamp band="sm" image={null} initial={(trip.name[0] ?? '?').toUpperCase()} name={stampName(trip.destination)} />
+          <SceneStamp
+            band="sm"
+            image={null}
+            initial={findCountry(trip.destination)?.code ?? (trip.name[0] ?? '?').toUpperCase()}
+            name="WAYMARK"
+          />
         )}
-        {past && country ? (
+        {past ? (
           <Postmark
-            city={info?.chip ?? ''}
+            city={postmarkCity(trip)}
             date={trip.endDate}
             style={styles.albumPostmark}
           />
         ) : null}
       </View>
       <View style={styles.albumLabels}>
-        <AppText
-          role="kicker"
-          style={[styles.albumLabelText, { fontSize: 10, lineHeight: 12, letterSpacing: 0.6 }]}
-        >
+        <AppText role="tagSm" style={styles.albumLabelText}>
           {(info?.caption ?? trip.destination ?? trip.name).toUpperCase()}
         </AppText>
-        <AppText
-          role="metaSm"
-          tone="secondary"
-          style={[styles.albumLabelText, { fontSize: 12, lineHeight: 15 }]}
-        >
+        <AppText role="caption" tone="secondary" style={styles.albumLabelText}>
           {albumStatus(trip, today)}
         </AppText>
       </View>
@@ -206,16 +229,26 @@ export default function ProfileScreen() {
   const remindersEnabled = useRemindersEnabled();
   const [editVisible, setEditVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const changingPhoto = uploadAvatar.isPending || upsertProfile.isPending;
 
   useEffect(() => {
     hydrateReminderPreference();
   }, []);
 
+  // The picked file uploads first, then the profile points at it; either step
+  // can fail, and the photo the person chose is worth an explanation.
   const onChangePhoto = async () => {
-    const picked = await pickImage([1, 1]);
-    if (!picked || !profile.data) return;
-    const avatarPath = await uploadAvatar.mutateAsync(picked);
-    await upsertProfile.mutateAsync({ displayName: profile.data.displayName, avatarPath });
+    if (changingPhoto) return;
+    setPhotoError(null);
+    try {
+      const picked = await pickImage([1, 1]);
+      if (!picked || !profile.data) return;
+      const avatarPath = await uploadAvatar.mutateAsync(picked);
+      await upsertProfile.mutateAsync({ displayName: profile.data.displayName, avatarPath });
+    } catch (e) {
+      setPhotoError(failureMessage(e, "Couldn't change your photo. Try again."));
+    }
   };
 
   const isWide = width >= 720;
@@ -247,22 +280,16 @@ export default function ProfileScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to your trips"
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
-        >
-          <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
-          <AppText role="button" style={styles.backLabel}>Trips</AppText>
-        </Pressable>
+        <BackButton label="Trips" accessibilityLabel="Back to your trips" />
 
         <View style={styles.identity}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Change your photo"
+            accessibilityState={{ disabled: changingPhoto, busy: changingPhoto }}
             onPress={onChangePhoto}
-            style={({ pressed }) => pressed && styles.pressed}
+            disabled={changingPhoto}
+            style={({ pressed }) => (pressed || changingPhoto) && styles.pressed}
           >
             <AvatarStamp
               size="lg"
@@ -274,8 +301,13 @@ export default function ProfileScreen() {
           <View style={styles.identityText}>
             <AppText role="cardTitleLg">{me.displayName}</AppText>
             {session?.user.email ? (
-              <AppText role="tag" tone="secondary" numberOfLines={1} ellipsizeMode="tail" style={styles.email}>
+              <AppText role="routeTime" tone="secondary" numberOfLines={1} ellipsizeMode="tail" style={styles.email}>
                 {session.user.email}
+              </AppText>
+            ) : null}
+            {photoError ? (
+              <AppText role="bodySm" style={[styles.identityError, { color: colors.danger }]}>
+                {photoError}
               </AppText>
             ) : null}
             <Pressable
@@ -307,7 +339,7 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <View style={[styles.settingsCard, { backgroundColor: colors.paper, boxShadow: '0 1px 2px rgba(21,34,59,0.12)' }]}>
+        <View style={[styles.settingsCard, { backgroundColor: colors.paper, boxShadow: shadows.row }]}>
           <View style={[styles.settingsRow, { borderBottomWidth: hairlineWidth, borderBottomColor: colors.hairline }]}>
             <AppText role="link">Appearance</AppText>
             <SegmentedControl
@@ -330,11 +362,11 @@ export default function ProfileScreen() {
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Read the privacy note"
+            accessibilityLabel="Read the privacy policy"
             onPress={() => router.push('/privacy')}
             style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}
           >
-            <AppText role="link">Privacy note</AppText>
+            <AppText role="link">Privacy policy</AppText>
             <ChevronRight size={20} color={colors.ink2} strokeWidth={iconStrokeWidth} />
           </Pressable>
         </View>
@@ -353,8 +385,8 @@ export default function ProfileScreen() {
             onPress={() => setDeleteVisible(true)}
             style={({ pressed }) => [styles.deleteRow, pressed && styles.pressed]}
           >
-            <Trash2 size={18} color={colors.wax} strokeWidth={iconStrokeWidth} />
-            <AppText role="link" style={{ color: colors.wax }}>Delete account</AppText>
+            <Trash2 size={18} color={colors.danger} strokeWidth={iconStrokeWidth} />
+            <AppText role="link" style={{ color: colors.danger }}>Delete account</AppText>
           </Pressable>
         </View>
       </ScrollView>
@@ -369,14 +401,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
-  backRow: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 8 },
-  backLabel: { fontFamily: fontFamilies.semibold },
   pressed: { opacity: 0.7 },
   identity: { paddingTop: spacing.s5, paddingHorizontal: spacing.gutter, flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
   identityText: { flex: 1, minWidth: 0 },
-  // Courier Prime 13/16 as typed: no tag uppercase or letter-spacing.
-  email: { marginTop: 4, fontFamily: fontFamilies.mono, fontSize: 13, lineHeight: 16, letterSpacing: 0, textTransform: 'none' },
-  editProfile: { height: 32, justifyContent: 'center', marginTop: 4 },
+  email: { marginTop: 4 },
+  identityError: { marginTop: spacing.s3 },
+  // 44 pt tall, like every other control on the screen (the label is 20).
+  editProfile: { minHeight: hitTargetMin, justifyContent: 'center', marginTop: 4 },
   sectionKicker: { paddingTop: spacing.s10, paddingBottom: spacing.s4, paddingHorizontal: spacing.gutter },
   albumCard: {
     marginHorizontal: spacing.cardGutter,
@@ -388,11 +419,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
     rowGap: 14,
-    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
+    boxShadow: shadows.card,
   },
   albumCell: { width: '33.33%', alignItems: 'center', gap: 6 },
   albumStampWrap: { width: 80, height: 96, position: 'relative' },
-  albumPostmark: { position: 'absolute', left: -14, top: 22 },
+  albumPostmark: { position: 'absolute', left: -6, top: 22 },
   albumLabels: { alignItems: 'center', alignSelf: 'stretch' },
   // Centred so short lines ("May") sit under the stamp, not left of centre (N7).
   albumLabelText: { textAlign: 'center', alignSelf: 'stretch' },
@@ -406,8 +437,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    minHeight: 44,
+    minHeight: hitTargetMin,
   },
   sheetError: { marginTop: spacing.s4 },
+  sheetBanner: { marginBottom: spacing.s5 },
   deleteButton: { alignSelf: 'stretch', marginTop: spacing.s3 },
 });

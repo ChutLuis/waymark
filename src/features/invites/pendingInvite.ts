@@ -22,3 +22,8 @@ export function takePendingInviteCode(): string | null {
 export function peekPendingInviteCode(): string | null {
   return pendingCode;
 }
+
+/** Drops any stashed code, so it can't replay into the next account to sign in. */
+export function clearPendingInviteCode(): void {
+  pendingCode = null;
+}

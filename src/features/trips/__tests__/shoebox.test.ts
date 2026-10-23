@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { albumSummary, moreLine, postmarkMonth, sheetHeading, sheetsByYear } from '../shoebox';
+import {
+  albumSummary,
+  cancelLineYs,
+  moreLine,
+  postmarkCity,
+  postmarkMonth,
+  sheetHeading,
+  sheetRows,
+  sheetsByYear,
+  stampCellWidth,
+} from '../shoebox';
 
 const trip = (id: string, start: string, end: string) => ({ id, startDate: start, endDate: end });
 const past = [
@@ -42,5 +52,62 @@ describe('shoebox lines', () => {
 
   it('names the postmark month', () => {
     expect(postmarkMonth(past[0])).toBe('MAR');
+  });
+});
+
+describe('postmarkCity', () => {
+  it('uses the illustrated country’s chip', () => {
+    expect(postmarkCity({ ...trip('kyoto', '2026-03-01', '2026-03-07'), destination: 'Kyoto, Japan' })).toBe('京都 · KYOTO');
+  });
+
+  it('falls back to the destination, then the name, uppercased', () => {
+    expect(postmarkCity({ ...trip('berlin', '2026-02-01', '2026-02-03'), destination: 'Berlin weekend' })).toBe('BERLIN WEEKEND');
+    expect(postmarkCity({ ...trip('berlin', '2026-02-01', '2026-02-03'), name: 'Berlin weekend' })).toBe('BERLIN WEEKEND');
+    expect(postmarkCity(trip('nameless', '2026-02-01', '2026-02-03'))).toBe('');
+  });
+
+  it('ignores a blank destination', () => {
+    expect(postmarkCity({ ...trip('x', '2026-02-01', '2026-02-03'), name: 'Oslo', destination: '   ' })).toBe('OSLO');
+  });
+});
+
+describe('sheetRows', () => {
+  it('marks a short row centred and a full row flush', () => {
+    expect(sheetRows(['a', 'b', 'c', 'd', 'e', 'f'], 4)).toEqual([
+      { trips: ['a', 'b', 'c', 'd'], centered: false },
+      { trips: ['e', 'f'], centered: true },
+    ]);
+  });
+
+  it('centres a single short row, and stops when a sheet divides evenly', () => {
+    expect(sheetRows(['a', 'b'], 4)).toEqual([{ trips: ['a', 'b'], centered: true }]);
+    expect(sheetRows(['a', 'b', 'c', 'd'], 4)).toEqual([{ trips: ['a', 'b', 'c', 'd'], centered: false }]);
+    expect(sheetRows([], 4)).toEqual([]);
+  });
+});
+
+describe('stampCellWidth', () => {
+  it('floors the quarter to a whole device pixel', () => {
+    // 390 - 32 padding - 3 × 8 gaps = 334; /4 = 83.5, floored on a 2x screen.
+    expect(stampCellWidth(390, 4, 8, 16, 2)).toBe(83.5);
+    expect(stampCellWidth(391, 4, 8, 16, 2)).toBe(83.5);
+  });
+});
+
+describe('cancelLineYs', () => {
+  it('keeps every line inside the postmark box', () => {
+    // The design's band: 22 × 16, pitch 5, stroke 1.5, first baseline at 3.
+    expect(cancelLineYs(16, 5, 1.5, 3)).toEqual([3, 8, 13]);
+  });
+
+  it('never returns a baseline whose stroke leaves the box', () => {
+    for (const y of cancelLineYs(16, 5, 1.5, 3)) {
+      expect(y - 1.25 - 0.75).toBeGreaterThanOrEqual(0);
+      expect(y + 0.75).toBeLessThanOrEqual(16);
+    }
+  });
+
+  it('fits a fourth line only when the box is tall enough', () => {
+    expect(cancelLineYs(22, 5, 1.5, 3)).toEqual([3, 8, 13, 18]);
   });
 });

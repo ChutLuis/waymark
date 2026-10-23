@@ -22,7 +22,7 @@ import { TextField } from '@/components/TextField';
 import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
 import { useSignIn } from '@/features/auth/hooks';
-import { iconStrokeWidth, spacing, useTheme } from '@/theme';
+import { hitTargetMin, iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { signInSchema, type SignInForm } from '@/lib/validation/schemas';
 
 function friendlyMessage(error: Error): string {
@@ -107,7 +107,9 @@ export default function SignInScreen() {
       // behaviour or the focused field stays under the keyboard.
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScreenStatusBar />
+      {/* The band keeps the brand row from sliding under the clock when the
+          keyboard scrolls the page, and after it is dismissed. */}
+      <ScreenStatusBar band />
       <ScrollView
         style={{ backgroundColor: colors.bg }}
         contentContainerStyle={[styles.content, { paddingTop: insets.top }, isWide && styles.contentWide]}
@@ -182,6 +184,16 @@ export default function SignInScreen() {
               <AppText role="button">Create an account</AppText>
             </Pressable>
           </Link>
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={8}
+            onPress={() => router.push('/forgot-password' as never)}
+            style={styles.linkTarget}
+          >
+            <AppText role="link" tone="secondary" style={styles.forgotLabel}>
+              Forgot password?
+            </AppText>
+          </Pressable>
         </View>
       </View>
 
@@ -217,7 +229,8 @@ const styles = StyleSheet.create({
   fieldGapFirst: { marginTop: 18 },
   fieldGap: { marginTop: 12 },
   submit: { marginTop: spacing.s7 },
-  linkRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  linkTarget: { height: 44, justifyContent: 'center' },
+  linkRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: spacing.s5, marginTop: 4 },
+  linkTarget: { minHeight: hitTargetMin, justifyContent: 'center' },
+  forgotLabel: { textDecorationLine: 'underline' },
   bottom: { marginTop: 'auto', paddingHorizontal: spacing.gutter, paddingTop: spacing.s3 },
 });

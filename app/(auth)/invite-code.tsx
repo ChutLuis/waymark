@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -10,15 +9,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Mail } from 'lucide-react-native';
+import { Mail } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
 import { ScreenStatusBar } from '@/components/ScreenStatusBar';
-import {
-  INVITE_CODE_LENGTH,
-  InviteCodeEntry,
-  sanitizeInviteCode,
-} from '@/features/invites/InviteCodeEntry';
+import { InviteCodeEntry } from '@/features/invites/InviteCodeEntry';
+import { INVITE_CODE_LENGTH } from '@/features/invites/inviteCode';
 import { setPendingInviteCode } from '@/features/invites/pendingInvite';
 import { iconStrokeWidth, spacing, useTheme } from '@/theme';
 
@@ -58,14 +55,7 @@ export default function InviteCodeScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}
-          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-        >
-          <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
-        </Pressable>
+        <BackButton fallbackHref="/sign-in" />
 
         <View style={styles.body}>
           <AppText role="kicker" tone="secondary">JOIN A TRIP</AppText>
@@ -74,12 +64,7 @@ export default function InviteCodeScreen() {
             We&apos;ll set up your account, then drop you straight into the trip.
           </AppText>
 
-          <InviteCodeEntry
-            value={code}
-            onChangeText={(text) => setCode(sanitizeInviteCode(text))}
-            autoFocus
-            onSubmit={onContinue}
-          />
+          <InviteCodeEntry value={code} onChangeText={setCode} autoFocus onSubmit={onContinue} />
         </View>
 
         <View style={[styles.bottom, { paddingBottom: insets.bottom + 34 }]}>
@@ -87,7 +72,7 @@ export default function InviteCodeScreen() {
             label="Continue"
             size="lg"
             disabled={!complete}
-            leading={<Mail size={20} color={complete ? colors.paper : colors.ink} strokeWidth={iconStrokeWidth} />}
+            leading={(color) => <Mail size={20} color={color} strokeWidth={iconStrokeWidth} />}
             onPress={onContinue}
           />
           <Button
@@ -105,8 +90,6 @@ export default function InviteCodeScreen() {
 const styles = StyleSheet.create({
   content: { paddingBottom: 0, flexGrow: 1 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
-  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
-  pressed: { opacity: 0.7 },
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter, flex: 1 },
   title: { marginTop: spacing.s3 },
   intro: { marginTop: spacing.s3 },

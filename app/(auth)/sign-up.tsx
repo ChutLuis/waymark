@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronLeft } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
 import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { ErrorBanner } from '@/components/ErrorBanner';
@@ -23,9 +23,9 @@ import { TextField } from '@/components/TextField';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { KraftEnvelope, WaxSeal } from '@/components/airmail/KraftEnvelope';
 import { useSignUp } from '@/features/auth/hooks';
+import { StrengthMeter } from '@/features/auth/StrengthMeter';
 import { peekPendingInviteCode } from '@/features/invites/pendingInvite';
-import { STRENGTH_LABELS, strengthOf } from '@/features/auth/passwordStrength';
-import { radius, spacing, useTheme } from '@/theme';
+import { hitTargetMin, radius, shadows, spacing, useTheme } from '@/theme';
 import { signUpSchema, type SignUpForm } from '@/lib/validation/schemas';
 
 /** Scroll distance over which the postcard shadows fade out (N35). */
@@ -41,31 +41,6 @@ function friendlyMessage(error: Error): string {
   return "Couldn't create the account. Try again.";
 }
 
-function StrengthMeter({ score }: { score: number }) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.meterRow}>
-      {[0, 1, 2, 3].map((index) => {
-        const filled = index < score;
-        if (!filled) {
-          return (
-            <View
-              key={index}
-              style={[styles.emptyStamp, { borderColor: colors.slot }]}
-            />
-          );
-        }
-        return (
-          <PerforatedStamp key={index} width={20} height={24} size="xs" tone="ink" />
-        );
-      })}
-      <AppText role="kicker" tone="secondary" style={styles.meterLabel}>
-        {STRENGTH_LABELS[score]}
-      </AppText>
-    </View>
-  );
-}
-
 export default function SignUpScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -76,12 +51,12 @@ export default function SignUpScreen() {
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const isWide = width >= 720;
 
-  const { control, handleSubmit, watch } = useForm<SignUpForm>({
+  const { control, handleSubmit } = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { email: '', password: '' },
   });
 
-  const password = watch('password');
+  const password = useWatch({ control, name: 'password' });
   const scrollRef = useRef<ScrollView>(null);
   // The postcard shadows fade out as the page scrolls and are gone before the
   // cards reach the status band, so nothing spills below it (N35).
@@ -132,13 +107,7 @@ export default function SignUpScreen() {
       // behaviour or the focused field stays under the keyboard (item 33).
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-    <ScreenStatusBar />
-    {/* Opaque page-coloured band behind the status bar (N18): scrolling content
-        passes under this, never under the clock. */}
-    <View
-      pointerEvents="none"
-      style={[styles.statusBand, { height: insets.top, backgroundColor: colors.bg }]}
-    />
+    <ScreenStatusBar band />
     <Animated.ScrollView
       ref={scrollRef}
       style={{ backgroundColor: colors.bg }}
@@ -152,14 +121,7 @@ export default function SignUpScreen() {
         useNativeDriver: true,
       })}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        onPress={() => router.back()}
-        style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-      >
-        <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
-      </Pressable>
+      <BackButton fallbackHref="/sign-in" />
 
       <View style={styles.body} onLayout={(event) => setBodyY(event.nativeEvent.layout.y)}>
         <AppText role="kicker" tone="secondary">NEW HERE</AppText>
@@ -251,7 +213,7 @@ export default function SignUpScreen() {
             )}
           />
         </View>
-        <StrengthMeter score={strengthOf(password)} />
+        <StrengthMeter password={password} />
 
         <AppText role="bodySm" tone="secondary" style={styles.privacy}>
           We keep only what your trips need.{' '}
@@ -261,7 +223,7 @@ export default function SignUpScreen() {
             onPress={() => router.push('/privacy')}
             style={{ color: colors.ink, textDecorationLine: 'underline' }}
           >
-            Read the privacy note
+            Read the privacy policy
           </AppText>
         </AppText>
       </View>
@@ -276,7 +238,7 @@ export default function SignUpScreen() {
         <View style={styles.signInRow}>
           <AppText role="body" tone="secondary">Already have one? </AppText>
           <Link href="/sign-in" asChild>
-            <Pressable accessibilityRole="link" hitSlop={8}>
+            <Pressable accessibilityRole="link" hitSlop={8} style={styles.linkTarget}>
               <AppText role="button">Sign in</AppText>
             </Pressable>
           </Link>
@@ -289,13 +251,9 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  // Pinned over the top inset so scrolling content slides beneath it (N18).
-  statusBand: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   // flexGrow lets the bottom block sit at the screen's foot (marginTop auto).
   content: { flexGrow: 1, paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
-  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
-  pressed: { opacity: 0.7 },
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   title: { marginTop: spacing.s3 },
   subtitle: { marginTop: spacing.s3 },
@@ -310,7 +268,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     borderRadius: radius.card,
-    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
+    boxShadow: shadows.card,
   },
   promise: {
     flex: 1,
@@ -327,11 +285,9 @@ const styles = StyleSheet.create({
   bannerWrap: { marginTop: spacing.s7 },
   fieldGap: { marginTop: spacing.s9 },
   passwordGap: { marginTop: 12 },
-  meterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s3, marginTop: spacing.s4 },
-  emptyStamp: { width: 20, height: 24, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 2 },
-  meterLabel: { marginLeft: 4 },
   privacy: { marginTop: spacing.s7 },
   bottom: { marginTop: 'auto', paddingHorizontal: spacing.gutter, paddingTop: spacing.s7, gap: spacing.s2 },
-  signInRow: { height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  confirmLink: { marginTop: spacing.s7 },
+  signInRow: { minHeight: hitTargetMin, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  linkTarget: { minHeight: hitTargetMin, justifyContent: 'center' },
+  confirmLink: { marginTop: spacing.s7, minHeight: hitTargetMin, justifyContent: 'center', alignSelf: 'flex-start' },
 });

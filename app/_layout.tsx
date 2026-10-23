@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
@@ -19,8 +19,11 @@ import {
 } from '@expo-google-fonts/besley';
 import { CourierPrime_700Bold } from '@expo-google-fonts/courier-prime';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
+import { watchAuthCallback } from '@/features/auth/authDeepLink';
 import { useMyProfile } from '@/features/auth/hooks';
+import { getLaunchUrl } from '@/features/auth/launchUrl';
 import { setPendingInviteCode, takePendingInviteCode } from '@/features/invites/pendingInvite';
+import { reminderOwner } from '@/features/reminders/registry';
 import { ThemeProvider, useTheme } from '@/theme';
 import { primeShell } from '@/features/trips/expandStore';
 
@@ -62,52 +65,93 @@ function inviteCodeFromUrl(url: string | null): string | null {
   return typeof code === 'string' ? code.toUpperCase() : null;
 }
 
+/** Mid-flow screens a replayed invite must not navigate away from. */
+const NO_INVITE_REPLAY = new Set(['/auth-callback', '/reset-password']);
+
 function RootStack() {
   const { scheme, colors } = useTheme();
   const { height } = useWindowDimensions();
   const router = useRouter();
-  const { session, isRestoring } = useAuth();
+  const pathname = usePathname();
+  const { session, isRestoring, userId } = useAuth();
   const profile = useMyProfile();
+  // Read by long-lived listeners, which would otherwise see the first render's values.
+  const userIdRef = useRef(userId);
+  const restoringRef = useRef(isRestoring);
+  useEffect(() => {
+    userIdRef.current = userId;
+    restoringRef.current = isRestoring;
+  }, [userId, isRestoring]);
+  /** A reminder tapped before the session was restored, opened once it is. */
+  const pendingTap = useRef<Record<string, unknown> | null>(null);
+
+  const openReminder = useCallback(
+    (data: Record<string, unknown>) => {
+      const tripId = data.tripId;
+      const signedIn = userIdRef.current;
+      // Only for the account that set it: one delivered before a sign-out opens nothing.
+      if (typeof tripId !== 'string' || signedIn === null) return;
+      if ((reminderOwner(data) ?? signedIn) !== signedIn) return;
+      primeShell(false);
+      router.push(`/trips/${tripId}` as never);
+    },
+    [router],
+  );
 
   // An invite deep link (…/join?code=XXXX) tapped while signed out is bounced
   // to /sign-in by the (app) guard, discarding the code. Capture it at the root
   // (before that guard) on both cold start and warm foreground, then replay it
   // once the session and profile exist so /join opens pre-filled (INV-2 / B1).
+  // Signed in, expo-router opens /join with the code itself, so nothing is
+  // stashed (a stash would replay later as a second /join).
   useEffect(() => {
     const capture = (url: string | null) => {
       const code = inviteCodeFromUrl(url);
-      if (code) setPendingInviteCode(code);
+      if (code && userIdRef.current === null) setPendingInviteCode(code);
     };
-    Linking.getInitialURL().then(capture);
+    // Read once per process (launchUrl.ts) and shared with the auth watcher.
+    getLaunchUrl().then(capture);
     const sub = Linking.addEventListener('url', ({ url }) => capture(url));
     return () => sub.remove();
   }, []);
 
+  // Email-confirmation links land on …/auth-callback?code=…; the PKCE code is
+  // exchanged for a session there (AUTH-1). Kept separate from the invite
+  // capture above: an invite link must NOT be treated as an auth code.
+  useEffect(() => watchAuthCallback(), []);
+
   useEffect(() => {
     if (isRestoring || !session) return;
     if (profile.isPending || profile.data == null) return;
+    if (NO_INVITE_REPLAY.has(pathname)) return;
     const code = takePendingInviteCode();
-    if (code) {
+    // A cold start while signed in already opened /join from the link itself.
+    if (code && pathname !== '/join') {
       // Land on Trips first, then push /join on top, so the chevron, "Not now"
       // and hardware back all have somewhere to go (N11). Replacing straight to
       // /join left nothing under it and GO_BACK threw.
       router.replace('/');
       router.push(`/join?code=${code}` as never);
     }
-  }, [isRestoring, session, profile.isPending, profile.data, router]);
+  }, [isRestoring, session, profile.isPending, profile.data, pathname, router]);
 
   // A tapped reminder routes to its trip (REM-3).
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const tripId = response.notification.request.content.data?.tripId;
-      if (typeof tripId === 'string') {
-        primeShell(false);
-        router.push(`/trips/${tripId}` as never);
-      }
+      const data = response.notification.request.content.data ?? {};
+      if (restoringRef.current) pendingTap.current = data;
+      else openReminder(data);
     });
     return () => sub.remove();
-  }, [router]);
+  }, [openReminder]);
+
+  useEffect(() => {
+    if (isRestoring || pendingTap.current === null) return;
+    const data = pendingTap.current;
+    pendingTap.current = null;
+    openReminder(data);
+  }, [isRestoring, userId, openReminder]);
 
   return (
     <View

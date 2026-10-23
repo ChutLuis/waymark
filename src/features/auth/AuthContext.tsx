@@ -8,9 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 import { AppState, Platform } from 'react-native';
-import type { Session } from '@supabase/supabase-js';
+import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
+import { clearPendingInviteCode } from '@/features/invites/pendingInvite';
+import { purgeAllReminders, purgeUserReminders, setReminderUser } from '@/features/reminders/store';
 
 interface AuthState {
   session: Session | null;
@@ -36,20 +38,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      cachedUserId.current = data.session?.user.id ?? null;
-      setSession(data.session);
-      setIsRestoring(false);
-    });
+    // An auth event carries a session at least as new as the restored one.
+    let eventSeen = false;
+    supabase.auth.getSession().then(
+      ({ data, error }) => {
+        if (!mounted) return;
+        if (!eventSeen) {
+          cachedUserId.current = data.session?.user.id ?? null;
+          setReminderUser(cachedUserId.current);
+          setSession(data.session);
+        }
+        // Nobody signed in, and not because the network is down: the last
+        // session was revoked or expired while the app was closed, so none of
+        // that person's reminders may fire for whoever uses the device now.
+        if (cachedUserId.current === null && !isAuthRetryableFetchError(error)) void purgeAllReminders();
+        setIsRestoring(false);
+      },
+      () => {
+        // The stored session couldn't be read: continue signed out instead of
+        // waiting forever.
+        if (mounted) setIsRestoring(false);
+      },
+    );
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      eventSeen = true;
       const nextUserId = next?.user.id ?? null;
       // A session ending any way (sign-out, token-refresh failure, remote
-      // revocation) or a different user signing in must not leave the previous
-      // user's cached trips/notes readable — clear before the new user reads.
+      // revocation, account deletion) or a different user signing in must not
+      // leave the previous user's cached trips/notes readable, their reminders
+      // scheduled, or their stashed invite waiting — clear before the new user
+      // reads.
       if (nextUserId !== cachedUserId.current) {
+        const previousUserId = cachedUserId.current;
         queryClient.clear();
         cachedUserId.current = nextUserId;
+        setReminderUser(nextUserId);
+        if (previousUserId !== null) {
+          void purgeUserReminders(previousUserId);
+          clearPendingInviteCode();
+        }
       }
       setSession(next);
     });
