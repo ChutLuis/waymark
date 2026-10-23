@@ -1,6 +1,7 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, G, Pattern, Polygon, Rect } from 'react-native-svg';
 import { AirmailStripes } from './AirmailBorder';
+import { useMeasuredBox } from './useMeasuredBox';
 
 export type PatternKey = 'japan' | 'guatemala' | 'portugal' | 'airmail';
 
@@ -96,6 +97,7 @@ interface PatternBandProps {
  * fallback for destinations whose pattern isn't designed yet.
  */
 export function PatternBand({ pattern, height = 12, tile, style }: PatternBandProps) {
+  const [box, onLayout] = useMeasuredBox();
   if (pattern === 'airmail') {
     return (
       <View style={[styles.host, { height }, style]}>
@@ -106,25 +108,27 @@ export function PatternBand({ pattern, height = 12, tile, style }: PatternBandPr
   const natural = TILE[pattern];
   const scale = tile ? tile / natural.h : 1;
   return (
-    <View style={[styles.host, { height }, style]}>
-      <Svg width="100%" height="100%">
-        <Defs>
-          <Pattern
-            id={`${pattern}-${height}-${tile ?? 'auto'}`}
-            x="0"
-            y="0"
-            width={natural.w}
-            height={natural.h}
-            patternUnits="userSpaceOnUse"
-            patternTransform={scale !== 1 ? `scale(${scale})` : undefined}
-          >
-            {pattern === 'japan' ? <SeigaihaTile /> : null}
-            {pattern === 'guatemala' ? <HuipilTile /> : null}
-            {pattern === 'portugal' ? <AzulejoTile /> : null}
-          </Pattern>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${pattern}-${height}-${tile ?? 'auto'})`} />
-      </Svg>
+    <View style={[styles.host, { height }, style]} onLayout={onLayout}>
+      {box ? (
+        <Svg width={box.width} height={box.height}>
+          <Defs>
+            <Pattern
+              id={`${pattern}-${height}-${tile ?? 'auto'}`}
+              x="0"
+              y="0"
+              width={natural.w}
+              height={natural.h}
+              patternUnits="userSpaceOnUse"
+              patternTransform={scale !== 1 ? `scale(${scale})` : undefined}
+            >
+              {pattern === 'japan' ? <SeigaihaTile /> : null}
+              {pattern === 'guatemala' ? <HuipilTile /> : null}
+              {pattern === 'portugal' ? <AzulejoTile /> : null}
+            </Pattern>
+          </Defs>
+          <Rect x={0} y={0} width={box.width} height={box.height} fill={`url(#${pattern}-${height}-${tile ?? 'auto'})`} />
+        </Svg>
+      ) : null}
     </View>
   );
 }

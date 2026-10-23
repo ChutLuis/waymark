@@ -13,12 +13,14 @@ import { palettes, type Palette } from './tokens';
 
 export {
   dayStampLayout,
+  disabledOpacity,
   fontFamilies,
   hairlineWidth,
   hitTargetMin,
   iconSizes,
   iconStrokeWidth,
   motion,
+  pressedOpacity,
   radius,
   shadows,
   spacing,

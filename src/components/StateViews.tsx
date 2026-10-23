@@ -30,10 +30,10 @@ function AlertMark() {
         cy={12}
         r={9}
         fill="none"
-        stroke={colors.wax}
+        stroke={colors.danger}
         strokeWidth={1.6}
       />
-      <Path d="M12 8v5M12 16.5v.5" fill="none" stroke={colors.wax} strokeWidth={1.6} strokeLinecap="round" />
+      <Path d="M12 8v5M12 16.5v.5" fill="none" stroke={colors.danger} strokeWidth={1.6} strokeLinecap="round" />
     </Svg>
   );
 }

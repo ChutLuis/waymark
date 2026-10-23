@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { AppText } from './AppText';
-import { radius, useTheme } from '@/theme';
+import { disabledOpacity, hitTargetMin, pressedOpacity, radius, useTheme } from '@/theme';
 
 interface ChipProps {
   label: string;
@@ -9,25 +9,26 @@ interface ChipProps {
   onPress: () => void;
   /** Optional leading element (e.g. an avatar for assignment chips). */
   leading?: ReactNode;
+  disabled?: boolean;
 }
 
 /** Selectable pill used for reminder offsets and packing assignment. */
-export function Chip({ label, selected, onPress, leading }: ChipProps) {
+export function Chip({ label, selected, onPress, leading, disabled = false }: ChipProps) {
   const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
       onPress={onPress}
-      hitSlop={6}
       style={({ pressed }) => [
         styles.chip,
         leading ? styles.chipWithLeading : null,
         {
           backgroundColor: selected ? colors.ink : 'transparent',
           borderColor: selected ? colors.ink : colors.border,
-          opacity: pressed ? 0.7 : 1,
+          opacity: disabled ? disabledOpacity : pressed ? pressedOpacity : 1,
         },
       ]}
     >
@@ -48,7 +49,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: radius.pill,
     borderWidth: 1.5,
-    minHeight: 44,
+    // A full target on its own: no hit slop to overlap the next chip in a row.
+    minHeight: hitTargetMin,
+    minWidth: hitTargetMin,
   },
   chipWithLeading: {
     paddingLeft: 8,

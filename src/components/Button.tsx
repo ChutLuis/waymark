@@ -13,7 +13,8 @@ interface ButtonProps {
   size?: ButtonSize;
   disabled?: boolean;
   loading?: boolean;
-  leading?: ReactNode;
+  /** A leading icon. Pass a function to draw it in the label's color, so it tracks the disabled state. */
+  leading?: ReactNode | ((color: string) => ReactNode);
   style?: StyleProp<ViewStyle>;
   /** Extra label styling, on top of the size role/weight. */
   labelStyle?: StyleProp<TextStyle>;
@@ -42,14 +43,14 @@ export function Button({
     switch (variant) {
       case 'primary':
         return {
-          backgroundColor: disabled ? colors.border : colors.ink,
+          backgroundColor: disabled ? colors.divider : colors.ink,
           opacity: pressed && !disabled ? 0.7 : 1,
         };
       case 'secondary':
         return {
           backgroundColor: colors.paper,
           borderWidth: 2,
-          borderColor: colors.ink,
+          borderColor: disabled ? colors.border : colors.ink,
           opacity: pressed ? 0.7 : 1,
         };
       case 'destructive':
@@ -61,7 +62,7 @@ export function Button({
         };
       case 'destructiveSolid':
         return {
-          backgroundColor: disabled ? colors.border : colors.wax,
+          backgroundColor: disabled ? colors.divider : colors.wax,
           opacity: pressed && !disabled ? 0.7 : 1,
         };
       case 'quiet':
@@ -76,13 +77,14 @@ export function Button({
     }
   };
 
-  const textColor =
-    variant === 'destructiveSolid'
+  const textColor = disabled
+    ? colors.ink2
+    : variant === 'destructiveSolid'
       ? colors.stampPaper
       : variant === 'primary'
         ? colors.paper
         : variant === 'destructive'
-          ? colors.wax
+          ? colors.danger
           : colors.ink;
 
   const textRole = size === 'lg' ? 'buttonLg' : size === 'md' ? 'button' : 'bodySm';
@@ -112,7 +114,7 @@ export function Button({
         <ActivityIndicator size="small" color={textColor} />
       ) : (
         <>
-          {leading}
+          {typeof leading === 'function' ? leading(textColor) : leading}
           <AppText role={textRole} style={textStyle} numberOfLines={labelLines}>
             {label}
           </AppText>

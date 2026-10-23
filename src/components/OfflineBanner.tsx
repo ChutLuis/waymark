@@ -1,36 +1,52 @@
-import { useSyncExternalStore } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
+import { useIsFocused } from 'expo-router';
 import { onlineManager } from '@tanstack/react-query';
 import { WifiOff } from 'lucide-react-native';
 import { AppText } from './AppText';
-import { iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
+import { iconSizes, iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
+import { useIsOnline } from '@/lib/useIsOnline';
 
-function useIsOnline(): boolean {
-  return useSyncExternalStore(
-    (onStoreChange) => onlineManager.subscribe(() => onStoreChange()),
-    () => onlineManager.isOnline(),
-    () => true,
-  );
-}
+const MESSAGE = 'You’re offline. Changes you make will be sent when you’re back online.';
+
+// Spoken once each time the connection drops, however many screens show the
+// banner; reset when it comes back.
+let announced = false;
+onlineManager.subscribe((online) => {
+  if (online) announced = false;
+});
 
 /**
- * Unobtrusive offline pill (STATE-2). Cached data stays on screen; this
- * just explains why nothing new is arriving.
+ * Offline notice (STATE-2). Cached data stays on screen and TanStack Query
+ * holds writes until the connection returns; this says so, in the flow of the
+ * page under its header (never over the status bar). Only the focused
+ * screen's banner speaks: Android through a polite live region, iOS (no live
+ * regions) through a single announcement.
  */
 export function OfflineBanner() {
   const { colors } = useTheme();
   const online = useIsOnline();
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (online || !isFocused || announced) return;
+    announced = true;
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(MESSAGE);
+  }, [online, isFocused]);
+
   if (online) return null;
 
   return (
     <View style={styles.host}>
       <View
-        accessibilityRole="alert"
-        style={[styles.pill, { backgroundColor: colors.paper, borderColor: colors.border }]}
+        accessible
+        accessibilityLabel={MESSAGE}
+        accessibilityLiveRegion={isFocused ? 'polite' : 'none'}
+        style={[styles.banner, { backgroundColor: colors.paper, borderColor: colors.border }]}
       >
-        <WifiOff size={13} color={colors.ink2} strokeWidth={iconStrokeWidth} />
+        <WifiOff size={iconSizes.md} color={colors.ink2} strokeWidth={iconStrokeWidth} />
         <AppText role="bodySm" tone="secondary" style={styles.label}>
-          Offline — showing what you have
+          {MESSAGE}
         </AppText>
       </View>
     </View>
@@ -39,20 +55,19 @@ export function OfflineBanner() {
 
 const styles = StyleSheet.create({
   host: {
-    alignItems: 'center',
+    paddingHorizontal: spacing.gutter,
     paddingVertical: spacing.s3,
   },
-  pill: {
+  banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s2,
-    borderRadius: radius.pill,
+    gap: spacing.s4,
+    borderRadius: radius.input,
     borderWidth: 1,
-    paddingVertical: 6,
-    paddingHorizontal: spacing.s5,
+    paddingVertical: spacing.s4,
+    paddingHorizontal: spacing.s6,
   },
   label: {
-    fontSize: 13,
-    lineHeight: 18,
+    flex: 1,
   },
 });

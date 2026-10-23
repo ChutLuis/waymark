@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { radius, useTheme } from '@/theme';
+import { useMeasuredBox } from './useMeasuredBox';
 
 /** Stripe geometry, measured across the stripes (README: AirmailBorder). */
 export const AIRMAIL_STRIPES = {
@@ -30,43 +31,50 @@ const STRIPE_GAP = '#FFFCF5';
 
 export function AirmailStripes({ size = 'full', gapColor }: AirmailStripesProps) {
   const { colors } = useTheme();
+  const [box, onLayout] = useMeasuredBox();
   const s = AIRMAIL_STRIPES[size];
   const gap = gapColor ?? STRIPE_GAP;
   const id = `airmail-${size}`;
   return (
-    <Svg width="100%" height="100%">
-      <Defs>
-        <Pattern
-          id={id}
-          x="0"
-          y="0"
-          width={s.period}
-          height={s.period}
-          patternUnits="userSpaceOnUse"
-          patternTransform="rotate(45)"
-        >
-          <Rect x={0} y={0} width={s.red} height={s.period} fill={colors.airmailRed} />
-          <Rect x={s.red} y={0} width={s.paper1} height={s.period} fill={gap} />
-          <Rect
-            x={s.red + s.paper1}
-            y={0}
-            width={s.blue}
-            height={s.period}
-            fill={colors.airmailBlue}
-          />
-          <Rect
-            x={s.red + s.paper1 + s.blue}
-            y={0}
-            width={s.paper2}
-            height={s.period}
-            fill={gap}
-          />
-        </Pattern>
-      </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
-    </Svg>
+    <View style={stripeStyles.fill} onLayout={onLayout} pointerEvents="none">
+      {box ? (
+        <Svg width={box.width} height={box.height}>
+          <Defs>
+            <Pattern
+              id={id}
+              x="0"
+              y="0"
+              width={s.period}
+              height={s.period}
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <Rect x={0} y={0} width={s.red} height={s.period} fill={colors.airmailRed} />
+              <Rect x={s.red} y={0} width={s.paper1} height={s.period} fill={gap} />
+              <Rect
+                x={s.red + s.paper1}
+                y={0}
+                width={s.blue}
+                height={s.period}
+                fill={colors.airmailBlue}
+              />
+              <Rect
+                x={s.red + s.paper1 + s.blue}
+                y={0}
+                width={s.paper2}
+                height={s.period}
+                fill={gap}
+              />
+            </Pattern>
+          </Defs>
+          <Rect x={0} y={0} width={box.width} height={box.height} fill={`url(#${id})`} />
+        </Svg>
+      ) : null}
+    </View>
   );
 }
+
+const stripeStyles = StyleSheet.create({ fill: { width: '100%', height: '100%' } });
 
 interface AirmailBorderProps {
   children: ReactNode;

@@ -3,6 +3,7 @@ import {
   Easing,
   cancelAnimation,
   withRepeat,
+  useFrameCallback,
   useSharedValue,
   withDelay,
   withTiming,
@@ -68,18 +69,18 @@ export function useTimeline(initial = 1): Timeline {
     (duration: number, delay = 0) => {
       cancelAnimation(p);
       if (reduced) {
-        p.value = 1;
+        p.set(1);
         return;
       }
-      p.value = 0;
-      p.value = withDelay(delay, withTiming(1, { duration, easing: Easing.linear }));
+      p.set(0);
+      p.set(withDelay(delay, withTiming(1, { duration, easing: Easing.linear })));
     },
     [p, reduced],
   );
   const set = useCallback(
     (value: number) => {
       cancelAnimation(p);
-      p.value = value;
+      p.set(value);
     },
     [p],
   );
@@ -123,4 +124,22 @@ export function useLoop(period: number, active: boolean): SharedValue<number> {
     return () => cancelAnimation(t);
   }, [active, reduced, period, t]);
   return t;
+}
+
+/** A phase-locked idle loop: pauses in place and rejoins its shared clock. */
+export function useClockPhase(active: boolean, phaseAt: (now: number) => number): SharedValue<number> {
+  const { reduced } = useMotion();
+  const phase = useSharedValue(0);
+  const frame = useFrameCallback(() => {
+    phase.set(phaseAt(Date.now()));
+  }, false);
+
+  useEffect(() => {
+    if (reduced) phase.set(0);
+    else if (active) phase.set(phaseAt(Date.now()));
+    frame.setActive(active && !reduced);
+    return () => frame.setActive(false);
+  }, [active, reduced, phase, phaseAt, frame]);
+
+  return phase;
 }

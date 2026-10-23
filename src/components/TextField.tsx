@@ -10,7 +10,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { AppText } from './AppText';
-import { radius, spacing, typeScale, useTheme } from '@/theme';
+import { disabledOpacity, radius, spacing, typeScale, useTheme } from '@/theme';
 
 interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   label: string;
@@ -50,11 +50,14 @@ export function TextField({
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
-  const borderColor = error ? colors.wax : focused ? colors.ink : colors.border;
+  // Locked while a save is on its way: Android can still refocus a disabled
+  // EditText and type into it, so a locked field takes no touches at all.
+  const locked = inputProps.editable === false;
+  const borderColor = error ? colors.danger : focused ? colors.ink : colors.fieldBorder;
   const borderWidth = focused || error ? 2 : 1.5;
 
   return (
-    <View>
+    <View pointerEvents={locked ? 'none' : 'auto'}>
       <View style={styles.labelRow}>
         <AppText role="kicker">
           {label}
@@ -74,6 +77,7 @@ export function TextField({
             borderWidth,
             paddingLeft: INSET - borderWidth,
             paddingRight: (trailing ? TRAILING_INSET : INSET) - borderWidth,
+            opacity: locked ? disabledOpacity : 1,
           },
           multiline && styles.fieldMultiline,
         ]}
@@ -120,7 +124,7 @@ export function TextField({
         ) : null}
       </View>
       {error ? (
-        <AppText role="bodySm" style={[styles.error, { color: colors.wax }]}>
+        <AppText role="bodySm" style={[styles.error, { color: colors.danger }]}>
           {error}
         </AppText>
       ) : null}

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Animated, Easing, Pressable, StyleSheet } from 'react-native';
 import { useLazyAnimatedValue } from './useLazyAnimatedValue';
 import { useReducedMotion } from './useReducedMotion';
-import { motion, radius, useTheme } from '@/theme';
+import { disabledOpacity, motion, radius, useTheme } from '@/theme';
 
 interface ToggleProps {
   value: boolean;
@@ -39,8 +39,8 @@ export function Toggle({ value, onValueChange, accessibilityLabel, disabled = fa
       style={[
         styles.track,
         {
-          backgroundColor: value ? colors.ink : colors.border,
-          opacity: disabled ? 0.5 : 1,
+          backgroundColor: value ? colors.ink : colors.fieldBorder,
+          opacity: disabled ? disabledOpacity : 1,
         },
       ]}
     >

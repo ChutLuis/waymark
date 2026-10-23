@@ -5,7 +5,8 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
-import { hitTargetMin, radius, spacing, useTheme } from '@/theme';
+import { useReducedMotion } from './useReducedMotion';
+import { disabledOpacity, hitTargetMin, radius, spacing, useTheme } from '@/theme';
 import {
   DATE_BOX_GAP,
   DATE_BOX_HEIGHT,
@@ -29,6 +30,8 @@ export interface DateTimeFieldProps {
   initialDate?: Date;
   /** Value type: 18/24 in the trip sheets (design), 16/20 in the item editor. */
   size?: 'lg' | 'md';
+  /** While a save is on its way: the box can't be opened. */
+  disabled?: boolean;
 }
 
 /**
@@ -46,8 +49,10 @@ export function DateTimeField({
   error,
   initialDate,
   size = 'lg',
+  disabled = false,
 }: DateTimeFieldProps) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
+  const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
 
   const current = value
@@ -105,6 +110,8 @@ export function DateTimeField({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${display ?? 'not set'}`}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
         onPress={openPicker}
         style={({ pressed }) => {
           // Pressed or open: inset 2 ink, as a focused TextField.
@@ -114,8 +121,9 @@ export function DateTimeField({
             {
               backgroundColor: colors.paper,
               borderWidth,
-              borderColor: error ? colors.wax : pressed || open ? colors.ink : colors.border,
+              borderColor: error ? colors.danger : pressed || open ? colors.ink : colors.fieldBorder,
               paddingHorizontal: DATE_BOX_INSET - borderWidth,
+              opacity: disabled ? disabledOpacity : 1,
             },
           ];
         }}
@@ -139,7 +147,7 @@ export function DateTimeField({
         <Modal
           transparent
           visible={iosPickerVisible}
-          animationType="slide"
+          animationType={reducedMotion ? 'none' : 'slide'}
           onRequestClose={() => setIosPickerVisible(false)}
         >
           <View style={styles.iosModalHost}>
@@ -197,6 +205,8 @@ export function DateTimeField({
                   if (date) setIosPending(date);
                 }}
                 accentColor={colors.ink}
+                textColor={colors.ink}
+                themeVariant={scheme}
                 style={styles.iosPicker}
               />
             </View>
@@ -207,6 +217,9 @@ export function DateTimeField({
         <DateTimePicker
           value={androidStep === 'time' ? (pendingDate ?? current) : current}
           mode={androidStep}
+          // 0-based from Sunday (Monday = 1): the module adds 1 to reach
+          // java.util.Calendar's MONDAY (2). Passing 2 started weeks on Tuesday.
+          firstDayOfWeek={1}
           onChange={onAndroidChange}
         />
       ) : null}

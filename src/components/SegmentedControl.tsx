@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { AppText } from './AppText';
-import { fontFamilies, radius, spacing, useTheme } from '@/theme';
+import { disabledOpacity, fontFamilies, radius, spacing, useTheme } from '@/theme';
 
 interface SegmentedControlProps<T extends string> {
   options: { value: T; label: string }[];
@@ -16,6 +16,7 @@ interface SegmentedControlProps<T extends string> {
   stretch?: boolean;
   /** Track styling, e.g. `alignSelf: 'center'` inside a vertical stack. */
   style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
 }
 
 /** Pill segmented control; selected segment is ink on paper. */
@@ -28,6 +29,7 @@ export function SegmentedControl<T extends string>({
   size = 'default',
   stretch = true,
   style,
+  disabled = false,
 }: SegmentedControlProps<T>) {
   const { colors } = useTheme();
   // Measure the track itself, not the screen: a filter control sits inside page
@@ -54,6 +56,7 @@ export function SegmentedControl<T extends string>({
         {
           backgroundColor: track === 'paper' ? colors.paper : colors.bg,
           padding,
+          opacity: disabled ? disabledOpacity : 1,
         },
         style,
       ]}
@@ -65,7 +68,8 @@ export function SegmentedControl<T extends string>({
             key={option.value}
             accessibilityRole="radio"
             accessibilityLabel={option.label}
-            accessibilityState={{ selected }}
+            accessibilityState={{ selected, disabled }}
+            disabled={disabled}
             onPress={() => onChange(option.value)}
             style={({ pressed }) => [
               styles.segment,

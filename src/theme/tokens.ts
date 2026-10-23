@@ -89,6 +89,29 @@ export interface Palette {
   /** The faint ring and cancel lines on past day stamps. */
   postmarkFaint: string;
   cancelFaint: string;
+  /**
+   * Error and destructive text, icons and error borders. Separate from `wax`
+   * (the seal material) so it can stay readable: at least 4.5:1 on `paper`
+   * and `bg` in both themes.
+   */
+  danger: string;
+  /**
+   * The idle boundary of a control the user has to find: text fields, code
+   * slots, the switch track. At least 3:1 on `paper` and `bg` (WCAG 1.4.11).
+   * `border` stays for decorative outlines and quiet buttons that carry a label.
+   */
+  fieldBorder: string;
+  /** The perforated outline of a stamp on paper (decorative). */
+  perforationEdge: string;
+  /**
+   * The faint postmark and cancel lines on day stamps printed in the theme's
+   * paper (not fixed stamp paper), so they follow the theme.
+   */
+  dayPostmark: string;
+  dayCancel: string;
+  /** The date-range calendar's band between the two ink caps, and its edge. */
+  rangeFill: string;
+  rangeEdge: string;
 }
 
 export const palettes: { light: Palette; dark: Palette } = {
@@ -131,7 +154,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     waxLight: '#C23A44',
     waxText: '#F3E7D2',
     slotFill: 'rgba(226,233,238,0.6)',
-    slotHover: 'rgba(36,71,154,0.12)',
+    slotHover: 'rgba(36,71,154,0.18)',
     parAvion: '#24479A',
     railDivider: '#B9B0A0',
     postmarkRing: 'rgba(21,34,59,0.72)',
@@ -139,6 +162,13 @@ export const palettes: { light: Palette; dark: Palette } = {
     cancelInk: 'rgba(21,34,59,0.62)',
     postmarkFaint: 'rgba(21,34,59,0.42)',
     cancelFaint: 'rgba(21,34,59,0.38)',
+    danger: '#A8262F',
+    fieldBorder: '#737F8F',
+    perforationEdge: '#C9BCA4',
+    dayPostmark: 'rgba(21,34,59,0.42)',
+    dayCancel: 'rgba(21,34,59,0.38)',
+    rangeFill: 'rgba(36,71,154,0.18)',
+    rangeEdge: '#24479A',
   },
   dark: {
     bg: '#0F1729',
@@ -154,7 +184,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     border: '#3A4762',
     divider: '#2B3752',
     slot: '#55627A',
-    airmailRed: '#E0575F',
+    airmailRed: '#E5636B',
     airmailBlue: '#7E9CF0',
     kraft: '#7A6545',
     kraftFlap: '#6A5638',
@@ -179,7 +209,7 @@ export const palettes: { light: Palette; dark: Palette } = {
     waxLight: '#D04A54',
     waxText: '#F3E7D2',
     slotFill: 'rgba(15,23,41,0.6)',
-    slotHover: 'rgba(126,156,240,0.16)',
+    slotHover: 'rgba(126,156,240,0.24)',
     parAvion: '#24479A',
     railDivider: '#55627A',
     postmarkRing: 'rgba(21,34,59,0.72)',
@@ -187,6 +217,13 @@ export const palettes: { light: Palette; dark: Palette } = {
     cancelInk: 'rgba(21,34,59,0.62)',
     postmarkFaint: 'rgba(21,34,59,0.42)',
     cancelFaint: 'rgba(21,34,59,0.38)',
+    danger: '#EE7A81',
+    fieldBorder: '#6B7A96',
+    perforationEdge: '#3A4762',
+    dayPostmark: 'rgba(238,241,246,0.42)',
+    dayCancel: 'rgba(238,241,246,0.38)',
+    rangeFill: 'rgba(126,156,240,0.24)',
+    rangeEdge: '#7E9CF0',
   },
 };
 
@@ -253,14 +290,22 @@ export type TypeRole =
   | 'letter'
   | 'ticketTitle'
   | 'codeSm'
-  | 'packedStamp';
+  | 'packedStamp'
+  | 'backLabel'
+  | 'metaXs'
+  | 'sheetTitle'
+  | 'sheetCancel'
+  | 'sheetAction'
+  | 'addressNote'
+  | 'addressInitial';
 
 export const typeScale: Record<TypeRole, TextStyle> = {
   display: { fontFamily: fontFamilies.bold, fontSize: 34, lineHeight: 38, letterSpacing: -0.5 },
   title: { fontFamily: fontFamilies.bold, fontSize: 32, lineHeight: 36, letterSpacing: -0.4 },
   tripTitle: { fontFamily: fontFamilies.bold, fontSize: 30, lineHeight: 34, letterSpacing: -0.3 },
   cardTitleLg: { fontFamily: fontFamilies.bold, fontSize: 26, lineHeight: 30, letterSpacing: -0.3 },
-  cardTitle: { fontFamily: fontFamilies.bold, fontSize: 24, lineHeight: 28, letterSpacing: -0.2 },
+  // 31, not the README's 28: Android clips Besley's descenders (g, y) in a 28 pt line box.
+  cardTitle: { fontFamily: fontFamilies.bold, fontSize: 24, lineHeight: 31, letterSpacing: -0.2 },
   cardTitleSm: { fontFamily: fontFamilies.bold, fontSize: 23, lineHeight: 27, letterSpacing: -0.2 },
   rowTitle: { fontFamily: fontFamilies.semibold, fontSize: 18, lineHeight: 23 },
   rowTitleLg: { fontFamily: fontFamilies.semibold, fontSize: 19, lineHeight: 24 },
@@ -322,6 +367,17 @@ export const typeScale: Record<TypeRole, TextStyle> = {
   ticketTitle: { fontFamily: fontFamilies.bold, fontSize: 21, lineHeight: 25, letterSpacing: -0.2 },
   codeSm: { fontFamily: fontFamilies.mono, fontSize: 20, lineHeight: 24, letterSpacing: 2.5 },
   packedStamp: { fontFamily: fontFamilies.mono, fontSize: 13, lineHeight: 16, letterSpacing: 1.5, textTransform: 'uppercase' },
+  /** The label beside a back chevron (BackButton). */
+  backLabel: { fontFamily: fontFamilies.semibold, fontSize: 16, lineHeight: 20 },
+  /** Small regular italic: the invite's expiry line. */
+  metaXs: { fontFamily: fontFamilies.regularItalic, fontSize: 12, lineHeight: 16 },
+  /** Sheet header: the centred title, the left Cancel/Back and the right pill action. */
+  sheetTitle: { fontFamily: fontFamilies.bold, fontSize: 17, lineHeight: 22 },
+  sheetCancel: { fontFamily: fontFamilies.semibold, fontSize: 17, lineHeight: 22 },
+  sheetAction: { fontFamily: fontFamilies.bold, fontSize: 16, lineHeight: 20 },
+  /** AddressCard: the note under a row, and the initial on its avatar panel. */
+  addressNote: { fontFamily: fontFamilies.regularItalic, fontSize: 13, lineHeight: 17 },
+  addressInitial: { fontFamily: fontFamilies.extrabold, fontSize: 15, lineHeight: 18 },
 };
 
 export const spacing = {
@@ -412,7 +468,7 @@ export const motion = {
     expand: 580, collapse: 480, push: 440, pop: 380,
     deal: 640, shuffle: 660, drop: 520, rise: 420, pop2: 420,
     flight: 900, stampTag: 320, flip: 480, hold: 600, envelope: 560,
-    slam: 340, claim: 360, springHome: 420, typeChar: 70,
+    slam: 340, claim: 360, springHome: 420, typeChar: 45,
   },
   stagger: { deal: 110, dayStamp: 45, routeStamp: 90, sheetStamp: 45, pile: 110, tag: 90 },
   easing: {
@@ -515,7 +571,7 @@ export const motion = {
       fromAt: 500,
       toAt: 950,
       write: 650,
-      codeAt: 1500,
+      codeAt: 320,
       caretBlink: 800,
     },
     /** 06 · Seal and break. Crack offsets are from the crack (hold + 600). */
@@ -560,6 +616,10 @@ export const iconStrokeWidth = 2;
 
 export const hitTargetMin = 44;
 
+/** Opacity of a control that can't be used right now (and its pressed feedback). */
+export const disabledOpacity = 0.5;
+export const pressedOpacity = 0.7;
+
 /** Plan's day stamps (48×56, gap 9); the strip scrolls sideways. */
 export const dayStampLayout = { width: 48, height: 56, gap: 9 } as const;
 
@@ -569,4 +629,10 @@ export const stampText = {
   md: { denomination: { fontSize: 8.5, lineHeight: 10 }, name: { fontSize: 8.5, lineHeight: 10, letterSpacing: 0.8 }, nameStrip: 15 },
   sm: { denomination: { fontSize: 8, lineHeight: 9 }, name: { fontSize: 8, lineHeight: 9, letterSpacing: 0.5 }, nameStrip: 13 },
   xs: { denomination: { fontSize: 6.5, lineHeight: 8 }, name: { fontSize: 6.5, lineHeight: 8, letterSpacing: 0.5 }, nameStrip: 11 },
+  /** Avatar stamps: the initial on the ink panel and the name strip (sm prints no name). */
+  avatar: {
+    lg: { initial: 36, name: { fontSize: 8, lineHeight: 9, letterSpacing: 0.8 } },
+    md: { initial: 28, name: { fontSize: 7.5, lineHeight: 9, letterSpacing: 0.8 } },
+    sm: { initial: 16, name: null },
+  },
 } as const;

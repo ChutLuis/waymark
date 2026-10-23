@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
-import { fontFamilies, radius, spacing, useTheme } from '@/theme';
+import { disabledOpacity, fontFamilies, radius, spacing, useTheme } from '@/theme';
 import { formatDate, formatDateTime } from '@/lib/format/date';
 import {
   DATE_BOX_GAP,
@@ -38,6 +38,7 @@ export function DateTimeField({
   error,
   placeholder = 'Add',
   size = 'lg',
+  disabled = false,
 }: DateTimeFieldProps) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -50,6 +51,7 @@ export function DateTimeField({
       <div style={{ position: 'relative', width: '100%' }}>
         <input
           aria-label={label}
+          disabled={disabled}
           type={isDateOnly ? 'date' : 'datetime-local'}
           value={isDateOnly ? (value ?? '') : toLocalInputValue(value)}
           onChange={(event) => {
@@ -63,7 +65,7 @@ export function DateTimeField({
             display: 'block',
             height: DATE_BOX_HEIGHT,
             borderRadius: radius.input,
-            border: `${borderWidth}px solid ${error ? colors.wax : focused ? colors.ink : colors.border}`,
+            border: `${borderWidth}px solid ${error ? colors.danger : focused ? colors.ink : colors.fieldBorder}`,
             outline: 'none',
             background: colors.paper,
             color: 'transparent',
@@ -72,6 +74,7 @@ export function DateTimeField({
             fontSize: valueType.fontSize,
             width: '100%',
             boxSizing: 'border-box',
+            opacity: disabled ? disabledOpacity : 1,
           }}
         />
         {/* Positioned from the outer edge, so the border never shifts it. */}
@@ -99,7 +102,7 @@ export function DateTimeField({
         </div>
       </div>
       {error ? (
-        <AppText role="bodySm" style={[styles.error, { color: colors.wax }]}>
+        <AppText role="bodySm" style={[styles.error, { color: colors.danger }]}>
           {error}
         </AppText>
       ) : null}

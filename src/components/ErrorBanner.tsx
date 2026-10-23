@@ -9,13 +9,13 @@ export function ErrorBanner({ message }: { message: string }) {
   return (
     <View
       accessibilityRole="alert"
-      style={[styles.banner, { backgroundColor: colors.paper, borderColor: colors.wax }]}
+      style={[styles.banner, { backgroundColor: colors.paper, borderColor: colors.danger }]}
     >
       <Svg width={16} height={16} viewBox="0 0 24 24" style={styles.icon}>
-        <Circle cx={12} cy={12} r={9} fill="none" stroke={colors.wax} strokeWidth={2} />
-        <Path d="M12 8v5M12 16.5v.5" stroke={colors.wax} strokeWidth={2} strokeLinecap="round" />
+        <Circle cx={12} cy={12} r={9} fill="none" stroke={colors.danger} strokeWidth={2} />
+        <Path d="M12 8v5M12 16.5v.5" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" />
       </Svg>
-      <AppText role="bodySm" style={[styles.message, { color: colors.wax }]}>
+      <AppText role="bodySm" style={[styles.message, { color: colors.danger }]}>
         {message}
       </AppText>
     </View>

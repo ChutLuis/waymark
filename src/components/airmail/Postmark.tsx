@@ -27,7 +27,7 @@ interface PostmarkProps {
 /** The circular postmark that lands on a done stamp. */
 export function Postmark({ city, date = null, variant = 'full', style }: PostmarkProps) {
   const { colors } = useTheme();
-  const ink = colors.ink;
+  const ink = colors.stampInk;
 
   if (variant === 'compact') {
     return (

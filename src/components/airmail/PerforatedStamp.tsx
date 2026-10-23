@@ -97,6 +97,8 @@ export function PerforatedStamp({
   // A CSS blur radius is twice the Gaussian deviation: 2px -> 1, 1.5px -> 0.75.
   const shadowBlur = width >= 40 && width <= 64 ? 0.75 : 1;
   const m = STAMP_SHADOW_MARGIN;
+  const outlinePath = stampOutline(width, height, v.pitch, v.hole, perforated);
+  const edgeStroke = tone === 'stampPaper' || tone === 'paper' ? colors.perforationEdge : undefined;
 
   return (
     <View style={[{ width, height }, style]}>
@@ -130,7 +132,7 @@ export function PerforatedStamp({
           {shadow ? (
             <G transform={`translate(0 ${shadowOffset})`} opacity={0.3}>
               <Path
-                d={stampOutline(width, height, v.pitch, v.hole, perforated)}
+                d={outlinePath}
                 fill={colors.stampInk}
                 filter={`url(#${filterId})`}
               />
@@ -144,6 +146,14 @@ export function PerforatedStamp({
             fill={fill}
             mask={`url(#${id})`}
           />
+          {edgeStroke ? (
+            <Path
+              d={outlinePath}
+              fill="none"
+              stroke={edgeStroke}
+              strokeWidth={0.75}
+            />
+          ) : null}
         </G>
       </Svg>
       <View

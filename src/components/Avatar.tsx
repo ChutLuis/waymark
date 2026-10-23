@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { AppText } from './AppText';
+import { useReducedMotion } from './useReducedMotion';
 import { fontFamilies, radius, useTheme } from '@/theme';
 import { firstInitial } from '@/lib/format/date';
 import { useSignedUrl } from '@/lib/supabase/storage';
@@ -26,6 +27,7 @@ export function Avatar({
 }: AvatarProps) {
   const { colors } = useTheme();
   const photoUrl = useSignedUrl('avatars', avatarPath);
+  const reducedMotion = useReducedMotion();
   const fontSize = Math.max(9, Math.round(size * 0.42));
   return (
     <View
@@ -58,7 +60,7 @@ export function Avatar({
           source={{ uri: photoUrl.data }}
           style={[StyleSheet.absoluteFill, { borderRadius: radius.pill }]}
           contentFit="cover"
-          transition={100}
+          transition={reducedMotion ? 0 : 100}
         />
       ) : null}
     </View>
