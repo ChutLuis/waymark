@@ -1,0 +1,56 @@
+/* The Airmail palette from src/theme/tokens.ts, for the public legal pages. */
+:root {
+  color-scheme: light dark;
+  --bg: #e2e9ee;
+  --paper: #fffcf5;
+  --ink: #15223b;
+  --ink2: #46536b;
+  --red: #c8323c;
+  --blue: #24479a;
+  --link: #24479a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1729;
+    --paper: #1a2438;
+    --ink: #eef1f6;
+    --ink2: #b4bfd1;
+    --link: #a9bdf5;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px 14px 48px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.55 Besley, Georgia, 'Times New Roman', serif;
+}
+
+.letter {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 24px 32px;
+  background: var(--paper);
+  border: 8px solid transparent;
+  border-image: repeating-linear-gradient(-45deg, var(--red) 0 12px, var(--paper) 12px 20px, var(--blue) 20px 32px, var(--paper) 32px 40px) 8;
+}
+
+.kicker {
+  margin: 0 0 6px;
+  font: 700 12px/1.3 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
+h1 { margin: 0 0 4px; font-size: 32px; line-height: 1.15; }
+h2 { margin: 28px 0 6px; font-size: 20px; line-height: 1.3; }
+.meta { margin-top: 0; font-style: italic; color: var(--ink2); }
+ul, ol { padding-left: 22px; }
+li { margin: 4px 0; }
+a { color: var(--link); }
+.footer { margin-top: 32px; font-size: 15px; color: var(--ink2); }

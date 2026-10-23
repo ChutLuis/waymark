@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <!-- Google Play feature graphic (1024×500, rendered without alpha by
+       store/render.sh). Airmail palette from src/theme/tokens.ts. -->
+  <defs>
+    <pattern id="stripes" width="64" height="64" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <rect width="64" height="64" fill="#FFFCF5" />
+      <rect x="0" y="0" width="19" height="64" fill="#C8323C" />
+      <rect x="32" y="0" width="19" height="64" fill="#24479A" />
+    </pattern>
+    <pattern id="icon-stripes" width="128" height="128" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <rect width="128" height="128" fill="#FFFCF5" />
+      <rect x="0" y="0" width="38" height="128" fill="#C8323C" />
+      <rect x="64" y="0" width="38" height="128" fill="#24479A" />
+    </pattern>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#15223B" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Airmail envelope border around a cream letter -->
+  <rect width="1024" height="500" fill="url(#stripes)" />
+  <rect x="22" y="22" width="980" height="456" rx="6" fill="#FFFCF5" />
+
+  <!-- The brand mark, from assets/images/android-icon-foreground.svg -->
+  <g transform="translate(72 70) scale(0.5)" filter="url(#shadow)">
+    <rect x="80" y="80" width="560" height="560" rx="92" fill="url(#icon-stripes)" />
+    <rect x="124" y="124" width="472" height="472" rx="60" fill="#FFFCF5" />
+    <rect x="146" y="146" width="428" height="428" rx="44" fill="none" stroke="#15223B" stroke-width="7" />
+    <polygon points="360,176 292,204 312,215 360,196 408,215 428,204" fill="#C8323C" />
+    <path d="M 194 254 L 282 254 L 282 282 L 260 282 L 302 436 L 349 290 L 377 290 L 423 436 L 466 282 L 444 282 L 444 254 L 526 254 L 526 282 L 504 282 L 440 500 L 400 500 L 356 362 L 312 500 L 272 500 L 210 282 L 194 282 Z" fill="#15223B" />
+    <line x1="254" y1="536" x2="466" y2="536" stroke="#24479A" stroke-width="6" stroke-linecap="round" />
+  </g>
+
+  <!-- Copy -->
+  <text x="470" y="150" font-family="Courier Prime" font-weight="700" font-size="22" letter-spacing="3.5" fill="#24479A">PAR AVION · TRIP PLANNER</text>
+  <text x="466" y="246" font-family="Besley" font-weight="800" font-size="92" letter-spacing="-1" fill="#15223B">Waymark</text>
+  <text x="470" y="306" font-family="Besley" font-style="italic" font-weight="600" font-size="31" fill="#46536B">Plan a trip together:</text>
+  <text x="470" y="348" font-family="Besley" font-style="italic" font-weight="600" font-size="31" fill="#46536B">stops, packing and notes,</text>
+  <text x="470" y="390" font-family="Besley" font-style="italic" font-weight="600" font-size="31" fill="#46536B">sent by airmail.</text>
+
+  <!-- A postmark in the corner -->
+  <g transform="translate(846 82)" fill="none" stroke="#15223B" stroke-opacity="0.5" stroke-width="3">
+    <circle cx="0" cy="0" r="40" />
+    <circle cx="0" cy="0" r="31" stroke-width="1.5" />
+    <path d="M 46 -12 q 12 -7 24 0 t 24 0 t 24 0" />
+    <path d="M 46 0 q 12 -7 24 0 t 24 0 t 24 0" />
+    <path d="M 46 12 q 12 -7 24 0 t 24 0 t 24 0" />
+  </g>
+</svg>
