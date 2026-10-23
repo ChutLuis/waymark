@@ -22,13 +22,13 @@ insert into trip_members (trip_id, user_id, role) values
 insert into trip_invites (trip_id, code, created_by, expires_at)
 values (
   '11111111-1111-1111-1111-111111111111',
-  'valid-trip-1-invite',
+  'VALIDINV',
   tests.get_supabase_uid('a@test.com'),
   now() + interval '1 day'
 );
 select tests.authenticate_as('c@test.com');
 select lives_ok(
-  $$select accept_trip_invite('valid-trip-1-invite')$$,
+  $$select accept_trip_invite('VALIDINV')$$,
   'S13: C can accept a valid Trip 1 invite'
 );
 select results_eq(
@@ -51,13 +51,13 @@ select tests.create_supabase_user('f@test.com');
 insert into trip_invites (trip_id, code, created_by, expires_at)
 values (
   '11111111-1111-1111-1111-111111111111',
-  'expired-trip-1-invite',
+  'EXPIRINV',
   tests.get_supabase_uid('a@test.com'),
   now() - interval '1 second'
 );
 select tests.authenticate_as('f@test.com');
 select throws_ok(
-  $$select accept_trip_invite('expired-trip-1-invite')$$,
+  $$select accept_trip_invite('EXPIRINV')$$,
   'P0001',
   'invite expired',
   'S14: accepting an expired invite is denied'
@@ -70,18 +70,18 @@ select tests.create_supabase_user('e@test.com');
 insert into trip_invites (trip_id, code, created_by, expires_at)
 values (
   '11111111-1111-1111-1111-111111111111',
-  'single-use-trip-1-invite',
+  'SINGLEUS',
   tests.get_supabase_uid('a@test.com'),
   now() + interval '1 day'
 );
 select tests.authenticate_as('d@test.com');
 select lives_ok(
-  $$select accept_trip_invite('single-use-trip-1-invite')$$,
+  $$select accept_trip_invite('SINGLEUS')$$,
   'S15: D can accept an unused invite'
 );
 select tests.authenticate_as('e@test.com');
 select throws_ok(
-  $$select accept_trip_invite('single-use-trip-1-invite')$$,
+  $$select accept_trip_invite('SINGLEUS')$$,
   'P0001',
   'invite already used',
   'S15: accepting an already-used invite is denied'

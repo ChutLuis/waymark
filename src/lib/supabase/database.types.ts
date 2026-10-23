@@ -34,6 +34,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_trips: {
+        Row: {
+          deleted_at: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      invite_attempts: {
+        Row: {
+          attempted_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       itinerary_items: {
         Row: {
           created_at: string
@@ -314,6 +350,13 @@ export type Database = {
     }
     Functions: {
       accept_trip_invite: { Args: { _code: string }; Returns: string }
+      account_storage_objects: {
+        Args: { _user_id: string }
+        Returns: {
+          bucket_id: string
+          name: string
+        }[]
+      }
       create_trip: {
         Args: {
           _destination?: string
@@ -339,6 +382,29 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_account_prepare: { Args: { _user_id: string }; Returns: string[] }
+      generate_invite_code: { Args: Record<PropertyKey, never>; Returns: string }
+      get_or_create_trip_invite: {
+        Args: { _trip_id: string }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          code: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          invited_email: string | null
+          trip_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trip_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      invite_lookups_paused: { Args: { _uid: string }; Returns: boolean }
       is_trip_member: { Args: { _trip_id: string }; Returns: boolean }
       is_trip_owner: { Args: { _trip_id: string }; Returns: boolean }
       preview_trip_invite: {
@@ -359,6 +425,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      try_uuid: { Args: { _value: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

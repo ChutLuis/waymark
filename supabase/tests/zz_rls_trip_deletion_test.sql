@@ -31,7 +31,7 @@ values (
 insert into trip_invites (trip_id, code, created_by, expires_at)
 values (
   '11111111-1111-1111-1111-111111111111',
-  'cascade-check-invite',
+  'CASCADE1',
   tests.get_supabase_uid('a@test.com'),
   now() + interval '1 day'
 );

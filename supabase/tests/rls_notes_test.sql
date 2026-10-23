@@ -1,5 +1,5 @@
 begin;
-select plan(7);
+select plan(8);
 
 -- Setup runs as postgres, before authentication, and therefore bypasses RLS.
 
@@ -78,6 +78,25 @@ select results_eq(
   $$select count(*) from trip_notes where trip_id = '11111111-1111-1111-1111-111111111111'$$,
   array[0::bigint],
   'S12: C cannot read any Trip 1 notes'
+);
+
+-- S13: a removed member cannot update their old note in a trip they no longer belong to.
+reset role;
+delete from trip_members
+where trip_id = '11111111-1111-1111-1111-111111111111'
+  and user_id = tests.get_supabase_uid('b@test.com');
+select tests.authenticate_as('b@test.com');
+select results_eq(
+  $$with updated_note as (
+      update trip_notes
+      set body = 'edited after removal', is_private = false
+      where trip_id = '11111111-1111-1111-1111-111111111111'
+        and author_id = tests.get_supabase_uid('b@test.com')
+      returning 1
+    )
+    select count(*)::int from updated_note$$,
+  array[0],
+  'S13: removed member B cannot update their note in Trip 1'
 );
 
 reset role;

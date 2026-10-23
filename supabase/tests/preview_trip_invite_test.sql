@@ -50,12 +50,11 @@ select results_eq(
   'P3: previewing does not join the outsider'
 );
 
--- P4: an unknown code is rejected.
-select throws_ok(
-  $$select preview_trip_invite('NOPE1234')$$,
-  'P0001',
-  'invalid invite',
-  'P4: an unknown code is rejected'
+-- P4: an unknown code returns no trip (the app reports it as an invalid
+-- invite). It doesn't raise, so the failed guess can be recorded.
+select is_empty(
+  $$select * from preview_trip_invite('NOPE1234')$$,
+  'P4: an unknown code returns no trip'
 );
 
 -- P5: an expired code is rejected.
