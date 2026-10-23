@@ -223,8 +223,10 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
 - Application configuration lives in `app.config.ts`, which reads the Supabase
   URL and anon key from environment variables (they are public by design).
 - No service-role key ships in the client. Privileged writes use the
-  `create_trip` and `accept_trip_invite` PostgreSQL security-definer RPCs; v1
-  has no edge functions.
+  `create_trip`, `get_or_create_trip_invite` and `accept_trip_invite`
+  PostgreSQL security-definer RPCs; account deletion runs in the
+  `delete-account` Edge Function with the service role (`docs/SECURITY.md`
+  §6.1).
 - Environments: local (Supabase CLI), a hosted staging project for shared builds,
   and production. The `development` profile embeds no values (Metro serves the
   bundle with the local `.env`); `test` reads the `preview` EAS environment
