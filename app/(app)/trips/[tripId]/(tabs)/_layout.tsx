@@ -9,7 +9,6 @@ import Animated, {
   useAnimatedStyle,
   useFrameCallback,
   useSharedValue,
-  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 import { OfflineBanner } from '@/components/OfflineBanner';
@@ -18,6 +17,12 @@ import { PatternBand } from '@/components/airmail/PatternBand';
 import { bezierAt, easing, sampleTrack, useMotion, useTimeline } from '@/components/motion';
 import { tabBarRise, topBarSettle } from '@/components/motion/keyframes';
 import { haptic } from '@/lib/haptics';
+import { InviteTripSheet } from '@/features/invites/InviteTripSheet';
+import {
+  TripCreatedInviteToast,
+  consumeTripJustCreated,
+  peekTripJustCreated,
+} from '@/features/invites/TripCreatedInviteToast';
 import { ShellTopBar } from '@/features/trips/ShellTopBar';
 import { TripScene } from '@/features/trips/TripScene';
 import { TripTabBar, type TripTab } from '@/features/trips/TripTabBar';
@@ -45,13 +50,13 @@ import {
   matchDestination,
   type CountryKey,
 } from '@/features/trips/destinations';
-import { motion, radius, useTheme } from '@/theme';
+import { hitTargetMin, motion, radius, useTheme } from '@/theme';
 
 /** Under the Trip page the shell slides 80 pt left and dims to 86%. */
 const SHEET_SHIFT = 80;
 const SHEET_DIM = 0.14;
-/** The expand clock's largest step per drawn frame: one 60 Hz frame. */
-const MAX_EXPAND_STEP = 1000 / 60;
+/** Allow normal 30 Hz frames; a longer drawing stall advances at most 34 ms. */
+const MAX_EXPAND_STEP = 34;
 
 function lerp(a: number, b: number, t: number): number {
   'worklet';
@@ -72,13 +77,27 @@ function lerp(a: number, b: number, t: number): number {
  */
 export default function TripTabsLayout() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
   const isFocused = useIsFocused();
   const { width: winW, height: winH } = useWindowDimensions();
   const { ms, reduced } = useMotion();
+  const [inviteVisible, setInviteVisible] = useState(false);
+  const [createdToastVisible, setCreatedToastVisible] = useState(() => peekTripJustCreated(tripId));
+  const [toastTripId, setToastTripId] = useState(tripId);
+  if (toastTripId !== tripId) {
+    setToastTripId(tripId);
+    setCreatedToastVisible(peekTripJustCreated(tripId));
+  }
+  if (!isFocused && inviteVisible) setInviteVisible(false);
+
+  useEffect(() => {
+    if (peekTripJustCreated(tripId)) {
+      consumeTripJustCreated(tripId);
+    }
+  }, [tripId]);
 
   const trip = useTrip(tripId);
   const members = useTripMembers(tripId);
@@ -103,8 +122,9 @@ export default function TripTabsLayout() {
   const screenWidth = Math.min(680, winW);
   const columnX = (winW - screenWidth) / 2;
 
-  // No art for this trip: show the README fallback banner on every tab.
-  const hasArt = country !== null || Boolean(trip.data?.coverImagePath);
+  // Every trip now has scene art: custom destination Lottie, uploaded cover,
+  // or the DefaultAirmailScene panorama inside TripScene.
+  const hasArt = true;
 
   // Scale the design's 196/104 header heights by the column width so wide
   // (web) layouts don't show mostly sky; the safe-area floor keeps the top bar
@@ -113,12 +133,16 @@ export default function TripTabsLayout() {
   // The 104 banner already includes the status bar. Without art every tab uses
   // this collapsed height (no 196 hero, no animation) so a Berlin/Narnia trip
   // doesn't open on a blank block.
-  const collapsedHeight = Math.max((SHELL.bannerHeight / 390) * screenWidth, insets.top + 57);
+  // Keep the 44 pt shortcut pills above the pattern band, even with a tall
+  // safe-area inset. The bar centres each pill within its 52 pt row.
+  const collapsedHeight = Math.max(
+    (SHELL.bannerHeight / 390) * screenWidth,
+    insets.top + (SHELL.topBarHeight + hitTargetMin) / 2 + SHELL.bandHeight,
+  );
   const targetHeight = hasArt && isPlan ? heroHeight : collapsedHeight;
 
-  // On Plan the pane rides up over the header so the day stamps hang across
-  // its bottom edge (y 156 of 196), but never over the top bar's buttons: the
-  // short paper banner (no art) only lends the stamps' drop-in room, if that.
+  // Only the drop-in room overlaps the header. At rest even today's raised
+  // stamp starts below the band, leaving its full width visible.
   const topBarBottom = insets.top + SHELL.topBarHeight;
   const planOverlap = !isPlan
     ? 0
@@ -143,11 +167,11 @@ export default function TripTabsLayout() {
   const bandIn = useTimeline(origin ? 0 : 1);
   const tabBarIn = useTimeline(origin ? 0 : 1);
 
-  // The expand runs on its own clock that advances at most one 60 Hz frame per
+  // The expand runs on its own clock that advances at most 34 ms per
   // drawn frame. Building the trip's views stalls drawing right after the
   // expand starts (~150 ms on the emulator, ~200 ms on a phone); a wall-clock
   // animation ran through those frames and was mostly over by the next one
-  // drawn. On this clock a stall pauses the expand instead of skipping it.
+  // drawn. Long stalls can't skip it, but normal 30 Hz drawing keeps real time.
   // Every part of the expand reads the same clock, so they stay in step.
   const expandClock = useSharedValue(0);
   const expandEnd = Math.max(
@@ -157,23 +181,32 @@ export default function TripTabsLayout() {
     motion.choreo.expand.bandAt + motion.choreo.expand.band,
     motion.choreo.expand.tabBarAt + motion.choreo.expand.tabBar,
   );
-  const stopDriver = () => driver.setActive(false);
+  const stopDriverRef = useRef<() => void>(() => {});
+  const stopDriver = () => stopDriverRef.current();
   const driver = useFrameCallback((frame) => {
     'worklet';
     const { expand } = motion.choreo;
     const step = Math.min(frame.timeSincePreviousFrame ?? 0, MAX_EXPAND_STEP);
     const t = Math.min(expandEnd, expandClock.value + step);
-    expandClock.value = t;
+    expandClock.set(t);
     const part = (at: number, duration: number) => Math.min(1, Math.max(0, (t - at) / duration));
     const e = bezierAt(motion.easing.standard, part(0, motion.duration.expand));
     reveal.value = e;
     homeCovered.value = e;
     shellContent.value = part(expand.contentAt, expand.content);
-    topBarIn.p.value = part(expand.topBarAt, expand.topBar);
-    bandIn.p.value = part(expand.bandAt, expand.band);
-    tabBarIn.p.value = part(expand.tabBarAt, expand.tabBar);
+    topBarIn.p.set(part(expand.topBarAt, expand.topBar));
+    bandIn.p.set(part(expand.bandAt, expand.band));
+    tabBarIn.p.set(part(expand.tabBarAt, expand.tabBar));
     if (t >= expandEnd) runOnJS(stopDriver)();
   }, false);
+
+  const setDriverActive = driver.setActive;
+  useEffect(() => {
+    stopDriverRef.current = () => setDriverActive(false);
+    return () => {
+      setDriverActive(false);
+    };
+  }, [setDriverActive]);
 
   // Starts on the shell's first layout; Home primed the first frame at the
   // card (or off-screen right).
@@ -194,8 +227,8 @@ export default function TripTabsLayout() {
         tabBarIn.set(1);
         return;
       }
-      expandClock.value = 0;
-      driver.setActive(true);
+      expandClock.set(0);
+      setDriverActive(true);
     } else {
       reveal.value = 1;
       shellContent.value = 1;
@@ -209,7 +242,7 @@ export default function TripTabsLayout() {
     () =>
       registerShellCloser((finish) => {
         // A collapse mid-expand takes over from the expand's clock.
-        driver.setActive(false);
+        setDriverActive(false);
         haptic('selection');
         const done = () => {
           finish();
@@ -234,7 +267,7 @@ export default function TripTabsLayout() {
           );
         }
       }),
-    [origin, ms],
+    [origin, ms, setDriverActive],
   );
 
   const paperColor = colors.paper;
@@ -244,28 +277,33 @@ export default function TripTabsLayout() {
     const x = origin ? lerp(origin.paper.x, 0, e) : 0;
     const y = origin ? lerp(origin.paper.y, 0, e) : 0;
     return {
-      left: x,
-      top: y,
       width: origin ? lerp(origin.paper.width, winW, e) : winW,
       height: origin ? lerp(origin.paper.height, winH, e) : winH,
       borderRadius: origin ? lerp(radius.airmailInner, 0, e) : 0,
-      transform: [{ translateX: (1 - shellPush.value) * winW - SHEET_SHIFT * tripSheet.value }],
+      transform: [
+        { translateX: x + (1 - shellPush.value) * winW - SHEET_SHIFT * tripSheet.value },
+        { translateY: y },
+      ],
     };
   });
   const sheetDimStyle = useAnimatedStyle(() => ({ opacity: SHEET_DIM * tripSheet.value }));
   const stageStyle = useAnimatedStyle(() => {
     const e = reveal.value;
     return {
-      left: origin ? -lerp(origin.paper.x, 0, e) : 0,
-      top: origin ? -lerp(origin.paper.y, 0, e) : 0,
+      transform: [
+        { translateX: origin ? -lerp(origin.paper.x, 0, e) : 0 },
+        { translateY: origin ? -lerp(origin.paper.y, 0, e) : 0 },
+      ],
       backgroundColor: interpolateColor(e, [0, 1], [paperColor, bgColor]),
     };
   });
   const headerStyle = useAnimatedStyle(() => {
     const e = origin ? reveal.value : 1;
     return {
-      left: origin ? lerp(origin.window.x - columnX, 0, e) : 0,
-      top: origin ? lerp(origin.window.y, 0, e) : 0,
+      transform: [
+        { translateX: origin ? lerp(origin.window.x - columnX, 0, e) : 0 },
+        { translateY: origin ? lerp(origin.window.y, 0, e) : 0 },
+      ],
       width: origin ? lerp(origin.window.width, screenWidth, e) : screenWidth,
       height: origin ? lerp(origin.window.height, headerHeight.value, e) : headerHeight.value,
     };
@@ -286,7 +324,15 @@ export default function TripTabsLayout() {
       h: lerp(from.h, to.h, e),
     };
     const { scale, left, top } = cropTransform(crop, frameW, frameH);
-    return { position: 'absolute', left, top, width: SCENE_WIDTH * scale, height: SCENE_HEIGHT * scale };
+    return {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      width: SCENE_WIDTH,
+      height: SCENE_HEIGHT,
+      transformOrigin: 'top left',
+      transform: [{ translateX: left }, { translateY: top }, { scale }],
+    };
   });
   const contentStyle = useAnimatedStyle(() => ({ opacity: shellContent.value }));
   const topBarStyle = useAnimatedStyle(() => ({
@@ -299,14 +345,10 @@ export default function TripTabsLayout() {
     transform: [{ translateY: sampleTrack(tabBarRise.translateY, tabBarIn.p.value, motion.easing.overshoot) }],
   }));
 
-  // Over art, follow the scene. Without art, follow the theme (dark icons in
-  // light mode, light icons in dark) — the paper banner is light in light mode
-  // and navy in dark mode (item 08, correction 2).
+  // The default airmail panorama has a pale sky in both themes.
   const statusBarStyle: 'light' | 'dark' = country
     ? DESTINATION_INFO[country].statusBar
-    : scheme === 'dark'
-      ? 'light'
-      : 'dark';
+    : 'dark';
 
   const openTrip = () => {
     haptic('selection');
@@ -333,14 +375,30 @@ export default function TripTabsLayout() {
         >
           <View testID="trip-column" style={[styles.column, styles.columnClamped]}>
             {trip.isPending ? (
-              <View style={{ paddingTop: insets.top }}>
+              <View style={[styles.stateScreen, { paddingTop: insets.top }]}>
+                <ShellTopBar
+                  tripName="Loading…"
+                  members={[]}
+                  overArt={false}
+                  onBack={goHome}
+                  onOpenTrip={() => {}}
+                  onInvite={() => {}}
+                />
                 <LoadingState />
               </View>
-            ) : trip.isError && !trip.data ? (
-              <View style={{ paddingTop: insets.top }}>
+            ) : trip.isError || !trip.data ? (
+              <View style={[styles.stateScreen, { paddingTop: insets.top }]}>
+                <ShellTopBar
+                  tripName="Trip"
+                  members={[]}
+                  overArt={false}
+                  onBack={goHome}
+                  onOpenTrip={() => {}}
+                  onInvite={() => {}}
+                />
                 <ErrorState title="Couldn't load the trip" onRetry={() => trip.refetch()} />
               </View>
-            ) : trip.data ? (
+            ) : (
               <>
                 {/* Only while focused, so the style doesn't outlive the screen. */}
                 {isFocused ? <StatusBar style={statusBarStyle} /> : null}
@@ -372,9 +430,16 @@ export default function TripTabsLayout() {
                     overArt={hasArt}
                     onBack={goHome}
                     onOpenTrip={openTrip}
+                    onInvite={() => {
+                      haptic('selection');
+                      setInviteVisible(true);
+                    }}
                     style={topBarStyle}
                   />
-                  <Animated.View style={[styles.band, bandStyle]}>
+                  {/* Full width from the first frame, revealed by the header's clip:
+                      react-native-svg keeps a percentage width from its first
+                      layout, so a band that grew with the header stopped short. */}
+                  <Animated.View style={[styles.band, { width: screenWidth }, bandStyle]}>
                     <PatternBand
                       pattern={country ? DESTINATION_INFO[country].pattern : 'airmail'}
                       height={SHELL.bandHeight}
@@ -393,10 +458,24 @@ export default function TripTabsLayout() {
                 <Animated.View pointerEvents="box-none" style={[styles.tabBarLayer, tabBarStyle]}>
                   <TripTabBar tripId={tripId} active={activeTab} />
                 </Animated.View>
+                {createdToastVisible ? (
+                  <TripCreatedInviteToast
+                    tripId={tripId}
+                    tripName={trip.data.name}
+                    bottomOffset={Math.max(insets.bottom + SHELL.tabBarLift, SHELL.tabBarMinBottom) + SHELL.tabBarHeight + 12}
+                    onDismiss={() => setCreatedToastVisible(false)}
+                  />
+                ) : null}
+                <InviteTripSheet
+                  visible={inviteVisible && isFocused}
+                  onClose={() => setInviteVisible(false)}
+                  tripId={tripId}
+                  tripName={trip.data.name}
+                />
               </>
-            ) : null}
+            )}
           </View>
-          <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.ink }, sheetDimStyle]} />
+          <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.stampInk }, sheetDimStyle]} />
         </Animated.View>
       </Animated.View>
     </View>
@@ -409,16 +488,18 @@ export function destinationArt(country: CountryKey | null) {
 }
 
 const styles = StyleSheet.create({
+  // Loading and error fill the screen under the plain top bar, so their content centres.
+  stateScreen: { flex: 1 },
   // The shell covers Home (a transparent modal) and draws its own ground.
   screen: { flex: 1, minHeight: 0 },
-  clip: { position: 'absolute', overflow: 'hidden' },
-  stage: { position: 'absolute' },
+  clip: { position: 'absolute', left: 0, top: 0, overflow: 'hidden' },
+  stage: { position: 'absolute', left: 0, top: 0 },
   column: { flex: 1, minHeight: 0 },
   // Keep the shell inside a centred 680 column at every width so the tab bar
   // and content never run past the window (N16).
   columnClamped: { width: '100%', maxWidth: 680, alignSelf: 'center' },
-  header: { position: 'absolute', overflow: 'hidden' },
-  band: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  header: { position: 'absolute', left: 0, top: 0, overflow: 'hidden' },
+  band: { position: 'absolute', left: 0, bottom: 0 },
   // minHeight 0 lets the tab's scroller shrink below its content on web, so the
   // tab bar stays on the window's bottom edge (N16).
   pane: { flex: 1, minHeight: 0 },

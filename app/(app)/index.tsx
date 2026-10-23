@@ -20,6 +20,7 @@ import {
   setSessionHomeTrip,
   shouldDeal,
   type CardActions,
+  type HomeCardHandle,
   type HomeDeal,
 } from '@/features/trips/TripWallet';
 import { TripRail } from '@/features/trips/TripRail';
@@ -39,7 +40,7 @@ import { splitTrips } from '@/features/trips/sort';
 import { greetingFor } from '@/features/trips/destinations';
 import { useMyProfile } from '@/features/auth/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
-import { motion, radius, shadows, spacing, useTheme } from '@/theme';
+import { hitTargetMin, motion, radius, shadows, spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
 
 /** Home underneath an open trip: scaled to .93 about (50%, 45%), dimmed 12%. */
@@ -122,7 +123,8 @@ export default function TripsListScreen() {
   const { ms } = useMotion();
   const [picked, setPicked] = useState<string | null>(getSessionHomeTrip);
   const [under, setUnder] = useState<string | null>(null);
-  const lastPick = useRef<string | null>(null);
+  const frontCard = useRef<HomeCardHandle>(null);
+  const [lastPick, setLastPick] = useState<string | null>(null);
   const underTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (underTimer.current) clearTimeout(underTimer.current);
@@ -136,13 +138,14 @@ export default function TripsListScreen() {
     if (!front || trip.id === front.id) return;
     haptic('selection');
     if (underTimer.current) clearTimeout(underTimer.current);
-    lastPick.current = trip.id;
+    frontCard.current?.settle();
+    setLastPick(trip.id);
     setUnder(front.id);
     setPicked(trip.id);
     setSessionHomeTrip(trip.id);
     underTimer.current = setTimeout(() => setUnder(null), ms(motion.duration.deal));
   };
-  const frontDeal: HomeDeal = front && lastPick.current === front.id ? 'pick' : dealing ? 'launch' : null;
+  const frontDeal: HomeDeal = front && lastPick === front.id ? 'pick' : dealing ? 'launch' : null;
 
   // Envelope papers follow each trip's place in the default order.
   const paperIndex = useMemo(() => {
@@ -172,7 +175,10 @@ export default function TripsListScreen() {
         <View style={styles.header}>
           <View style={styles.brandRow}>
             <BrandMark />
-            <AppText role="wordmark">Waymark</AppText>
+            {/* The wordmark is the logo, not copy: it keeps its size. */}
+            <AppText role="wordmark" numberOfLines={1} maxFontSizeMultiplier={1}>
+              Waymark
+            </AppText>
           </View>
           <View style={styles.headerActions}>
             {hasTrips ? (
@@ -187,7 +193,12 @@ export default function TripsListScreen() {
                 ]}
               >
                 <Plus size={18} color={colors.paper} strokeWidth={2.4} />
-                <AppText role="pillLabel" style={{ color: colors.paper }}>
+                <AppText
+                  role="pillLabel"
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={HEADER_TEXT_SCALE_MAX}
+                  style={{ color: colors.paper }}
+                >
                   New trip
                 </AppText>
               </Pressable>
@@ -253,11 +264,12 @@ export default function TripsListScreen() {
                       pointerEvents={isFront ? 'auto' : 'none'}
                     >
                       <HomeCard
+                        ref={isFront ? frontCard : undefined}
                         trip={trip}
                         onNow={onNowIds.has(trip.id)}
                         viewerId={userId}
                         paperIndex={paperIndex(trip.id)}
-                        focused={isFocused}
+                        focused={isFront && isFocused}
                         collapsing={isFront && collapsing}
                         deal={isFront ? frontDeal : null}
                         onPress={(actions) => openFromCard(trip, actions)}
@@ -291,10 +303,16 @@ export default function TripsListScreen() {
           </ScrollView>
         )}
       </View>
-      <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.ink }, dimStyle]} />
+      <Animated.View pointerEvents="none" style={[styles.dim, { backgroundColor: colors.stampInk }, dimStyle]} />
     </Animated.View>
   );
 }
+
+/**
+ * The header is a fixed 52 pt bar with the wordmark, New trip and the profile
+ * stamp side by side; past this text scale New trip no longer fits beside them.
+ */
+const HEADER_TEXT_SCALE_MAX = 1.15;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, transformOrigin: '50% 45%' },
@@ -308,10 +326,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   newTrip: {
-    height: 40,
+    height: hitTargetMin,
     paddingLeft: 10,
     paddingRight: 14,
     borderRadius: radius.codeBox,
@@ -322,18 +340,20 @@ const styles = StyleSheet.create({
   avatarTarget: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.7 },
   titleBlock: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
-  greeting: { marginTop: 2, fontSize: 17, lineHeight: 22 },
+  greeting: { marginTop: 2 },
   list: { paddingHorizontal: spacing.cardGutter, paddingTop: spacing.s7 },
   skeletonGap: { height: spacing.s5 },
   listContent: { paddingTop: spacing.s10 },
   stackWrap: { marginHorizontal: spacing.cardGutter },
   // The card being replaced waits under the one being dealt.
-  under: { position: 'absolute', left: 0, right: 0, top: 0 },
+  under: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, overflow: 'hidden' },
   rail: { marginTop: spacing.s7 },
   emptySecondary: { marginTop: spacing.s3 },
   inviteRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
+    paddingHorizontal: spacing.gutter,
     alignItems: 'baseline',
     gap: 6,
     paddingTop: spacing.s12,

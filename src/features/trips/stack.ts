@@ -148,12 +148,21 @@ export function isDaysAway(start: string | null, todayKey: string, within = 7): 
   return diff >= 0 && diff <= within;
 }
 
-/**
- * x on the on-now card's mini route, proportional to time from the first
- * stop to the last; clamped to the route.
- */
+/** Include NOW so a single stop still has a route to or from it. */
+export function miniRouteWindow(first: number, last: number, now: number): { first: number; last: number } {
+  const start = Math.min(first, now);
+  const end = Math.max(last, now);
+  return start === end ? { first: start - 60, last: end + 60 } : { first: start, last: end };
+}
+
+/** A centred element's left edge, kept wholly inside its track. */
+export function miniRouteLeft(center: number, elementWidth: number, trackWidth: number): number {
+  return Math.max(0, Math.min(center - elementWidth / 2, Math.max(0, trackWidth - elementWidth)));
+}
+
+/** x proportional to time inside the mini route's window, clamped to it. */
 export function miniRouteX(minutes: number, first: number, last: number, width: number): number {
-  if (last <= first) return 0;
+  if (last <= first) return Math.max(0, width) / 2;
   const t = (minutes - first) / (last - first);
-  return Math.min(width, Math.max(0, t * width));
+  return Math.min(Math.max(0, width), Math.max(0, t * width));
 }

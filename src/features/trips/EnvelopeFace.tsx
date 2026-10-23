@@ -1,12 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { AppText } from '@/components/AppText';
+import { DefaultAirmailStampArt } from '@/components/airmail/DefaultAirmailArt';
 import { EmptyStampSlot } from '@/components/StateViews';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
-import { fontFamilies, radius, shadows, useTheme, type Palette } from '@/theme';
+import { fontFamilies, radius, shadows, spacing, useTheme, type Palette } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
+import { findCountry } from './countries';
 import { DESTINATION_ART } from './destinationArt';
-import { daysUntilLabelUppercase, matchDestination, tripDays } from './destinations';
+import { DESTINATION_INFO, daysUntilLabelUppercase, matchDestination, normaliseDestination, tripDays } from './destinations';
 import { addressDates, envelopeNote, isDaysAway, STACK_CARD_HEIGHT, STACK_PEEK } from './stack';
 import type { TripListItem } from './hooks';
 
@@ -33,7 +35,7 @@ function ParAvion() {
   return (
     <View style={[styles.parAvion, { backgroundColor: colors.parAvion }]}>
       <View pointerEvents="none" style={[styles.parAvionRule, { borderColor: colors.stampPaper }]} />
-      <AppText role="parAvion" style={{ color: colors.stampPaper }}>
+      <AppText role="parAvion" numberOfLines={1} style={{ color: colors.stampPaper, paddingRight: 1 }}>
         PAR AVION
       </AppText>
       <AppText role="parAvionSub" style={{ color: colors.stampPaper }}>
@@ -44,8 +46,8 @@ function ParAvion() {
 }
 
 function FaceStamp({ trip }: { trip: TripListItem }) {
-  const { colors } = useTheme();
   const country = matchDestination(trip.destination);
+  const iso = findCountry(trip.destination)?.code;
   const hasDates = Boolean(trip.startDate && trip.endDate);
   if (!hasDates) return <EmptyStampSlot width={STAMP.width} height={STAMP.height} />;
   return (
@@ -53,13 +55,11 @@ function FaceStamp({ trip }: { trip: TripListItem }) {
       {country ? (
         <Image source={DESTINATION_ART[country].sceneStampStill} style={styles.stampArt} contentFit="cover" />
       ) : (
-        <View style={[styles.stampArt, styles.initialPanel, { backgroundColor: colors.stampInk }]}>
-          <AppText role="initialLg" style={{ color: colors.stampPaper }}>
-            {(trip.name.trim()[0] ?? '?').toUpperCase()}
-          </AppText>
-          <AppText role="stampLabel" style={[styles.waymark, { color: colors.stampPaper }]}>
-            WAYMARK
-          </AppText>
+        <View style={styles.stampArt}>
+          <DefaultAirmailStampArt
+            label={iso ?? (trip.name.trim()[0] ?? '?').toUpperCase()}
+            subtitle="WAYMARK"
+          />
         </View>
       )}
     </PerforatedStamp>
@@ -77,6 +77,13 @@ export function EnvelopeFace({ trip, others, paperIndex }: EnvelopeFaceProps) {
   const { paper, rule } = PAPERS[paperIndex % PAPERS.length];
   const today = toDateOnly(new Date());
   const hasDates = Boolean(trip.startDate && trip.endDate);
+  const country = matchDestination(trip.destination);
+  const info = country ? DESTINATION_INFO[country] : null;
+  // The destination once: when the trip is simply named after it (a trip
+  // "El Salvador" to El Salvador), the header doesn't repeat the address line.
+  const place = info?.region ?? trip.destination?.trim() ?? '';
+  const repeatsName = place !== '' && normaliseDestination(place) === normaliseDestination(trip.name);
+  const headerKicker = (place && !repeatsName ? place : 'AIRMAIL DISPATCH').toUpperCase();
   const countdown = daysUntilLabelUppercase(trip.startDate, today);
   const statusColor = !hasDates
     ? colors.ink3
@@ -92,10 +99,10 @@ export function EnvelopeFace({ trip, others, paperIndex }: EnvelopeFaceProps) {
   return (
     <View style={[styles.face, { backgroundColor: colors[paper], boxShadow: shadows.envelope }]}>
       <View style={styles.header}>
-        <AppText role="envelopeTitle" numberOfLines={1} style={[styles.name, { color: hasDates ? colors.ink : colors.ink2 }]}>
-          {trip.name}
+        <AppText role="kickerSm" numberOfLines={1} style={[styles.name, { color: colors.ink2 }]}>
+          {headerKicker}
         </AppText>
-        <AppText role="kickerSm" style={{ color: statusColor }}>
+        <AppText role="kickerSm" numberOfLines={1} style={{ color: statusColor, paddingRight: 1 }}>
           {countdown ?? 'NO DATES'}
         </AppText>
       </View>
@@ -151,9 +158,7 @@ const styles = StyleSheet.create({
   parAvionRule: { position: 'absolute', left: 2, top: 2, right: 2, bottom: 2, borderWidth: 1, borderRadius: 1 },
   stamp: { position: 'absolute', right: 18, top: 50, transform: [{ rotate: '2.2deg' }] },
   stampArt: { position: 'absolute', left: STAMP.inset, top: STAMP.inset, right: STAMP.inset, bottom: STAMP.inset },
-  initialPanel: { alignItems: 'center', justifyContent: 'center', gap: 2 },
-  waymark: { fontSize: 6, lineHeight: 7, letterSpacing: 0.8 },
-  address: { position: 'absolute', left: 40, right: 24, top: 148 },
+  address: { position: 'absolute', left: 40, right: 24, top: 148, bottom: spacing.s12, justifyContent: 'space-between' },
   addressLine: { borderBottomWidth: 1 },
   addressNote: { fontFamily: fontFamilies.regularItalic },
 });

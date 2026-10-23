@@ -1,10 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { runOnJS, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { ChevronLeft, PenLine, Trash2 } from 'lucide-react-native';
+import { onlineManager } from '@tanstack/react-query';
+import { PenLine, Trash2 } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { EmptyStampSlot, ErrorState, LoadingState } from '@/components/StateViews';
 import { easing, useMotion } from '@/components/motion';
 import { AddressCard, type AddressLine } from '@/features/trips/AddressCard';
@@ -20,11 +31,12 @@ import {
   stampName,
   tripDays,
 } from '@/features/trips/destinations';
-import { sheetDays, sheetHeader, usedRange, usedSummary } from '@/features/trips/sheet';
+import { OFFLINE_MESSAGE, failureMessage } from '@/features/trips/errors';
+import { sheetDays, sheetHeader, stampLabel, usedRange, usedSummary } from '@/features/trips/sheet';
 import { tripSheet } from '@/features/trips/expandStore';
 import { getLastTab } from '@/features/trips/shellMotion';
 import { useAuth } from '@/features/auth/AuthContext';
-import { iconStrokeWidth, motion, radius, shadows, spacing, useTheme } from '@/theme';
+import { hitTargetMin, iconStrokeWidth, motion, radius, shadows, spacing, useTheme } from '@/theme';
 import { confirmDestructive } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
 import { toDateOnly } from '@/lib/format/date';
@@ -52,7 +64,7 @@ export default function TripPageScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { ms } = useMotion();
+  const { ms, reduced } = useMotion();
   const { userId } = useAuth();
   const [backLabel] = useState(() => TAB_LABEL[getLastTab()]);
   const trip = useTrip(tripId);
@@ -60,7 +72,9 @@ export default function TripPageScreen() {
   const leaveTrip = useLeaveTrip();
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
   const closing = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   // Push on open.
   useEffect(() => {
@@ -102,16 +116,41 @@ export default function TripPageScreen() {
   };
 
   const currentMember = members.data?.find((m) => m.userId === userId);
-  const isOwner = currentMember?.role === 'owner';
+  // Until the members load, the creator is the owner (ownership never moves),
+  // so an owner never sees Leave.
+  const isOwner = currentMember ? currentMember.role === 'owner' : trip.data?.createdBy === userId;
+  const leaving = leaveTrip.isPending;
+
+  // The banner prints under the Leave row, which can sit at the bottom edge.
+  useEffect(() => {
+    if (leaveError) scrollRef.current?.scrollToEnd({ animated: !reduced });
+  }, [leaveError, reduced]);
+
+  const failLeave = (message: string) => {
+    setLeaveError(message);
+    AccessibilityInfo.announceForAccessibility(message);
+  };
 
   const onLeave = async () => {
+    if (leaving) return;
     const confirmed = await confirmDestructive(
       'Leave this trip?',
       'You lose access to its itinerary, packing list, and notes until someone invites you back.',
       'Leave',
     );
     if (!confirmed) return;
-    await leaveTrip.mutateAsync(tripId);
+    // Offline, the mutation would wait for the connection instead of failing.
+    if (!onlineManager.isOnline()) {
+      failLeave(OFFLINE_MESSAGE);
+      return;
+    }
+    setLeaveError(null);
+    try {
+      await leaveTrip.mutateAsync(tripId);
+    } catch (error) {
+      failLeave(failureMessage(error, 'Couldn’t leave the trip. Try again.'));
+      return;
+    }
     router.replace('/');
   };
 
@@ -132,7 +171,6 @@ export default function TripPageScreen() {
     ]
       .filter(Boolean)
       .join(' · ');
-    const name = info?.stampName ?? stampName(data.destination);
 
     const owner = (members.data ?? []).find((m) => m.role === 'owner');
     const lines: AddressLine[] = [
@@ -157,7 +195,7 @@ export default function TripPageScreen() {
     ];
 
     return (
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.titleBlock}>
           <AppText role="tripTitle" numberOfLines={2}>
             {data.name}
@@ -174,16 +212,16 @@ export default function TripPageScreen() {
             <SheetOfStamps
               days={days}
               country={country}
-              initial={(data.name.trim()[0] ?? '?').toUpperCase()}
-              header={sheetHeader(name, data.name, count, year)}
+              label={stampLabel(data.destination, data.name)}
+              header={sheetHeader(data.destination, data.name, count, year)}
               footer={usedSummary(days)}
-              city={(info?.caption ?? name).toUpperCase()}
+              city={(info?.caption ?? stampName(data.destination)).toUpperCase()}
               range={year ? usedRange(days, year) : ''}
             />
           ) : (
             <View style={[styles.noStamps, { backgroundColor: colors.stampPaper, boxShadow: shadows.postcard }]}>
               <EmptyStampSlot width={56} height={72} />
-              <AppText role="bodySm" tone="secondary" style={styles.noStampsText}>
+              <AppText role="bodySm" style={[styles.noStampsText, { color: colors.stampInk }]}>
                 Pick dates to print this trip&apos;s stamps.
               </AppText>
             </View>
@@ -197,21 +235,34 @@ export default function TripPageScreen() {
         ) : null}
 
         <View style={styles.inviteBlock}>
-          <RegisteredInvite tripId={tripId} />
+          <RegisteredInvite tripId={tripId} tripName={data.name} />
         </View>
 
         <View style={styles.danger}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={isOwner ? 'Delete trip' : 'Leave trip'}
+            accessibilityLabel={isOwner ? 'Delete trip' : leaving ? 'Leaving trip' : 'Leave trip'}
+            accessibilityState={{ disabled: leaving, busy: leaving }}
+            disabled={leaving}
             onPress={isOwner ? () => setDeleteVisible(true) : onLeave}
             style={({ pressed }) => [styles.deleteRow, pressed && styles.pressed]}
           >
-            <Trash2 size={18} color={colors.wax} strokeWidth={iconStrokeWidth} />
-            <AppText role="button" tone="danger" style={styles.deleteText}>
-              {isOwner ? 'Delete trip' : 'Leave trip'}
+            <View style={styles.dangerIcon}>
+              {leaving ? (
+                <ActivityIndicator size="small" color={colors.danger} />
+              ) : (
+                <Trash2 size={18} color={colors.danger} strokeWidth={iconStrokeWidth} />
+              )}
+            </View>
+            <AppText role="pillLabel" tone="danger">
+              {isOwner ? 'Delete trip' : leaving ? 'Leaving…' : 'Leave trip'}
             </AppText>
           </Pressable>
+          {leaveError ? (
+            <View style={styles.dangerError}>
+              <ErrorBanner message={leaveError} />
+            </View>
+          ) : null}
         </View>
 
         <DeleteTripSheet visible={deleteVisible} onClose={() => setDeleteVisible(false)} trip={data} />
@@ -230,30 +281,15 @@ export default function TripPageScreen() {
     >
       <View style={styles.column}>
         <View style={styles.topBar}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Back to ${backLabel}`}
-            onPress={goBack}
-            style={({ pressed }) => [
-              styles.pill,
-              styles.backPill,
-              { backgroundColor: colors.paper, borderColor: colors.divider },
-              pressed && styles.pressed,
-            ]}
-          >
-            <ChevronLeft size={20} color={colors.ink} strokeWidth={iconStrokeWidth} />
-            <AppText role="tagLabel" style={styles.pillText}>
-              {backLabel}
-            </AppText>
-          </Pressable>
+          <BackButton variant="pill" label={backLabel} onPress={goBack} style={styles.topBarPill} />
           {isOwner && trip.data ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Edit trip"
               onPress={() => setEditVisible(true)}
               style={({ pressed }) => [
-                styles.pill,
-                { backgroundColor: colors.paper, borderColor: colors.divider },
+                styles.editPill,
+                { backgroundColor: colors.paper, borderColor: colors.divider, boxShadow: shadows.pill },
                 pressed && styles.pressed,
               ]}
             >
@@ -278,8 +314,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  pill: {
-    height: 40,
+  // BackButton aligns itself to the start; in this row that would be the top.
+  topBarPill: { alignSelf: 'center' },
+  editPill: {
+    minHeight: hitTargetMin,
     paddingLeft: 10,
     paddingRight: 12,
     borderRadius: radius.codeBox,
@@ -288,8 +326,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  backPill: { paddingLeft: 8, gap: 4 },
-  pillText: { fontSize: 16 },
   content: { paddingBottom: spacing.s12 * 2 },
   titleBlock: { paddingTop: 6, paddingHorizontal: spacing.gutter },
   meta: { marginTop: 2 },
@@ -298,7 +334,8 @@ const styles = StyleSheet.create({
   noStamps: { borderRadius: radius.airmailInner, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 },
   noStampsText: { flex: 1 },
   danger: { paddingTop: spacing.s10, paddingHorizontal: spacing.s7 },
-  deleteRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 8 },
-  deleteText: { fontSize: 16, lineHeight: 20 },
+  deleteRow: { minHeight: hitTargetMin, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 8 },
+  dangerIcon: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  dangerError: { marginTop: spacing.s3 },
   pressed: { opacity: 0.7 },
 });

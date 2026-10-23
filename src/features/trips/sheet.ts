@@ -3,7 +3,8 @@
  * stamp per trip day, the days already used, and the sheet's printed lines.
  */
 import { numberWord } from './stack';
-import { romanMonth } from './destinations';
+import { findCountry } from './countries';
+import { DESTINATION_INFO, matchDestination, normaliseDestination, romanMonth } from './destinations';
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -45,10 +46,42 @@ export function sheetDays(start: string | null, end: string | null, todayKey: st
   return out;
 }
 
+/**
+ * What a stamp without scene art prints: the destination's country code
+ * ("SV"), else the trip's initial, as on the rail, the envelopes and the
+ * profile.
+ */
+export function stampLabel(destination: string | null, tripName: string): string {
+  return findCountry(destination)?.code ?? (tripName.trim()[0] ?? '?').toUpperCase();
+}
+
+/** A name's words without accents or punctuation, padded for whole-word search. */
+function wordsOf(text: string): string {
+  return ` ${normaliseDestination(text).replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
+}
+
+/**
+ * The country at the head of the sheet: the scene's stamp name ("NIPPON"),
+ * else the country's whole name ("EL SALVADOR": unlike a stamp's name strip,
+ * the header has room), else the destination up to its first comma. Empty
+ * when the trip's name already names the country, so it never prints twice.
+ */
+export function sheetStampName(destination: string | null, tripName: string): string {
+  const place = destination?.split(',')[0].trim() ?? '';
+  if (!place) return '';
+  const key = matchDestination(destination);
+  const info = key ? DESTINATION_INFO[key] : null;
+  const country = findCountry(destination);
+  const printed = info?.stampName ?? country?.name ?? place;
+  const trip = wordsOf(tripName);
+  const named = [printed, info?.region, country?.name].some((name) => name && trip.includes(wordsOf(name)));
+  return named ? '' : printed.toUpperCase();
+}
+
 /** "NIPPON · KYOTO & NARA · TEN DAYS · 2026". */
-export function sheetHeader(stampName: string, tripName: string, days: number, year: number | null): string {
+export function sheetHeader(destination: string | null, tripName: string, days: number, year: number | null): string {
   const length = `${numberWord(days)} ${days === 1 ? 'day' : 'days'}`;
-  return [stampName, tripName, length, year ? String(year) : '']
+  return [sheetStampName(destination, tripName), tripName, length, year ? String(year) : '']
     .filter(Boolean)
     .join(' · ')
     .toUpperCase();

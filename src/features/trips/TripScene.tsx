@@ -5,6 +5,7 @@ import LottieView from 'lottie-react-native';
 import { useIsFocused } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, type AnimatedStyle } from 'react-native-reanimated';
 import { useAppActive } from '@/components/useAppActive';
+import { DefaultAirmailScene } from '@/components/airmail/DefaultAirmailArt';
 import { useReducedMotion } from '@/components/useReducedMotion';
 import { useSignedUrl } from '@/lib/supabase/storage';
 import { motion, useTheme } from '@/theme';
@@ -86,7 +87,6 @@ export function TripScene({
 
   const playing = showLive && lottieReady;
   const playingRef = useRef(playing);
-  playingRef.current = playing;
 
   // Control playback imperatively so the same mounted animation is paused on
   // blur / background / off-screen and resumed, in phase, when it should play.
@@ -94,6 +94,7 @@ export function TripScene({
   // frame to the end and restarts from 0 on finish; the web player's
   // play(frame) seeks and keeps looping the whole comp.
   useEffect(() => {
+    playingRef.current = playing;
     if (!art) return;
     if (!playing) {
       ref.current?.pause();
@@ -140,7 +141,7 @@ export function TripScene({
             source={{ uri: coverUrl.data }}
             style={styles.fill}
             contentFit="cover"
-            transition={150}
+            transition={reducedMotion ? 0 : motion.choreo.expand.sceneFade}
             accessibilityLabel="Trip cover photo"
           />
         </Animated.View>
@@ -168,7 +169,11 @@ export function TripScene({
             />
           </Animated.View>
         </Animated.View>
-      ) : null}
+      ) : (
+        <Animated.View style={artStyle ?? staticArt} pointerEvents="none">
+          <DefaultAirmailScene live={showLive} />
+        </Animated.View>
+      )}
     </View>
   );
 }

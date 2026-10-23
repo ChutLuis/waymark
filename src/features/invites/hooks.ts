@@ -1,66 +1,37 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase/client';
 import { INVITE_SELECT } from '@/lib/supabase/selects';
 import { useAuth } from '@/features/auth/AuthContext';
 import type { TripInvite } from '@/lib/types';
 
-/** No lookalike characters (0/O, 1/I/L). */
-const INVITE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-
-function generateInviteCode(): string {
-  let code = '';
-  for (let i = 0; i < 8; i += 1) {
-    code += INVITE_ALPHABET[Math.floor(Math.random() * INVITE_ALPHABET.length)];
-  }
-  return code;
-}
-
 /**
- * The current unexpired, unused invite this user can see, created lazily.
- * (RLS shows members the invites they created; owners see all.)
+ * The caller's current invite for the trip. The security-definer
+ * `get_or_create_trip_invite` RPC reuses their newest invite while it has a
+ * day left, otherwise mints a 7-day code with cryptographic randomness on
+ * the server; clients can no longer insert invites themselves.
  */
 export function useTripInvite(tripId: string) {
   const { userId } = useAuth();
   return useQuery({
     queryKey: ['invite', tripId, userId],
+    enabled: userId !== null,
     queryFn: async (): Promise<TripInvite> => {
-      if (!userId) throw new Error('Not signed in');
-      const nowIso = new Date().toISOString();
-      // Reuse only an invite THIS user created: RLS returns a member only their
-      // own invites (owners see all), so a trip-wide lookup would miss it and
-      // mint a fresh row every time. Match RLS by filtering on created_by (B5).
-      const { data: active, error: selectError } = await supabase
-        .from('trip_invites')
-        .select(INVITE_SELECT)
-        .eq('trip_id', tripId)
-        .eq('created_by', userId)
-        .is('accepted_at', null)
-        .gt('expires_at', nowIso)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (selectError) throw selectError;
-      if (active) return active;
-
       const { data, error } = await supabase
-        .from('trip_invites')
-        .insert({
-          trip_id: tripId,
-          code: generateInviteCode(),
-          created_by: userId,
-          expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString(),
-        })
+        .rpc('get_or_create_trip_invite', { _trip_id: tripId })
         .select(INVITE_SELECT)
         .single();
       if (error) throw error;
-      return data;
+      return data as unknown as TripInvite;
     },
   });
 }
 
 /**
  * Acceptance is a security-definer RPC that validates and joins in one
- * step (INV-2/INV-4); returns the joined trip's id.
+ * step (INV-2/INV-4); returns the joined trip's id. An unknown or revoked
+ * code comes back as null (so the server can count the failed guess) and is
+ * reported like any other invalid code.
  */
 export function useAcceptInvite() {
   const queryClient = useQueryClient();
@@ -70,6 +41,7 @@ export function useAcceptInvite() {
         _code: code.trim().toUpperCase(),
       });
       if (error) throw error;
+      if (!data) throw new Error('invalid invite');
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
@@ -82,8 +54,17 @@ export function formatInviteCode(code: string): string {
   return `${code.slice(0, 4)}·${code.slice(4)}`;
 }
 
+/** The join deep link in this build's own scheme (waymark, waymark-test, waymark-dev). */
 export function inviteLink(code: string): string {
-  return `https://waymark.app/join?code=${code}`;
+  return Linking.createURL('join', { queryParams: { code } });
+}
+
+export function inviteShareMessage(tripName: string, code: string): string {
+  const formatted = code.length === 8 ? `${code.slice(0, 4)} ${code.slice(4)}` : code;
+  const trimmed = tripName.trim();
+  return trimmed
+    ? `Join my "${trimmed}" trip on Waymark! Enter invite code: ${formatted}`
+    : `Join my trip on Waymark! Enter invite code: ${formatted}`;
 }
 
 export interface InvitePreview {

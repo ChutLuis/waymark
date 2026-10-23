@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, type RefOb
 import { Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { sampleTrack, useMotion, useTimeline } from '@/components/motion';
+import { useAppActive } from '@/components/useAppActive';
 import { cardPress, dealCard, frontBump } from '@/components/motion/keyframes';
 import { hapticAfter } from '@/lib/haptics';
 import { motion } from '@/theme';
@@ -125,6 +126,11 @@ function useCardActions(face: RefObject<TripFaceHandle | null>) {
 /** How a Home card arrives: the session's deal, a pick from the rail, or not at all. */
 export type HomeDeal = 'launch' | 'pick' | null;
 
+export interface HomeCardHandle {
+  /** Finish an interrupted deal before this card moves underneath another. */
+  settle: () => void;
+}
+
 interface HomeCardProps {
   trip: TripListItem;
   onNow: boolean;
@@ -144,12 +150,25 @@ interface HomeCardProps {
  * and when picked from the rail (at once, `light` at 450), landing on top of
  * the card it replaces.
  */
-export function HomeCard({ trip, onNow, viewerId, paperIndex, focused, collapsing, deal, onPress }: HomeCardProps) {
+export const HomeCard = forwardRef<HomeCardHandle, HomeCardProps>(function HomeCard(
+  { trip, onNow, viewerId, paperIndex, focused, collapsing, deal, onPress },
+  ref,
+) {
   const { ms } = useMotion();
+  const appActive = useAppActive();
   const face = useRef<TripFaceHandle>(null);
+  const cancelDealHaptic = useRef<(() => void) | null>(null);
   const { actions, style } = useCardActions(face);
   const dealt = useTimeline(deal ? 0 : 1);
   const keys = useMemo(() => dealCard(0), []);
+
+  useImperativeHandle(ref, () => ({
+    settle: () => {
+      dealt.set(1);
+      cancelDealHaptic.current?.();
+      cancelDealHaptic.current = null;
+    },
+  }));
 
   useEffect(() => {
     if (!deal) return;
@@ -158,7 +177,9 @@ export function HomeCard({ trip, onNow, viewerId, paperIndex, focused, collapsin
     const delay = deal === 'launch' ? home.dealBase : 0;
     const contact = deal === 'launch' ? home.dealBase + home.dealContact : home.pickContact;
     dealt.run(motion.duration.deal, delay);
-    return hapticAfter('light', ms(contact));
+    const cancel = hapticAfter('light', ms(contact));
+    cancelDealHaptic.current = cancel;
+    return cancel;
     // Mount only: a card deals once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -182,11 +203,11 @@ export function HomeCard({ trip, onNow, viewerId, paperIndex, focused, collapsin
             onNow={onNow}
             viewerId={viewerId}
             paperIndex={paperIndex}
-            live={focused}
-            collapsing={collapsing}
+            live={focused && appActive}
+            collapsing={collapsing && appActive}
           />
         </Pressable>
       </Animated.View>
     </Animated.View>
   );
-}
+});

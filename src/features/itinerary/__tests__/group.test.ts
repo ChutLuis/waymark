@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupItineraryByDay, UNSCHEDULED_KEY } from '../group';
+import { groupItineraryByDay, newItemStartAt, nextStop, stopsToGo, UNSCHEDULED_KEY } from '../group';
 import type { ItineraryItem } from '@/lib/types';
 
 function item(partial: Partial<ItineraryItem> & { id: string }): ItineraryItem {
@@ -48,5 +48,62 @@ describe('groupItineraryByDay', () => {
 
   it('returns no sections for an empty list', () => {
     expect(groupItineraryByDay([])).toEqual([]);
+  });
+});
+
+describe('stopsToGo', () => {
+  it('counts every stop that is not done, whatever its time', () => {
+    const stops = [
+      item({ id: 'overdue', startAt: '2026-10-12T08:00:00', status: 'planned' }),
+      item({ id: 'confirmed', startAt: '2026-10-12T09:00:00', status: 'confirmed' }),
+      item({ id: 'done', startAt: '2026-10-12T23:00:00', status: 'done' }),
+    ];
+    expect(stopsToGo(stops)).toBe(2);
+  });
+
+  it('is zero only when every stop is done', () => {
+    expect(stopsToGo([item({ id: 'a', status: 'done' })])).toBe(0);
+    expect(stopsToGo([])).toBe(0);
+  });
+});
+
+describe('nextStop', () => {
+  const now = new Date('2026-10-12T12:00:00');
+
+  it('skips stops already marked done, even in the future', () => {
+    const next = nextStop(
+      [
+        item({ id: 'done-later', startAt: '2026-10-12T13:00:00', status: 'done' }),
+        item({ id: 'planned-later', startAt: '2026-10-12T15:00:00' }),
+      ],
+      now,
+    );
+    expect(next?.id).toBe('planned-later');
+  });
+
+  it('ignores overdue stops: they are not next', () => {
+    expect(nextStop([item({ id: 'overdue', startAt: '2026-10-12T08:00:00' })], now)).toBeNull();
+  });
+});
+
+describe('newItemStartAt', () => {
+  it('prefills 10:00 on the selected local day, including a DST change day', () => {
+    for (const day of ['2026-10-19', '2026-03-08', '2026-11-01']) {
+      const date = new Date(newItemStartAt(day)!);
+      const [year, month, number] = day.split('-').map(Number);
+      expect([date.getFullYear(), date.getMonth() + 1, date.getDate()]).toEqual([year, month, number]);
+      expect([date.getHours(), date.getMinutes()]).toEqual([10, 0]);
+    }
+  });
+
+  it('keeps ANY and undated trips unscheduled', () => {
+    expect(newItemStartAt('ANY')).toBeNull();
+    expect(newItemStartAt(null)).toBeNull();
+  });
+
+  it('rejects invalid date keys rather than rolling into another day', () => {
+    expect(newItemStartAt('2026-02-30')).toBeNull();
+    expect(newItemStartAt('2026-13-01')).toBeNull();
+    expect(newItemStartAt('not a date')).toBeNull();
   });
 });

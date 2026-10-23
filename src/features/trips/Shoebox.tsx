@@ -8,7 +8,7 @@ import { shoeboxStamp } from '@/components/motion/keyframes';
 import { iconStrokeWidth, motion, spacing, useTheme } from '@/theme';
 import { SceneStamp } from './SceneStamp';
 import { DESTINATION_ART } from './destinationArt';
-import { DESTINATION_INFO, matchDestination } from './destinations';
+import { matchDestination } from './destinations';
 import { moreLine } from './shoebox';
 import type { TripListItem } from './hooks';
 
@@ -28,11 +28,19 @@ function monthYear(trip: TripListItem): string {
 }
 
 function PileStamp({ trip }: { trip: TripListItem }) {
+  const { colors } = useTheme();
   const country = matchDestination(trip.destination);
-  return country ? (
-    <SceneStamp band="mini" image={DESTINATION_ART[country].sceneStampStill} denomination={null} name={null} />
-  ) : (
-    <SceneStamp band="mini" image={null} initial={(trip.name.trim()[0] ?? '?').toUpperCase()} />
+  return (
+    <>
+      {country ? (
+        <SceneStamp band="mini" image={DESTINATION_ART[country].sceneStampStill} denomination={null} name={null} />
+      ) : (
+        <SceneStamp band="mini" image={null} initial={(trip.name.trim()[0] ?? '?').toUpperCase()} />
+      )}
+      <View pointerEvents="none" style={[styles.postmarkPaper, { backgroundColor: colors.stampPaper }]}>
+        <Postmark variant="compact" style={styles.postmark} />
+      </View>
+    </>
   );
 }
 
@@ -65,7 +73,6 @@ export function Shoebox({
 
   if (past.length === 0) return null;
   const latest = past[0];
-  const country = matchDestination(latest.destination);
   const behind = past.slice(1, 3);
   const sub = past.length === 1 ? `${monthYear(latest)} · postmarked` : moreLine(past, new Date().getFullYear());
 
@@ -98,18 +105,10 @@ export function Shoebox({
             })}
           <Animated.View style={[styles.pileStamp, TOP, topStyle]}>
             <PileStamp trip={latest} />
-            {country ? (
-              <Postmark
-                variant="compact"
-                style={styles.postmark}
-                city={DESTINATION_INFO[country].chip}
-                date={latest.endDate}
-              />
-            ) : null}
           </Animated.View>
         </View>
         <View style={styles.text}>
-          <AppText role="envelopeTitle" numberOfLines={1} style={styles.name}>
+          <AppText role="rowTitle" numberOfLines={1}>
             {latest.name}
           </AppText>
           <AppText role="metaSm" tone="secondary" numberOfLines={1}>
@@ -127,8 +126,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 16, height: 56, marginTop: spacing.s4 },
   pile: { width: 52, height: 56 },
   pileStamp: { position: 'absolute', width: 40, height: 48 },
-  postmark: { position: 'absolute', left: 10, top: 2, opacity: 0.85 },
+  postmarkPaper: { position: 'absolute', left: 3, bottom: 3, width: 34, height: 24, overflow: 'hidden', opacity: 0.85 },
+  postmark: { position: 'absolute', left: -15, top: -10, transform: [{ scale: 0.5 }] },
   text: { flex: 1, minWidth: 0, marginLeft: 20 },
-  name: { fontSize: 18, lineHeight: 22 },
   pressed: { opacity: 0.7 },
 });

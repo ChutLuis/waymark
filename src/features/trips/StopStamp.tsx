@@ -1,11 +1,11 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { StyleSheet, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
 import { useMotion, useTimeline, sampleTrack } from '@/components/motion';
 import { postmarkSquash } from '@/components/motion/keyframes';
 import { haptic } from '@/lib/haptics';
-import { motion } from '@/theme';
+import { motion, useTheme } from '@/theme';
 import type { ItineraryStatus } from '@/lib/types';
 import { DESTINATION_ART, NEUTRAL_STOP_STAMP } from './destinationArt';
 import type { CountryKey } from './destinations';
@@ -36,10 +36,10 @@ interface StopStampProps {
   width?: number;
   height?: number;
   /**
-   * Called on the contact frame of a forward change (the stamp landing, the
-   * postmark hitting), so the row's status tag can stamp in on the same frame.
+   * Local changes deliver their contact frame; incoming data settles at once
+   * with `local` false, without stamping the row's status tag.
    */
-  onContact?: (status: ItineraryStatus) => void;
+  onContact?: (status: ItineraryStatus, local: boolean) => void;
   /**
    * When the press that set `status` happened (ms since epoch): contact times
    * run from the tap, not from when the change reached the stamp (README 03).
@@ -51,7 +51,7 @@ interface StopStampProps {
 /**
  * Marker-driven stop stamp (LottieView, loop={false}). Seeks to the frame for
  * the current status without playing on mount; plays the transition when the
- * status changes forward; seeks instantly when it moves backwards. Haptics fire
+ * user presses it forward; incoming data and rollbacks seek silently. Haptics fire
  * on contact (README 03/04): the stamp lands 300 ms into `confirm` (light),
  * the postmark bottoms out 200 ms into `done` (medium) and the stamp squashes.
  *
@@ -67,23 +67,38 @@ export function StopStamp({
   style,
 }: StopStampProps) {
   const { reduced, ms } = useMotion();
+  const { scheme } = useTheme();
+  const { fontScale } = useWindowDimensions();
   const ref = useRef<LottieView>(null);
   const prevFrame = useRef<number | null>(null);
+  const prevSource = useRef<unknown>(null);
+  const handledPress = useRef<number | null>(null);
   /** While a segment plays, nothing may seek the stamp (README 03 v4.1.1). */
   const playingUntil = useRef(0);
   const squash = useTimeline(1);
   const contactRef = useRef(onContact);
-  contactRef.current = onContact;
   const pressedRef = useRef(pressedAt);
-  pressedRef.current = pressedAt;
+  useLayoutEffect(() => {
+    contactRef.current = onContact;
+    pressedRef.current = pressedAt;
+  }, [onContact, pressedAt]);
 
   const source = country ? DESTINATION_ART[country].stopStamp : NEUTRAL_STOP_STAMP;
   const targetFrame = STATUS_FRAME[status];
+
+  const apply = useCallback(() => {
+    if (Date.now() < playingUntil.current) return;
+    const frame = prevFrame.current ?? STATUS_FRAME.planned;
+    ref.current?.play(frame, frame);
+    ref.current?.pause();
+  }, []);
 
   // A layout effect, so the segment starts in the commit that carries the
   // change rather than after it paints.
   useLayoutEffect(() => {
     const from = prevFrame.current;
+    const sourceChanged = prevSource.current !== source;
+    prevSource.current = source;
     prevFrame.current = targetFrame;
     // Static seek: play(f, f) jumps to the frame; pause() then holds it (the web
     // player's play(f, f) does setFrame + play, so the pause is what stops it).
@@ -92,14 +107,13 @@ export function StopStamp({
       ref.current?.pause();
     };
 
-    if (from === null) {
+    const press = pressedRef.current;
+    const local = press !== null && press !== handledPress.current && !sourceChanged && from !== null;
+    if (local) handledPress.current = press;
+    if (from === null || sourceChanged || targetFrame < from || !local) {
+      playingUntil.current = 0;
       seek(targetFrame);
-      return;
-    }
-    if (targetFrame < from) {
-      // Going backwards never animates.
-      seek(targetFrame);
-      haptic('selection');
+      if (from !== null && (targetFrame !== from || sourceChanged)) contactRef.current?.(status, false);
       return;
     }
     if (targetFrame === from) return;
@@ -121,39 +135,44 @@ export function StopStamp({
     }
 
     // Time already spent since the tap comes off every contact.
-    const lag = pressedRef.current === null ? 0 : Math.max(0, Date.now() - pressedRef.current);
+    const lag = Math.max(0, Date.now() - press!);
     const timers = contacts.map(({ status: landed, at }) =>
       setTimeout(() => {
         // Haptics still fire under Reduce Motion; the frame jumps to the end.
         haptic(landed === 'done' ? 'medium' : 'light');
         if (landed === 'done') squash.run(motion.choreo.stamp.squash);
-        contactRef.current?.(landed);
+        contactRef.current?.(landed, true);
       }, Math.max(0, ms(at) - lag)),
     );
+    // A segment command sent before Lottie loads can be lost. Always settle
+    // after its end; the load retries alone may both fall inside the segment.
+    timers.push(setTimeout(() => {
+      playingUntil.current = 0;
+      apply();
+    }, ms(frameMs(targetFrame))));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetFrame, source]);
+  }, [targetFrame, source, apply]);
 
   // A freshly loaded animation starts at frame 0 (mount, or a destination
   // change). Seek it to the right frame without playing — this is also the web
   // player's only static-seek path, since it isn't ready during the first
   // effect run. A segment in play is left alone.
-  const apply = () => {
-    if (Date.now() < playingUntil.current) return;
-    const frame = prevFrame.current ?? STATUS_FRAME[status];
-    ref.current?.play(frame, frame);
-    ref.current?.pause();
-  };
-
   // The web player does not consistently fire onAnimationLoaded for a mount
   // that starts on a non-zero frame, so seek on a short timer as well (N17).
-  // Only when an animation loads: on a status change these seeks landed 50 ms
-  // into the segment and cut it to its last frame.
+  // Retry after native configuration changes too, but never seek a playing
+  // segment; its own end timer settles it if these retries both arrive early.
   useEffect(() => {
     const timers = [setTimeout(apply, 50), setTimeout(apply, 250)];
     return () => timers.forEach(clearTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source]);
+  }, [source, scheme, fontScale, apply]);
+
+  useEffect(() => {
+    if (reduced) {
+      playingUntil.current = 0;
+      apply();
+    }
+  }, [reduced, apply]);
 
   const squashStyle = useAnimatedStyle(() => ({
     transform: [{ scale: sampleTrack(postmarkSquash.scale, squash.p.value, motion.easing.standard) }],
@@ -165,6 +184,7 @@ export function StopStamp({
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
+      onLayout={apply}
     >
       <LottieView
         ref={ref}

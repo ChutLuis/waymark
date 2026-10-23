@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { markTripJustCreated } from '@/features/invites/TripCreatedInviteToast';
 import { CreateTripSheet } from '@/features/trips/CreateTripSheet';
 import { primeShell } from '@/features/trips/expandStore';
 
@@ -11,8 +12,10 @@ export default function NewTripScreen() {
   return (
     <CreateTripSheet
       visible
-      onClose={() => router.back()}
+      // A deep link opens this with nothing underneath to go back to.
+      onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       onCreated={(trip) => {
+        markTripJustCreated(trip.id);
         primeShell(false);
         router.replace(`/trips/${trip.id}` as never);
       }}

@@ -5,7 +5,7 @@
  * values live at module level so Home (underneath, scaling and dimming) and
  * the shell (clipping and framing) animate from the same clock.
  */
-import { makeMutable } from 'react-native-reanimated';
+import { cancelAnimation, makeMutable } from 'react-native-reanimated';
 
 export interface Rect {
   x: number;
@@ -73,6 +73,33 @@ export function currentOrigin(tripId: string): ExpandOrigin | null {
 
 export function clearExpandOrigin(): void {
   origin = null;
+}
+
+/**
+ * Trip shells currently mounted. A reminder can push a second trip over the
+ * first; only the last one to go may reset the state the other still uses.
+ */
+let mountedShells = 0;
+
+/** Call on a trip shell's mount; the returned cleanup resets Home once no shell is left. */
+export function trackShellMounted(): () => void {
+  mountedShells += 1;
+  return () => {
+    mountedShells = Math.max(0, mountedShells - 1);
+    if (mountedShells === 0) resetHomeCover();
+  };
+}
+
+/** Navigation can remove the shell without running its animated collapse. */
+export function resetHomeCover(): void {
+  [homeCovered, reveal, shellContent, shellPush, tripSheet].forEach(cancelAnimation);
+  homeCovered.value = 0;
+  reveal.value = 1;
+  shellContent.value = 1;
+  shellPush.value = 1;
+  tripSheet.value = 0;
+  setCollapsing(false);
+  clearExpandOrigin();
 }
 
 export function setCollapsing(on: boolean): void {

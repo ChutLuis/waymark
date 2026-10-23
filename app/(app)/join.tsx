@@ -1,17 +1,21 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, ChevronLeft, Lock, Mail } from 'lucide-react-native';
+import { onlineManager } from '@tanstack/react-query';
+import { Check, Lock, Mail } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Button } from '@/components/Button';
+import { useIsOnline } from '@/lib/useIsOnline';
 import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
 import { SceneStamp } from '@/features/trips/SceneStamp';
 import { TripPreviewCard } from '@/features/trips/TripPreviewCard';
 import { useAcceptInvite, usePreviewTripInvite } from '@/features/invites/hooks';
-import { INVITE_CODE_LENGTH, InviteCodeEntry, sanitizeInviteCode } from '@/features/invites/InviteCodeEntry';
+import { InviteCodeEntry } from '@/features/invites/InviteCodeEntry';
+import { INVITE_CODE_LENGTH, sanitizeInviteCode } from '@/features/invites/inviteCode';
 import {
   DESTINATION_INFO,
   matchDestination,
@@ -19,6 +23,8 @@ import {
   daysUntilLabelUppercase,
   stampName,
 } from '@/features/trips/destinations';
+import { OFFLINE_MESSAGE, isNetworkError } from '@/features/trips/errors';
+import { stampLabel } from '@/features/trips/sheet';
 import { iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
 import { takePendingInviteCode } from '@/features/invites/pendingInvite';
@@ -27,6 +33,7 @@ import { primeShell } from '@/features/trips/expandStore';
 const LENGTH = INVITE_CODE_LENGTH;
 
 function friendlyMessage(error: Error): string {
+  if (isNetworkError(error)) return OFFLINE_MESSAGE;
   if (/invalid invite/i.test(error.message)) {
     return "That code doesn't match an invite. Check it and try again.";
   }
@@ -35,6 +42,10 @@ function friendlyMessage(error: Error): string {
   }
   if (/expired/i.test(error.message)) {
     return 'That invite has expired. Ask for a new invite.';
+  }
+  // The server pauses lookups for 15 minutes after ten codes that matched nothing.
+  if (/too many attempts/i.test(error.message)) {
+    return 'Too many codes that didn’t match. Wait 15 minutes, then check the code and try again.';
   }
   return "Couldn't join the trip. Try again.";
 }
@@ -46,6 +57,7 @@ export default function JoinScreen() {
   const router = useRouter();
   const { code: linkCode } = useLocalSearchParams<{ code?: string }>();
   const acceptInvite = useAcceptInvite();
+  const online = useIsOnline();
 
   const initialCode = typeof linkCode === 'string' ? linkCode : '';
   const [code, setCode] = useState(sanitizeInviteCode(initialCode));
@@ -58,6 +70,17 @@ export default function JoinScreen() {
   // Already on the trip: open it, never spend the code (N36).
   const isMember = preview.data?.isMember ?? false;
   const artWidth = Math.min(width, 440) - spacing.gutter * 2 - 14;
+  // Offline, the preview and the join would wait for the connection, spinning
+  // without a word; say so instead. Opening a trip you're on needs no network.
+  const offline = !online && complete && !isMember;
+  const message =
+    banner ?? (offline ? OFFLINE_MESSAGE : preview.isError ? friendlyMessage(preview.error as Error) : null);
+  // A preview that never reached the server says nothing about the code.
+  const previewRejected = preview.isError && !isNetworkError(preview.error);
+
+  useEffect(() => {
+    if (message) AccessibilityInfo.announceForAccessibility(message);
+  }, [message]);
 
   const openTrip = () => {
     if (preview.data) {
@@ -68,6 +91,7 @@ export default function JoinScreen() {
 
   const onJoin = async () => {
     setBanner(null);
+    if (!onlineManager.isOnline()) return;
     try {
       const tripId = await acceptInvite.mutateAsync(code);
       primeShell(false);
@@ -102,14 +126,7 @@ export default function JoinScreen() {
       showsVerticalScrollIndicator={false}
     >
       <ScreenStatusBar />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        onPress={leaveInvite}
-        style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-      >
-        <ChevronLeft size={24} color={colors.ink} strokeWidth={2.2} />
-      </Pressable>
+      <BackButton onPress={leaveInvite} />
 
       <View style={styles.body}>
         <AppText role="kicker" tone="secondary">JOIN A TRIP</AppText>
@@ -117,7 +134,10 @@ export default function JoinScreen() {
 
         <InviteCodeEntry
           value={code}
-          onChangeText={setCode}
+          onChangeText={(next) => {
+            setCode(next);
+            setBanner(null);
+          }}
           autoFocus={!linkCode}
           onSubmit={() => {
             if (isMember) openTrip();
@@ -134,9 +154,9 @@ export default function JoinScreen() {
             </AppText>
           </View>
         ) : null}
-        {banner || preview.isError ? (
-          <AppText role="bodySm" style={[styles.error, { color: colors.wax }]}>
-            {banner ?? friendlyMessage(preview.error as Error)}
+        {message ? (
+          <AppText role="bodySm" accessibilityRole="alert" style={[styles.error, { color: colors.danger }]}>
+            {message}
           </AppText>
         ) : null}
         </InviteCodeEntry>
@@ -166,7 +186,7 @@ export default function JoinScreen() {
                     <SceneStamp
                       band="md"
                       image={null}
-                      initial={(preview.data.name[0] ?? '?').toUpperCase()}
+                      initial={stampLabel(preview.data.destination, preview.data.name)}
                       name={stampName(preview.data.destination)}
                     />
                   }
@@ -230,7 +250,7 @@ export default function JoinScreen() {
           <Button
             label={preview.data ? `Join ${preview.data.name}` : 'Join trip'}
             size="lg"
-            disabled={!complete || preview.isError}
+            disabled={!complete || offline || previewRejected}
             loading={acceptInvite.isPending}
             onPress={onJoin}
           />
@@ -249,8 +269,6 @@ export default function JoinScreen() {
 const styles = StyleSheet.create({
   content: { paddingBottom: 0 },
   contentWide: { width: '100%', maxWidth: 440, alignSelf: 'center' },
-  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
-  pressed: { opacity: 0.7 },
   body: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   title: { marginTop: spacing.s3 },
   foundRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.s4 },

@@ -1,12 +1,16 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
+import { AppText } from '@/components/AppText';
+import { DefaultAirmailStampArt } from '@/components/airmail/DefaultAirmailArt';
 import { PerforatedStamp, type StampSize } from '@/components/airmail/PerforatedStamp';
 import { useSignedUrl } from '@/lib/supabase/storage';
-import { fontFamilies, useTheme } from '@/theme';
+import { stampText, useTheme } from '@/theme';
 import { DESTINATION_ART, NEUTRAL_STAMP_STILL } from './destinationArt';
 import { denomination as denomText, DESTINATION_INFO, type CountryKey } from './destinations';
 
 export type StampBand = 'lg' | 'md' | 'sm' | 'xs' | 'mini';
+
+type StampTextSize = (typeof stampText)[Exclude<keyof typeof stampText, 'avatar'>];
 
 interface BandLayout {
   width: number;
@@ -17,27 +21,24 @@ interface BandLayout {
   /** Perforation profile. */
   size: StampSize;
   denomPad: { t: number; r: number; b: number; l: number };
-  denomSize: number;
-  denomLine: number;
-  nameSize: number;
-  nameLine: number;
-  nameLs: number;
+  /** Denomination and name type; the 40×48 stamp prints neither. */
+  text: StampTextSize | null;
 }
 
 /** Exact stamp geometry per README's stamp table (art windows) + the override. */
 export const STAMP_BANDS: Record<StampBand, BandLayout> = {
-  lg: { width: 104, height: 128, artW: 90, artH: 99, nameStrip: 17, size: 'lg', denomPad: { t: 2, r: 4, b: 0, l: 0 }, denomSize: 9.5, denomLine: 11, nameSize: 9.5, nameLine: 11, nameLs: 0.8 },
-  md: { width: 88, height: 104, artW: 74, artH: 77, nameStrip: 15, size: 'md', denomPad: { t: 1, r: 3, b: 0, l: 0 }, denomSize: 8.5, denomLine: 10, nameSize: 8.5, nameLine: 10, nameLs: 0.8 },
-  sm: { width: 80, height: 96, artW: 66, artH: 71, nameStrip: 13, size: 'sm', denomPad: { t: 1, r: 3, b: 0, l: 0 }, denomSize: 8, denomLine: 9, nameSize: 8, nameLine: 9, nameLs: 0.5 },
+  lg: { width: 104, height: 128, artW: 90, artH: 99, nameStrip: stampText.lg.nameStrip, size: 'lg', denomPad: { t: 2, r: 4, b: 0, l: 0 }, text: stampText.lg },
+  md: { width: 88, height: 104, artW: 74, artH: 77, nameStrip: stampText.md.nameStrip, size: 'md', denomPad: { t: 1, r: 3, b: 0, l: 0 }, text: stampText.md },
+  sm: { width: 80, height: 96, artW: 66, artH: 71, nameStrip: stampText.sm.nameStrip, size: 'sm', denomPad: { t: 1, r: 3, b: 0, l: 0 }, text: stampText.sm },
   // Large perforations (holes r 3 every 8, padding 5): 5 + 2 + 42 + 2 + 5 = 56.
-  xs: { width: 56, height: 72, artW: 42, artH: 49, nameStrip: 11, size: 'sm', denomPad: { t: 1, r: 2, b: 1, l: 3 }, denomSize: 6.5, denomLine: 8, nameSize: 6.5, nameLine: 8, nameLs: 0.5 },
-  mini: { width: 40, height: 48, artW: 28, artH: 36, nameStrip: 0, size: 'mini', denomPad: { t: 0, r: 0, b: 0, l: 0 }, denomSize: 0, denomLine: 0, nameSize: 0, nameLine: 0, nameLs: 0 },
+  xs: { width: 56, height: 72, artW: 42, artH: 49, nameStrip: stampText.xs.nameStrip, size: 'sm', denomPad: { t: 1, r: 2, b: 1, l: 3 }, text: stampText.xs },
+  mini: { width: 40, height: 48, artW: 28, artH: 36, nameStrip: 0, size: 'mini', denomPad: { t: 0, r: 0, b: 0, l: 0 }, text: null },
 };
 
 export const AVATAR_STAMP_SIZES = {
-  lg: { width: 80, height: 96, initial: 36, nameSize: 8, nameLine: 9, nameLs: 0.8 },
-  md: { width: 64, height: 80, initial: 28, nameSize: 7.5, nameLine: 9, nameLs: 0.8 },
-  sm: { width: 40, height: 48, initial: 16, nameSize: 0, nameLine: 0, nameLs: 0 },
+  lg: { width: 80, height: 96, ...stampText.avatar.lg },
+  md: { width: 64, height: 80, ...stampText.avatar.md },
+  sm: { width: 40, height: 48, ...stampText.avatar.sm },
 } as const;
 
 type AvatarStampSize = keyof typeof AVATAR_STAMP_SIZES;
@@ -66,6 +67,8 @@ interface ArtStampProps {
   frame?: 'stampPaper' | 'ink';
   /** Fallback initial shown in an ink panel (unknown destination with dates). */
   initial?: string | null;
+  /** Disable SVG blur filter inside dense scrolling lists. */
+  shadow?: boolean;
 }
 
 /**
@@ -80,6 +83,7 @@ export function SceneStamp({
   name = null,
   frame = 'stampPaper',
   initial = null,
+  shadow = true,
 }: ArtStampProps) {
   const { colors } = useTheme();
   const layout = STAMP_BANDS[band];
@@ -101,13 +105,12 @@ export function SceneStamp({
       {image ? (
         <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" />
       ) : (
-        <View style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: colors.stampInk }]}>
-          <Text style={{ fontFamily: fontFamilies.extrabold, fontSize: layout.artH * 0.5, lineHeight: layout.artH * 0.6, color: colors.stampPaper }}>
-            {initial ?? '?'}
-          </Text>
-        </View>
+        <DefaultAirmailStampArt
+          label={initial ?? '?'}
+          compact={band === 'mini' || band === 'xs'}
+        />
       )}
-      {denomination && layout.denomSize > 0 ? (
+      {denomination && layout.text ? (
         <View
           style={[
             styles.denom,
@@ -120,37 +123,30 @@ export function SceneStamp({
             },
           ]}
         >
-          <Text style={{ fontFamily: fontFamilies.mono, fontSize: layout.denomSize, lineHeight: layout.denomLine, color: colors.stampInk }}>
+          <AppText role="stampLabel" style={[layout.text.denomination, styles.denomText, { color: colors.stampInk }]}>
             {denomination}
-          </Text>
+          </AppText>
         </View>
       ) : null}
     </View>
   );
 
   return (
-    <PerforatedStamp width={layout.width} height={layout.height} size={layout.size} tone={frame}>
+    <PerforatedStamp width={layout.width} height={layout.height} size={layout.size} tone={frame} shadow={shadow}>
       {panel}
-      {layout.nameStrip > 0 ? (
+      {layout.text ? (
         <View style={{ height: layout.nameStrip, alignItems: 'center', justifyContent: 'center' }}>
           {/* alignSelf/stretch + textAlign centre give the Text the strip's
               full width, so Android's hair-short mono measurement can't wrap
               the last letter onto a clipped second line (N4/N10). numberOfLines
               is back now that the width is unambiguous. */}
-          <Text
+          <AppText
+            role="stampLabel"
             numberOfLines={1}
-            style={{
-              alignSelf: 'stretch',
-              textAlign: 'center',
-              fontFamily: fontFamilies.mono,
-              fontSize: layout.nameSize,
-              lineHeight: layout.nameLine,
-              letterSpacing: layout.nameLs,
-              color: colors.stampInk,
-            }}
+            style={[styles.stripText, layout.text.name, { color: colors.stampInk }]}
           >
             {(name ?? '').toUpperCase()}
-          </Text>
+          </AppText>
         </View>
       ) : null}
     </PerforatedStamp>
@@ -200,27 +196,26 @@ export function AvatarStamp({
         {resolvedImage ? (
           <Image source={{ uri: resolvedImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
         ) : (
-          <Text style={{ fontFamily: fontFamilies.extrabold, fontSize: dims.initial, lineHeight: dims.initial * 1.2, color: colors.stampPaper }}>
+          <AppText
+            role="initialLg"
+            style={{ fontSize: dims.initial, lineHeight: dims.initial * 1.2, color: colors.stampPaper }}
+          >
             {initial}
-          </Text>
+          </AppText>
         )}
       </View>
-      {dims.nameSize > 0 ? (
+      {dims.name ? (
         <View style={{ height: layout.nameStrip, alignItems: 'center', justifyContent: 'center' }}>
-          <Text
+          <AppText
+            role="stampLabel"
             numberOfLines={1}
-            style={{
-              alignSelf: 'stretch',
-              textAlign: 'center',
-              fontFamily: fontFamilies.mono,
-              fontSize: dims.nameSize,
-              lineHeight: dims.nameLine,
-              letterSpacing: dims.nameLs,
-              color: colors.stampInk,
-            }}
+            style={[
+              styles.stripText,
+              { ...dims.name, color: colors.stampInk },
+            ]}
           >
             {(name ?? '').toUpperCase()}
-          </Text>
+          </AppText>
         </View>
       ) : null}
     </PerforatedStamp>
@@ -296,4 +291,7 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
   },
+  // Denominations print untracked.
+  denomText: { letterSpacing: 0 },
+  stripText: { alignSelf: 'stretch', textAlign: 'center' },
 });

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { codeLength, sheetDays, sheetHeader, typedCode, usedRange, usedSummary } from '../sheet';
+import {
+  codeLength,
+  sheetDays,
+  sheetHeader,
+  sheetStampName,
+  stampLabel,
+  typedCode,
+  usedRange,
+  usedSummary,
+} from '../sheet';
 
 describe('sheetDays', () => {
   const days = sheetDays('2026-10-03', '2026-10-12', '2026-10-08');
@@ -30,7 +39,13 @@ describe('sheet lines', () => {
   const days = sheetDays('2026-10-03', '2026-10-12', '2026-10-08');
 
   it('heads the sheet', () => {
-    expect(sheetHeader('NIPPON', 'Kyoto & Nara', 10, 2026)).toBe('NIPPON · KYOTO & NARA · TEN DAYS · 2026');
+    expect(sheetHeader('Japan', 'Kyoto & Nara', 10, 2026)).toBe('NIPPON · KYOTO & NARA · TEN DAYS · 2026');
+    expect(sheetHeader('El Salvador', 'Surf week', 6, 2026)).toBe('EL SALVADOR · SURF WEEK · SIX DAYS · 2026');
+    expect(sheetHeader(null, 'Weekend', 1, null)).toBe('WEEKEND · ONE DAY');
+  });
+
+  it('never prints a country twice', () => {
+    expect(sheetHeader('El Salvador', 'El Salvador', 6, 2026)).toBe('EL SALVADOR · SIX DAYS · 2026');
   });
 
   it('dates the postmark with the used days', () => {
@@ -40,6 +55,52 @@ describe('sheet lines', () => {
 
   it('counts used and to go', () => {
     expect(usedSummary(days)).toBe('5 USED · 5 TO GO');
+  });
+});
+
+describe('sheetStampName', () => {
+  it("prints a scene's stamp name", () => {
+    expect(sheetStampName('Japan', 'Kyoto & Nara')).toBe('NIPPON');
+    expect(sheetStampName('Kyoto, Japan', 'Spring')).toBe('NIPPON');
+  });
+
+  it('prints a two-word country whole, not cut to a stamp strip', () => {
+    expect(sheetStampName('El Salvador', 'Surf week')).toBe('EL SALVADOR');
+  });
+
+  it('leaves out a country the trip name already says', () => {
+    expect(sheetStampName('El Salvador', 'El Salvador')).toBe('');
+    expect(sheetStampName('El Salvador', 'Summer in el salvador!')).toBe('');
+    expect(sheetStampName('México', 'Mexico')).toBe('');
+    expect(sheetStampName('Japan', 'Japan in spring')).toBe('');
+    expect(sheetStampName('Japan', 'Nippon days')).toBe('');
+  });
+
+  it('only matches whole words', () => {
+    expect(sheetStampName('Oman', 'Romania road trip')).toBe('OMAN');
+    expect(sheetStampName('El Salvador', 'Salvador surf')).toBe('EL SALVADOR');
+  });
+
+  it('falls back to the destination before its first comma', () => {
+    expect(sheetStampName('San Salvador, El Salvador', 'Volcanoes')).toBe('SAN SALVADOR');
+  });
+
+  it('is empty without a destination', () => {
+    expect(sheetStampName(null, 'Trip')).toBe('');
+    expect(sheetStampName('  ', 'Trip')).toBe('');
+  });
+});
+
+describe('stampLabel', () => {
+  it('prints the country code, as the rail does', () => {
+    expect(stampLabel('El Salvador', 'El Salvador')).toBe('SV');
+    expect(stampLabel('SV', 'Beach')).toBe('SV');
+  });
+
+  it("falls back to the trip's initial", () => {
+    expect(stampLabel('Kyoto', 'kyoto & Nara')).toBe('K');
+    expect(stampLabel(null, '  summer')).toBe('S');
+    expect(stampLabel(null, '')).toBe('?');
   });
 });
 

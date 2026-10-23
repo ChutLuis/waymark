@@ -12,10 +12,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Line, Rect } from 'react-native-svg';
 import { AppText } from '@/components/AppText';
+import { DefaultAirmailStampArt } from '@/components/airmail/DefaultAirmailArt';
 import { PerforatedStamp, STAMP_SHADOW_MARGIN } from '@/components/airmail/PerforatedStamp';
 import { easing, sampleTrack, useEntrance, useMotion } from '@/components/motion';
 import { dayStampRotation, dropIn } from '@/components/motion/keyframes';
 import { motion, useTheme } from '@/theme';
+import { findCountry } from './countries';
 import { DESTINATION_ART } from './destinationArt';
 import { matchDestination } from './destinations';
 import { RAIL, railEntries, railScrollTarget } from './stack';
@@ -31,31 +33,38 @@ function RailStamp({ trip }: { trip: TripListItem }) {
   const country = matchDestination(trip.destination);
   if (!trip.startDate || !trip.endDate) {
     return (
-      <Svg width={RAIL.stampWidth} height={RAIL.stampHeight}>
-        <Rect
-          x={0.75}
-          y={0.75}
-          width={RAIL.stampWidth - 1.5}
-          height={RAIL.stampHeight - 1.5}
-          rx={2}
-          fill={colors.paper}
-          fillOpacity={0.5}
-          stroke={colors.slot}
-          strokeWidth={1.5}
-          strokeDasharray="4 3"
-        />
-      </Svg>
+      <View style={styles.emptySlot} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Svg width={RAIL.stampWidth} height={RAIL.stampHeight} style={StyleSheet.absoluteFill}>
+          <Rect
+            x={0.75}
+            y={0.75}
+            width={RAIL.stampWidth - 1.5}
+            height={RAIL.stampHeight - 1.5}
+            rx={2}
+            fill={colors.paper}
+            fillOpacity={0.5}
+            stroke={colors.fieldBorder}
+            strokeWidth={1.5}
+            strokeDasharray="4 3"
+          />
+        </Svg>
+        <AppText role="dayNumber" numberOfLines={1}>
+          {(trip.name.trim()[0] ?? '?').toUpperCase()}
+        </AppText>
+        <AppText role="stampLabel" tone="secondary" numberOfLines={2} style={styles.slotName}>
+          {trip.name}
+        </AppText>
+      </View>
     );
   }
+  const iso = findCountry(trip.destination)?.code;
   return (
     <PerforatedStamp width={RAIL.stampWidth} height={RAIL.stampHeight} size="sm">
       {country ? (
         <Image source={DESTINATION_ART[country].sceneStampStill} style={styles.art} contentFit="cover" />
       ) : (
-        <View style={[styles.art, styles.initial, { backgroundColor: colors.stampInk }]}>
-          <AppText role="initialLg" style={[styles.initialText, { color: colors.stampPaper }]}>
-            {(trip.name.trim()[0] ?? '?').toUpperCase()}
-          </AppText>
+        <View style={styles.art}>
+          <DefaultAirmailStampArt label={iso ?? (trip.name.trim()[0] ?? '?').toUpperCase()} compact />
         </View>
       )}
     </PerforatedStamp>
@@ -86,10 +95,10 @@ function RailItem({
 
   // The picked stamp rises 4 pt; the one it replaces settles back.
   useEffect(() => {
-    lift.value = withTiming(picked ? -RAIL.lift : 0, {
+    lift.set(withTiming(picked ? -RAIL.lift : 0, {
       duration: ms(motion.choreo.home.pickLift),
       easing: easing('standard'),
-    });
+    }));
   }, [picked, lift, ms]);
 
   // One transform for both: two styles setting transform on one view overwrite
@@ -134,7 +143,7 @@ function YearDivider({ label }: { label: string | null }) {
       <Svg width={2} height={RAIL.stampHeight}>
         <Line x1={1} y1={0} x2={1} y2={RAIL.stampHeight} stroke={colors.railDivider} strokeWidth={1.5} strokeDasharray="4 3" />
       </Svg>
-      <AppText role="tagSm" tone="secondary" style={[styles.caption, styles.noRule]}>
+      <AppText role="tagSm" tone="secondary" numberOfLines={1} style={[styles.caption, styles.noRule]}>
         {label ?? ' '}
       </AppText>
     </View>
@@ -160,7 +169,7 @@ interface TripRailProps {
 export function TripRail({ trips, onNowIds, pickedId, dealing, onPick }: TripRailProps) {
   const { ms } = useMotion();
   const entries = useMemo(() => railEntries(trips, onNowIds), [trips, onNowIds]);
-  const byId = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips]);
+  const byId = useMemo(() => new Map(trips.map((trip, index) => [trip.id, { trip, index }])), [trips]);
   const [viewport, setViewport] = useState(0);
   const ref = useAnimatedRef<Animated.ScrollView>();
   const offset = useSharedValue(0);
@@ -182,13 +191,12 @@ export function TripRail({ trips, onNowIds, pickedId, dealing, onPick }: TripRai
     onPick(trip);
     const to = railScrollTarget(x, offset.value, viewport, contentWidth);
     if (to === null) return;
-    target.value = offset.value;
-    target.value = withTiming(to, { duration: ms(motion.choreo.home.railScroll), easing: easing('standard') }, () => {
-      target.value = -1;
-    });
+    target.set(offset.value);
+    target.set(withTiming(to, { duration: ms(motion.choreo.home.railScroll), easing: easing('standard') }, () => {
+      target.set(-1);
+    }));
   };
 
-  let tripIndex = -1;
   return (
     <View>
       <View style={styles.labelRow}>
@@ -211,15 +219,15 @@ export function TripRail({ trips, onNowIds, pickedId, dealing, onPick }: TripRai
       >
         {entries.map((entry) => {
           if (entry.kind === 'divider') return <YearDivider key={`divider-${entry.x}`} label={entry.label} />;
-          const trip = byId.get(entry.id);
-          if (!trip) return null;
-          tripIndex += 1;
+          const item = byId.get(entry.id);
+          if (!item) return null;
+          const { trip, index } = item;
           return (
             <RailItem
               key={entry.id}
               trip={trip}
               caption={entry.caption}
-              index={tripIndex}
+              index={index}
               picked={entry.id === pickedId}
               deal={dealing && (viewport === 0 || entry.x < viewport)}
               onPick={() => pick(trip, entry.x)}
@@ -238,7 +246,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     paddingHorizontal: RAIL.padX,
   },
-  position: { letterSpacing: 0.8 },
+  position: { paddingRight: 1 },
   rail: { height: RAIL_HEIGHT, flexGrow: 0 },
   railContent: {
     paddingTop: PAD_TOP,
@@ -249,11 +257,10 @@ const styles = StyleSheet.create({
   },
   item: { width: RAIL.stampWidth, alignItems: 'center', gap: CAPTION_GAP },
   art: { position: 'absolute', left: 5, top: 5, right: 5, bottom: 5 },
-  initial: { alignItems: 'center', justifyContent: 'center' },
-  initialText: { fontSize: 22, lineHeight: 24 },
+  emptySlot: { width: RAIL.stampWidth, height: RAIL.stampHeight, alignItems: 'center', justifyContent: 'center', padding: 4, gap: 2 },
+  slotName: { alignSelf: 'stretch', textAlign: 'center', paddingRight: 1 },
   caption: {
-    lineHeight: 12,
-    letterSpacing: 0.4,
+    paddingRight: 1,
     borderBottomWidth: RULE,
     paddingBottom: RULE,
   },

@@ -166,9 +166,11 @@ export function useDeleteTrip() {
       if (objects && objects.length > 0) {
         await supabase.storage.from('trip-covers').remove(objects.map((o) => `${tripId}/${o.name}`));
       }
-      // RLS restricts the delete to the owner; cascades clean up the rest.
-      const { error } = await supabase.from('trips').delete().eq('id', tripId);
+      // RLS restricts the delete to the owner; cascades clean up the rest. A
+      // delete RLS filters out deletes nothing without an error, so check.
+      const { data, error } = await supabase.from('trips').delete().eq('id', tripId).select('id');
       if (error) throw error;
+      if (data.length === 0) throw new Error("Only the trip's owner can delete it.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tripKeys.list() });
@@ -243,12 +245,16 @@ export function useLeaveTrip() {
   return useMutation({
     mutationFn: async (tripId: string) => {
       if (!userId) throw new Error('Not signed in');
-      const { error } = await supabase
+      // The database refuses an owner leaving their own trip with a readable
+      // message; a delete that matched nothing is reported too.
+      const { data, error } = await supabase
         .from('trip_members')
         .delete()
         .eq('trip_id', tripId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select('id');
       if (error) throw error;
+      if (data.length === 0) throw new Error("You're no longer on this trip.");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: tripKeys.list() }),
   });

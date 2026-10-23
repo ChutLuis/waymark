@@ -4,28 +4,38 @@ import { useNavigation, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Animated, { runOnJS, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import Svg, { Line } from 'react-native-svg';
-import { ChevronLeft } from 'lucide-react-native';
+import Svg, { Path } from 'react-native-svg';
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
+import { DefaultAirmailStampArt } from '@/components/airmail/DefaultAirmailArt';
 import { ErrorState, LoadingState } from '@/components/StateViews';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { easing, sampleTrack, useEntrance, useMotion } from '@/components/motion';
 import { sheetStampPrint } from '@/components/motion/keyframes';
+import { findCountry } from '@/features/trips/countries';
 import { DESTINATION_ART } from '@/features/trips/destinationArt';
 import { matchDestination } from '@/features/trips/destinations';
 import { albumSheet, primeShell } from '@/features/trips/expandStore';
 import { markShellOpening } from '@/features/trips/shellMotion';
-import { albumSummary, postmarkMonth, sheetHeading, sheetsByYear } from '@/features/trips/shoebox';
+import {
+  albumSummary,
+  cancelLineYs,
+  postmarkMonth,
+  sheetHeading,
+  sheetRows,
+  sheetsByYear,
+  stampCellWidth,
+} from '@/features/trips/shoebox';
 import { splitTrips } from '@/features/trips/sort';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { haptic } from '@/lib/haptics';
 import { toDateOnly } from '@/lib/format/date';
-import { iconStrokeWidth, motion, radius, shadows, spacing, useTheme } from '@/theme';
+import { motion, radius, shadows, spacing, useTheme } from '@/theme';
 
 /** README 01 · the album's stamp cell, in points. */
 const STAMP = { width: 56, height: 64, art: 6 } as const;
 const RING = { size: 34, left: 26, top: 6, stroke: 1.5 } as const;
-const LINES = { left: 44, top: 30, width: 22, height: 16, pitch: 5, stroke: 1.5 } as const;
+const LINES = { left: 44, top: 30, width: 22, height: 16, pitch: 5, stroke: 1.5, first: 3 } as const;
 const COLUMNS = 4;
 const GAP = { row: 12, column: 8 } as const;
 const SHEET_PAD = { top: 12, x: 16, bottom: 14 } as const;
@@ -75,9 +85,10 @@ function AlbumStamp({
             {country ? (
               <Image source={DESTINATION_ART[country].sceneStampStill} style={StyleSheet.absoluteFill} contentFit="cover" />
             ) : (
-              <AppText role="initialLg" style={[styles.initial, { color: colors.stampPaper }]}>
-                {(trip.name.trim()[0] ?? '?').toUpperCase()}
-              </AppText>
+              <DefaultAirmailStampArt
+                label={findCountry(trip.destination)?.code ?? (trip.name.trim()[0] ?? '?').toUpperCase()}
+                compact
+              />
             )}
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.stampPaper, opacity: WASH }]} />
           </View>
@@ -85,13 +96,11 @@ function AlbumStamp({
         {/* Outside the stamp's mask: the postmark runs 4 and 10 pt onto the sheet. */}
         <View pointerEvents="none" style={[styles.ring, { borderColor: colors.cancelInk }]} />
         <Svg width={LINES.width} height={LINES.height} style={styles.lines} pointerEvents="none">
-          {Array.from({ length: Math.ceil(LINES.height / LINES.pitch) }, (_, i) => (
-            <Line
-              key={i}
-              x1={0}
-              x2={LINES.width}
-              y1={i * LINES.pitch + LINES.stroke / 2}
-              y2={i * LINES.pitch + LINES.stroke / 2}
+          {cancelLineYs(LINES.height, LINES.pitch, LINES.stroke, LINES.first).map((y) => (
+            <Path
+              key={y}
+              d={`M0 ${y} q3.5 -2.5 7 0 t7 0 8 0`}
+              fill="none"
               stroke={colors.cancelInk}
               strokeWidth={LINES.stroke}
             />
@@ -174,10 +183,18 @@ export default function ShoeboxScreen() {
   const scale = PixelRatio.get();
   const cellWidth =
     sheetWidth > 0
-      ? Math.floor(((sheetWidth - 2 * SHEET_PAD.x - (COLUMNS - 1) * GAP.column) / COLUMNS) * scale) / scale
+      ? stampCellWidth(sheetWidth, COLUMNS, GAP.column, SHEET_PAD.x, scale)
       : STAMP.width;
-  // Only the sheets on screen at open print in.
-  let estimatedTop = ESTIMATE.header;
+  // Only the sheets on screen at open print in, judged from estimated heights.
+  const sheetOnScreen = useMemo(() => {
+    const onScreen: boolean[] = [];
+    let top: number = ESTIMATE.header;
+    for (const sheet of sheets) {
+      onScreen.push(top < height);
+      top += ESTIMATE.sheetHead + Math.ceil(sheet.trips.length / COLUMNS) * ESTIMATE.row + GAP.row;
+    }
+    return onScreen;
+  }, [sheets, height]);
 
   return (
     <Animated.View
@@ -185,14 +202,7 @@ export default function ShoeboxScreen() {
     >
       <View style={styles.column}>
         <View style={styles.topBar}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back to your trips"
-            onPress={back}
-            style={({ pressed }) => [styles.back, { backgroundColor: colors.paper, boxShadow: shadows.pill }, pressed && styles.pressed]}
-          >
-            <ChevronLeft size={22} color={colors.ink} strokeWidth={iconStrokeWidth} />
-          </Pressable>
+          <BackButton variant="pill" label="Trips" accessibilityLabel="Back to your trips" onPress={back} />
         </View>
         <View style={styles.titleBlock}>
           <AppText role="display">The shoebox</AppText>
@@ -210,8 +220,7 @@ export default function ShoeboxScreen() {
             showsVerticalScrollIndicator={false}
           >
             {sheets.map((sheet, s) => {
-              const animate = estimatedTop < height;
-              estimatedTop += ESTIMATE.sheetHead + Math.ceil(sheet.trips.length / COLUMNS) * ESTIMATE.row + GAP.row;
+              const animate = sheetOnScreen[s];
               return (
                 <View
                   key={sheet.year}
@@ -222,16 +231,20 @@ export default function ShoeboxScreen() {
                     {sheetHeading(sheet.year, sheet.trips.length)}
                   </AppText>
                   <View style={styles.grid}>
-                    {sheet.trips.map((trip, i) => (
-                      <AlbumStamp
-                        key={trip.id}
-                        trip={trip}
-                        index={i}
-                        sheet={s}
-                        animate={animate}
-                        width={cellWidth}
-                        onOpen={() => openTrip(trip)}
-                      />
+                    {sheetRows(sheet.trips, COLUMNS).map((row) => (
+                      <View key={row.trips[0].id} style={row.centered ? styles.rowCentered : styles.rowFlush}>
+                        {row.trips.map((trip, i) => (
+                          <AlbumStamp
+                            key={trip.id}
+                            trip={trip}
+                            index={i}
+                            sheet={s}
+                            animate={animate}
+                            width={cellWidth}
+                            onOpen={() => openTrip(trip)}
+                          />
+                        ))}
+                      </View>
                     ))}
                   </View>
                 </View>
@@ -248,7 +261,6 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   column: { flex: 1, width: '100%', maxWidth: 680, alignSelf: 'center' },
   topBar: { height: 52, paddingHorizontal: spacing.s7, flexDirection: 'row', alignItems: 'center' },
-  back: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   titleBlock: { paddingTop: spacing.s3, paddingHorizontal: spacing.gutter },
   summary: { marginTop: 2, fontSize: 17, lineHeight: 22 },
   sheets: { paddingTop: spacing.s7, paddingHorizontal: spacing.s7, gap: spacing.s7 },
@@ -259,7 +271,10 @@ const styles = StyleSheet.create({
     paddingBottom: SHEET_PAD.bottom,
   },
   sheetHeading: { textAlign: 'center', lineHeight: 12, letterSpacing: 1.6 },
-  grid: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', rowGap: GAP.row, columnGap: GAP.column },
+  grid: { marginTop: 10, gap: GAP.row },
+  // A full row holds the sheet's padding; a short row floats to its middle.
+  rowFlush: { flexDirection: 'row', columnGap: GAP.column },
+  rowCentered: { flexDirection: 'row', columnGap: GAP.column, justifyContent: 'center' },
   cell: { alignItems: 'center', gap: 6 },
   stamp: { width: STAMP.width, height: STAMP.height },
   art: {
@@ -272,7 +287,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  initial: { fontSize: 22, lineHeight: 24 },
   ring: {
     position: 'absolute',
     left: RING.left,

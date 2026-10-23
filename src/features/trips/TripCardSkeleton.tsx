@@ -1,28 +1,35 @@
 import { useEffect } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { useIsFocused } from 'expo-router';
+import { useAppActive } from '@/components/useAppActive';
 import { useReducedMotion } from '@/components/useReducedMotion';
 import { useLazyAnimatedValue } from '@/components/useLazyAnimatedValue';
-import { radius, spacing, useTheme } from '@/theme';
+import { motion, radius, shadows, spacing, useTheme } from '@/theme';
 
 /** Pulsing placeholder card (opacity 0.6→1; static under reduced motion). */
 export function TripCardSkeleton({ withCover = false }: { withCover?: boolean }) {
   const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
+  const focused = useIsFocused();
+  const appActive = useAppActive();
   const pulse = useLazyAnimatedValue(1);
 
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion || !focused || !appActive) {
+      pulse.setValue(1);
+      return;
+    }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
           toValue: 0.6,
-          duration: 700,
+          duration: motion.duration.shuffle,
           easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(pulse, {
           toValue: 1,
-          duration: 700,
+          duration: motion.duration.shuffle,
           easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),
@@ -30,7 +37,7 @@ export function TripCardSkeleton({ withCover = false }: { withCover?: boolean })
     );
     loop.start();
     return () => loop.stop();
-  }, [pulse, reducedMotion]);
+  }, [pulse, reducedMotion, focused, appActive]);
 
   const block = { backgroundColor: colors.artPlaceholder };
 
@@ -55,9 +62,9 @@ export function TripCardSkeleton({ withCover = false }: { withCover?: boolean })
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 4,
+    borderRadius: radius.card,
     overflow: 'hidden',
-    boxShadow: '0 1px 2px rgba(21,34,59,0.15), 0 10px 20px -12px rgba(21,34,59,0.35)',
+    boxShadow: shadows.card,
   },
   cover: { height: 112, width: '100%' },
   row: { flexDirection: 'row', alignItems: 'center', padding: spacing.s6 + 1, gap: spacing.s5 },

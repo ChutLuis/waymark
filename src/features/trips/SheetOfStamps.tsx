@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { AppText } from '@/components/AppText';
+import { DefaultAirmailStampArt } from '@/components/airmail/DefaultAirmailArt';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { easing, sampleTrack, useEntrance, useMotion } from '@/components/motion';
 import {
@@ -51,7 +52,7 @@ function SheetStamp({
   width,
   height,
   country,
-  initial,
+  label,
   d0,
   t1,
   usedIndex,
@@ -61,7 +62,7 @@ function SheetStamp({
   width: number;
   height: number;
   country: CountryKey | null;
-  initial: string;
+  label: string;
   d0: number;
   t1: number;
   /** Order among the used stamps (the cancel line passes them in turn). */
@@ -113,18 +114,15 @@ function SheetStamp({
           {art ? (
             <Image source={art.sceneStampStill} style={StyleSheet.absoluteFill} contentFit="cover" />
           ) : (
-            <View style={[StyleSheet.absoluteFill, styles.initial, { backgroundColor: colors.stampInk }]}>
-              <AppText role="pillLabel" style={{ color: colors.stampPaper }}>
-                {initial}
-              </AppText>
-            </View>
+            <DefaultAirmailStampArt label={label} compact />
           )}
           <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.stampPaper }, washStyle]} />
         </View>
+        {/* Stamp paper stays cream in both themes, so TODAY is printed in the fixed airmail blue. */}
         <AppText
           role="stampLabel"
           numberOfLines={1}
-          style={[styles.label, { bottom: ART.top * k, color: day.today ? colors.airmailBlue : colors.stampInk }]}
+          style={[styles.label, { bottom: ART.top * k, color: day.today ? colors.parAvion : colors.stampInk }]}
         >
           {day.label}
         </AppText>
@@ -136,7 +134,8 @@ function SheetStamp({
 interface SheetOfStampsProps {
   days: SheetDay[];
   country: CountryKey | null;
-  initial: string;
+  /** Printed on stamps without scene art: the country code, else the trip's initial. */
+  label: string;
   header: string;
   footer: string;
   /** "KYOTO" over "3–7 X 26" on the postmark ring; empty when nothing is used. */
@@ -150,7 +149,7 @@ interface SheetOfStampsProps {
  * lines roll across them and wash their art back, and today's stamp lifts.
  * Runs once per open, from d0 = 380 ms.
  */
-export function SheetOfStamps({ days, country, initial, header, footer, city, range }: SheetOfStampsProps) {
+export function SheetOfStamps({ days, country, label, header, footer, city, range }: SheetOfStampsProps) {
   const { colors } = useTheme();
   const { ms } = useMotion();
   const [innerWidth, setInnerWidth] = useState(0);
@@ -217,7 +216,7 @@ export function SheetOfStamps({ days, country, initial, header, footer, city, ra
             width={width}
             height={height}
             country={country}
-            initial={initial}
+            label={label}
             d0={d0}
             t1={t1}
             usedIndex={usedOrder.get(day.key) ?? 0}
@@ -299,7 +298,6 @@ const styles = StyleSheet.create({
   header: { textAlign: 'center' },
   grid: { marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', alignSelf: 'center' },
   art: { position: 'absolute', overflow: 'hidden' },
-  initial: { alignItems: 'center', justifyContent: 'center' },
   label: { position: 'absolute', left: -LABEL_BLEED, right: -LABEL_BLEED, textAlign: 'center' },
   ring: { position: 'absolute', borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', gap: 2, zIndex: 3 },
   ringRule: { height: 1 },

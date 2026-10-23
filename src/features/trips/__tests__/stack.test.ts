@@ -4,6 +4,8 @@ import {
   addressDates,
   envelopeNote,
   isDaysAway,
+  miniRouteLeft,
+  miniRouteWindow,
   miniRouteX,
   railCaption,
   railEntries,
@@ -110,5 +112,64 @@ describe('miniRouteX', () => {
     expect(miniRouteX(13 * 60, 8 * 60, 21 * 60, 310)).toBeCloseTo((5 / 13) * 310, 6);
     expect(miniRouteX(7 * 60, 8 * 60, 21 * 60, 310)).toBe(0);
     expect(miniRouteX(22 * 60, 8 * 60, 21 * 60, 310)).toBe(310);
+  });
+  it('centres a degenerate window instead of piling up at the left edge', () => {
+    expect(miniRouteX(12 * 60, 12 * 60, 12 * 60, 310)).toBe(155);
+  });
+});
+
+describe('miniRouteWindow', () => {
+  const now = 12 * 60;
+  const position = (minute: number, window: { first: number; last: number }) =>
+    miniRouteX(minute, window.first, window.last, 280);
+
+  it('separates one stop before now from the plane', () => {
+    const window = miniRouteWindow(9 * 60, 9 * 60, now);
+    expect(position(9 * 60, window)).toBe(0);
+    expect(position(now, window)).toBe(280);
+  });
+
+  it('leaves a visible dashed route to one stop after now', () => {
+    const window = miniRouteWindow(15 * 60, 15 * 60, now);
+    expect(position(now, window)).toBe(0);
+    expect(position(15 * 60, window)).toBe(280);
+  });
+
+  it('keeps two stops proportional when now falls between them', () => {
+    const window = miniRouteWindow(9 * 60, 15 * 60, now);
+    expect(position(9 * 60, window)).toBe(0);
+    expect(position(now, window)).toBe(140);
+    expect(position(15 * 60, window)).toBe(280);
+  });
+
+  it('includes now when all stops are in the past', () => {
+    const window = miniRouteWindow(8 * 60, 10 * 60, now);
+    expect(position(8 * 60, window)).toBe(0);
+    expect(position(10 * 60, window)).toBe(140);
+    expect(position(now, window)).toBe(280);
+  });
+
+  it('gives simultaneous now and stop a nonzero window', () => {
+    const window = miniRouteWindow(now, now, now);
+    expect(window.last - window.first).toBe(120);
+    expect(position(now, window)).toBe(140);
+  });
+});
+
+describe('miniRouteLeft', () => {
+  it('keeps a measured label within both track edges', () => {
+    expect(miniRouteLeft(0, 30, 280)).toBe(0);
+    expect(miniRouteLeft(280, 30, 280)).toBe(250);
+    expect(miniRouteLeft(140, 30, 280)).toBe(125);
+  });
+
+  it('keeps the entire plane disc and ring on the track', () => {
+    expect(miniRouteLeft(0, 28, 280)).toBe(0);
+    expect(miniRouteLeft(280, 28, 280)).toBe(252);
+  });
+
+  it('never returns a negative edge for a narrow or unmeasured track', () => {
+    expect(miniRouteLeft(10, 30, 20)).toBe(0);
+    expect(miniRouteLeft(0, 30, 0)).toBe(0);
   });
 });

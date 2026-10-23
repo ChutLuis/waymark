@@ -79,6 +79,9 @@ function stubPath(w: number, h: number): string {
  * apart by dotted lines, with a bg-coloured pill that springs to the active
  * tab (440 ms, `indicator` easing). The Trip page opens from the title pill.
  */
+/** Three icon + label tabs share one bar; past this scale "Packing" runs into its neighbours. */
+const TAB_LABEL_SCALE_MAX = 1.3;
+
 export function TripTabBar({
   tripId,
   active,
@@ -174,6 +177,8 @@ export function TripTabBar({
             {tabIcon(tab.key, tone)}
             <AppText
               role="tabLabel"
+              numberOfLines={1}
+              maxFontSizeMultiplier={TAB_LABEL_SCALE_MAX}
               style={{ color: tone, fontFamily: selected ? fontFamilies.bold : fontFamilies.semibold }}
             >
               {tab.label}

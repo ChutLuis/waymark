@@ -58,13 +58,13 @@ export function AddressCard({ lines }: { lines: AddressLine[] }) {
           </AppText>
           <View style={styles.text}>
             <Handwriting text={line.name} delay={s.d0 + (i === 0 ? s.fromAt : s.toAt + (i - 1) * (s.toAt - s.fromAt))} />
-            <AppText role="metaSm" tone="muted" style={styles.note}>
+            <AppText role="addressNote" tone="muted">
               {line.note}
             </AppText>
           </View>
           <PerforatedStamp width={STAMP.width} height={STAMP.height} size="xs">
             <View style={[styles.initialPanel, { backgroundColor: colors.stampInk }]}>
-              <AppText role="brandLetter" style={[styles.initial, { color: colors.stampPaper }]}>
+              <AppText role="addressInitial" style={{ color: colors.stampPaper }}>
                 {(line.name.trim()[0] ?? '?').toUpperCase()}
               </AppText>
             </View>
@@ -83,7 +83,5 @@ const styles = StyleSheet.create({
   writeHost: { alignSelf: 'flex-start', maxWidth: '100%' },
   ghost: { opacity: 0 },
   writeClip: { position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' },
-  note: { fontSize: 13, lineHeight: 17 },
   initialPanel: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  initial: { fontSize: 15, lineHeight: 18 },
 });

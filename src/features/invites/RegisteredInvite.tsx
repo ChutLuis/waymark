@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Check, Copy, Share as ShareIcon } from 'lucide-react-native';
@@ -7,16 +7,22 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { useLoop, useMotion } from '@/components/motion';
 import { codeLength, typedCode } from '@/features/trips/sheet';
-import { iconStrokeWidth, motion, radius, shadows, useTheme } from '@/theme';
-import { inviteLink, useTripInvite } from './hooks';
+import { disabledOpacity, hitTargetMin, iconStrokeWidth, motion, radius, shadows, spacing, useTheme } from '@/theme';
+import { inviteShareMessage, useTripInvite } from './hooks';
 
 const CARET = { width: 2, height: 18 } as const;
 const BARCODE = { width: 150, height: 10 } as const;
 /** The barcode's bar widths in points, repeating (2 on, 1 off, 1 on, 3 off, 3 on, 1 off). */
 const BARS = [2, 1, 1, 3, 3, 1];
 
+/**
+ * Whole days left, rounded: a fresh 7-day invite reads 7 even when this
+ * device's clock runs a second behind the server's (a ceiling made it 8).
+ * The last day still reads 1, not 0.
+ */
 function daysUntil(iso: string): number {
-  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+  const ms = new Date(iso).getTime() - Date.now();
+  return ms <= 0 ? 0 : Math.max(1, Math.round(ms / 86_400_000));
 }
 
 function Barcode({ color }: { color: string }) {
@@ -39,9 +45,19 @@ function Barcode({ color }: { color: string }) {
  * The invite as registered mail (Airmail v4 · 05): an "R" box, the code typed
  * in one character every 70 ms behind a blinking caret, a barcode and the
  * expiry. Typing starts at d0 + 1500 and runs once per open; with reduced
- * motion the code appears in full at once.
+ * motion the code appears in full at once. Until the code arrives the card is
+ * already printed at its full size, with dots for the code and its buttons
+ * off, so nothing under it moves when the code lands.
  */
-export function RegisteredInvite({ tripId }: { tripId: string }) {
+export function RegisteredInvite({
+  tripId,
+  tripName = '',
+  presentation = 'card',
+}: {
+  tripId: string;
+  tripName?: string;
+  presentation?: 'card' | 'sheet';
+}) {
   const { colors } = useTheme();
   const { reduced, ms } = useMotion();
   const invite = useTripInvite(tripId);
@@ -49,17 +65,19 @@ export function RegisteredInvite({ tripId }: { tripId: string }) {
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const code = invite.data?.code ?? '';
+  const ready = code.length > 0;
   const total = codeLength(code);
-  const typing = !reduced && typed < total;
+  // The shortcut is a utility surface: show the full code immediately, without
+  // waiting for the Trip page's stamp-sheet choreography.
+  const expanded = presentation === 'sheet';
+  // With reduced motion the code is printed whole at once.
+  const shown = expanded || reduced ? total : typed;
+  const typing = !expanded && !reduced && typed < total;
   const caret = useLoop(motion.choreo.sheet.caretBlink, typing && code.length > 0);
   const caretStyle = useAnimatedStyle(() => ({ opacity: caret.value < 0.5 ? 1 : 0 }));
 
   useEffect(() => {
-    if (!code) return;
-    if (reduced) {
-      setTyped(total);
-      return;
-    }
+    if (!code || expanded || reduced) return;
     let interval: ReturnType<typeof setInterval> | null = null;
     const start = setTimeout(() => {
       interval = setInterval(() => {
@@ -73,7 +91,7 @@ export function RegisteredInvite({ tripId }: { tripId: string }) {
       clearTimeout(start);
       if (interval) clearInterval(interval);
     };
-  }, [code, total, reduced, ms]);
+  }, [code, total, reduced, ms, expanded]);
 
   useEffect(
     () => () => {
@@ -83,12 +101,12 @@ export function RegisteredInvite({ tripId }: { tripId: string }) {
   );
 
   const onShare = async () => {
-    if (!invite.data) return;
-    const message = `Join my trip on Waymark: ${inviteLink(invite.data.code)}`;
+    if (!ready) return;
+    const message = inviteShareMessage(tripName, code);
     try {
       if (Platform.OS === 'web') {
         if (navigator.share) await navigator.share({ text: message });
-        else await Clipboard.setStringAsync(message);
+        else await Clipboard.setStringAsync(code);
       } else {
         await Share.share({ message });
       }
@@ -98,21 +116,15 @@ export function RegisteredInvite({ tripId }: { tripId: string }) {
   };
 
   const onCopy = async () => {
-    if (!invite.data) return;
-    await Clipboard.setStringAsync(invite.data.code);
+    if (!ready) return;
+    await Clipboard.setStringAsync(code);
     setCopied(true);
     if (copiedTimer.current) clearTimeout(copiedTimer.current);
     copiedTimer.current = setTimeout(() => setCopied(false), 2000);
   };
 
-  if (invite.isPending) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.ink} accessibilityLabel="Creating invite" />
-      </View>
-    );
-  }
-  if (invite.isError) {
+  // A failed background refetch keeps the code it already has.
+  if (invite.isError && !ready) {
     return (
       <View style={styles.loading}>
         <AppText role="bodySm" tone="muted">
@@ -123,11 +135,23 @@ export function RegisteredInvite({ tripId }: { tripId: string }) {
     );
   }
 
-  const days = daysUntil(invite.data.expiresAt);
+  const days = invite.data ? daysUntil(invite.data.expiresAt) : 0;
+  const status = invite.data
+    ? `Works once · expires in ${days} ${days === 1 ? 'day' : 'days'}`
+    : invite.isPaused
+      ? 'Waiting for a connection…'
+      : 'Printing the invite code…';
+  const dots = !ready || shown === 0;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.stampPaper, borderColor: colors.stampInk, boxShadow: shadows.bag }]}>
-      <View style={[styles.rBox, { borderColor: colors.stampInk }]}>
+    <View style={[styles.card, expanded && styles.sheetCard, { backgroundColor: colors.stampPaper, borderColor: colors.stampInk, boxShadow: shadows.bag }]}>
+      <View
+        // The registered-mail "R" is decoration; screen readers read "capital R".
+        importantForAccessibility="no-hide-descendants"
+        aria-hidden
+        accessibilityElementsHidden
+        style={[styles.rBox, { borderColor: colors.stampInk }]}
+      >
         <AppText role="initialLg" style={[styles.r, { color: colors.stampInk }]}>
           R
         </AppText>
@@ -137,44 +161,76 @@ export function RegisteredInvite({ tripId }: { tripId: string }) {
           REGISTERED · INVITE SOMEONE ELSE
         </AppText>
         <View
-          style={styles.codeRow}
+          style={[styles.codeRow, expanded && styles.sheetCodeRow]}
           accessible
-          accessibilityLabel={`Invite code ${invite.data.code.split('').join(' ')}`}
+          accessibilityLabel={ready ? `Invite code ${code.split('').join(' ')}` : status}
         >
-          <AppText role="codeSm" style={{ color: colors.stampInk }}>
-            {typedCode(invite.data.code, typed)}
+          <AppText role="codeSm" style={{ color: dots ? colors.postmarkFaint : colors.stampInk }}>
+            {dots ? '···· ····' : typedCode(code, shown)}
           </AppText>
-          {typing ? (
-            <Animated.View style={[styles.caret, { backgroundColor: colors.airmailBlue }, caretStyle]} />
+          {typing && typed > 0 ? (
+            <Animated.View style={[styles.caret, { backgroundColor: colors.parAvion }, caretStyle]} />
           ) : null}
         </View>
         <Barcode color={colors.stampInk} />
-        <AppText role="metaSm" style={[styles.expiry, { color: colors.stampInk }]}>
-          Works once · expires in {days} {days === 1 ? 'day' : 'days'}
+        <AppText role="metaXs" style={[styles.expiry, { color: colors.stampInk }]}>
+          {status}
         </AppText>
       </View>
-      <View style={styles.actions}>
+      <View style={[styles.actions, expanded && styles.sheetActions]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={copied ? 'Copied' : 'Copy code'}
+          accessibilityState={{ disabled: !ready }}
+          disabled={!ready}
           onPress={onCopy}
           hitSlop={4}
-          style={({ pressed }) => [styles.action, { borderColor: colors.ruleWarm, borderWidth: 1.5 }, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.action,
+            expanded && styles.sheetAction,
+            {
+              backgroundColor: copied ? colors.stampInk : colors.stampPaper,
+              borderColor: colors.stampInk,
+              borderWidth: 2,
+            },
+            !ready && styles.disabled,
+            pressed && styles.pressed,
+          ]}
         >
           {copied ? (
-            <Check size={17} color={colors.stampInk} strokeWidth={iconStrokeWidth} />
+            <Check size={17} color={colors.stampPaper} strokeWidth={iconStrokeWidth} />
           ) : (
             <Copy size={17} color={colors.stampInk} strokeWidth={iconStrokeWidth} />
           )}
+          {expanded ? (
+            <AppText
+              role="link"
+              style={[
+                styles.sheetActionLabel,
+                { color: copied ? colors.stampPaper : colors.stampInk },
+              ]}
+            >
+              {copied ? 'Copied' : 'Copy code'}
+            </AppText>
+          ) : null}
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Share link"
+          accessibilityLabel="Share code"
+          accessibilityState={{ disabled: !ready }}
+          disabled={!ready}
           onPress={onShare}
           hitSlop={4}
-          style={({ pressed }) => [styles.action, { backgroundColor: colors.stampInk }, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.action,
+            expanded && styles.sheetAction,
+            { backgroundColor: colors.stampInk },
+            !ready && styles.disabled,
+            pressed && styles.pressed,
+          ]}
         >
           <ShareIcon size={17} color={colors.stampPaper} strokeWidth={iconStrokeWidth} />
+          {expanded ? <AppText role="link" style={[styles.sheetActionLabel, { color: colors.stampPaper }]}>Share code</AppText> : null}
         </Pressable>
       </View>
     </View>
@@ -192,8 +248,22 @@ const styles = StyleSheet.create({
   caret: { width: CARET.width, height: CARET.height, marginLeft: 1 },
   barcode: { width: BARCODE.width, height: BARCODE.height, marginTop: 3 },
   bar: { position: 'absolute', top: 0, bottom: 0 },
-  expiry: { marginTop: 3, fontSize: 12, lineHeight: 16, opacity: 0.7 },
+  expiry: { marginTop: 3, opacity: 0.7 },
   actions: { gap: 8 },
   action: { width: 40, height: 36, borderRadius: radius.codeBox, alignItems: 'center', justifyContent: 'center' },
+  sheetCard: { flexWrap: 'wrap' },
+  sheetCodeRow: { height: 'auto', minHeight: spacing.s11 },
+  sheetActions: { width: '100%', flexDirection: 'row', gap: spacing.s3 },
+  sheetAction: {
+    flex: 1,
+    width: 'auto',
+    height: 'auto',
+    minHeight: hitTargetMin,
+    flexDirection: 'row',
+    gap: spacing.s2,
+    padding: spacing.s3,
+  },
+  sheetActionLabel: { flexShrink: 1, textAlign: 'center' },
+  disabled: { opacity: disabledOpacity },
   pressed: { opacity: 0.7 },
 });

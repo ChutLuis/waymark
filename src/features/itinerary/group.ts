@@ -109,6 +109,15 @@ export function defaultSelectedDay(days: TripDay[], todayKey: string): string | 
   return days.some((d) => d.key === todayKey) ? todayKey : days[0].key;
 }
 
+/** New stops belong to the selected local day; ANY/no dates stay unscheduled. */
+export function newItemStartAt(selectedDay: string | null): string | null {
+  if (!selectedDay || !/^\d{4}-\d{2}-\d{2}$/.test(selectedDay)) return null;
+  const date = parseDateOnly(selectedDay);
+  if (dateOnlyKey(date) !== selectedDay) return null;
+  date.setHours(10, 0, 0, 0);
+  return date.toISOString();
+}
+
 export type DayRow =
   | { type: 'item'; key: string; item: ItineraryItem }
   | { type: 'free'; key: string; minutes: number };
@@ -155,6 +164,15 @@ export function nextStop(items: ItineraryItem[], now: Date): ItineraryItem | nul
     })
     .sort((a, b) => new Date(a.startAt as string).getTime() - new Date(b.startAt as string).getTime());
   return candidates[0] ?? null;
+}
+
+/**
+ * How many of a day's stops still need doing. Completion comes from the
+ * status a member set, never from the clock: a planned stop whose time has
+ * passed is overdue, not done.
+ */
+export function stopsToGo(items: readonly Pick<ItineraryItem, 'status'>[]): number {
+  return items.filter((item) => item.status !== 'done').length;
 }
 
 /** Minutes until an ISO timestamp (can be negative). */

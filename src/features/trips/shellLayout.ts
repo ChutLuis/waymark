@@ -7,11 +7,13 @@ export const SHELL = {
   heroHeight: 196,
   bannerHeight: 104,
   /** The seigaiha band across the header's bottom edge. */
-  bandHeight: 10,
+  bandHeight: 14,
   /** Top bar row under the status bar. */
   topBarHeight: 52,
-  /** Day stamps hang this far over the header's bottom edge (y 156 of 196). */
-  dayStripOverhang: 40,
+  /** Stamps hang below the edge; only their drop-in room overlaps the band. */
+  dayStripOverhang: 0,
+  /** Today's stamp is raised, with this clearance reserved above every stamp. */
+  dayStripRaise: 4,
   /** Room above the day stamps for their drop-in, so it isn't clipped. */
   dayStripDropRoom: 30,
   /** Floating ticket-stub tab bar. */

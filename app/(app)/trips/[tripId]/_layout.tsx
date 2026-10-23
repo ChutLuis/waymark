@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Stack, useNavigation } from 'expo-router';
-import { runShellCloser } from '@/features/trips/expandStore';
+import { runShellCloser, trackShellMounted } from '@/features/trips/expandStore';
 import { useTheme } from '@/theme';
 
 /**
@@ -13,6 +13,9 @@ export default function TripLayout() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const closing = useRef(false);
+
+  // Leaving the trip any way (a delete or leave replaces the route) resets Home.
+  useEffect(() => trackShellMounted(), []);
 
   useEffect(
     () =>
