@@ -2,138 +2,117 @@
 
 [![CI](https://github.com/ChutLuis/waymark/actions/workflows/ci.yml/badge.svg)](https://github.com/ChutLuis/waymark/actions/workflows/ci.yml)
 
-Working codename for a shared trip-planning mobile app. This is the flagship
-React Native portfolio piece: a small, real, polished product rather than a
-demo. The name is a placeholder and can be changed before any public release.
+A shared trip planner for two, built as a real product rather than a demo:
+Expo and React Native on iOS, Android and web, Supabase with tested Row Level
+Security, and a hand-made "Airmail" design where every change of state happens
+to paper: trips are dealt like envelopes, stops get stamped and postmarked,
+private notes are sealed with wax, and full bags get stamped PACKED.
 
-## What it is
+![Waymark: Home, Plan, Notes and Packing](docs/media/hero-light.png)
 
-Waymark helps a small group (starting with two people) plan a trip together.
-Trip members share an itinerary and a packing list, and each member can keep
-private notes that no other member can see. It runs from a single Expo codebase
-on iOS, Android, and web.
+<table>
+  <tr>
+    <td width="300"><img src="docs/media/walkthrough.gif" width="300" alt="Walkthrough: dealing trips on Home, opening Paris, stamping a stop, packing a bag, breaking a wax seal, the trip page and the album" /></td>
+    <td>
+      <strong>Walkthrough</strong> (Android, recorded on the emulator)
+      <ol>
+        <li>Home deals the picked trip like an envelope from a rail of stamps.</li>
+        <li>The card expands into the trip; its destination scene heads the screen.</li>
+        <li>Plan lays stops out by clock time; tapping a stop stamps it.</li>
+        <li>Packing: drag a loose tag into a bag; a full bag is stamped PACKED.</li>
+        <li>Notes: hold the wax seal to open a private letter; tap to seal it again.</li>
+        <li>The Trip page prints a sheet of day stamps and a registered-mail invite.</li>
+        <li>Past trips live in the shoebox album, postmarked by year.</li>
+      </ol>
+    </td>
+  </tr>
+</table>
 
-## Why it exists (portfolio goals)
+![Waymark in dark mode](docs/media/hero-dark.png)
 
-- Demonstrate production React Native and Expo across iOS, Android, and web.
-- Demonstrate Supabase Auth and PostgreSQL Row Level Security with tested,
-  provable isolation between private and shared data.
-- Demonstrate native capability integration (scheduled notifications) and
-  deliberate, non-template product design.
-- Demonstrate a complete delivery: migrations, tests, CI gates, EAS configuration,
-  documentation, and a public repository with a clear README.
-- Use a safe domain. No health, children's, financial, or otherwise regulated
-  data, so the app can be public without compliance exposure.
+## What it does
 
-This app is also designed to produce truthful evidence for future client work:
-a real Supabase RLS implementation with adversarial tests, a real cross-platform
-Expo delivery, and a real native-integration example.
+A small group (starting with two people) plans a trip together. Members share
+an itinerary and a packing list, and each can keep private notes no other
+member can read. Invites are 8-character codes minted by the server.
+Reminders are local notifications. Everything works from one Expo codebase on
+iOS, Android and web.
 
-## Status
+## What it demonstrates
 
-The full v1 is implemented against a LIVE Supabase backend (Postgres, Auth,
-Storage, and RLS) and deployed to a hosted project. Email authentication and
-onboarding, trip listing and creation, itinerary planning, packing, shared and
-private notes, deep-link invite joining, local reminders, offline handling,
-and storage for covers and avatars are working. A 33-test pgTAP RLS suite runs
-GREEN in CI, proving private-versus-shared isolation.
+- **Supabase done properly.** Postgres Row Level Security on every table,
+  privileged writes only through reviewed `security definer` RPCs, and a pgTAP
+  suite (104 assertions in 11 files) that proves private-versus-shared
+  isolation and the database rules: RPC-only trip and invite creation, owners
+  who can't orphan a trip, throttled and expiring invites, and resumable
+  account deletion through an Edge Function. See `docs/SECURITY.md`.
+- **Production React Native.** Expo SDK 57, React Native 0.86 on the New
+  Architecture, Reanimated 4 worklets for all motion, TanStack Query with an
+  offline queue, typed Supabase access, and native notifications on an
+  Android channel.
+- **Deliberate design.** A complete design system (tokens, type roles,
+  contrast-checked palettes in light and dark) and a motion spec implemented to
+  the frame. It honours Reduce Motion and screen readers, and holds up at 200%
+  text. See `docs/DESIGN_DECISIONS.md`.
+- **A complete delivery.** Migrations, Vitest and pgTAP gates in CI, local EAS
+  builds in three variants that install side by side, and a release AAB checked
+  for permissions, signing and 16 KB page alignment (`docs/BUILDS.md`).
 
-The UI is the **Airmail** design: a printed-mail visual system with animated
-destination scenes, stamps, postmarks and a bottom tab bar across all 11
-screens. Each trip takes on its destination — a Lottie scene heads the trip and
-its centre is cut into the trip's stamp — and stop status follows a letter's
-life (planned slot, stamped, postmarked). See `docs/DESIGN_DECISIONS.md` and
-`design_handoff_airmail_v3/README.md`.
+## Tech
 
-The remaining portfolio and release work is listed in the roadmap below.
-Android builds run locally with `eas build --local` in three variants that
-install side by side: `development` (dev client, `app.waymark.dev`), `test`
-(release-like APK, `app.waymark.test`) and `production` (Play AAB, or an APK
-for sideloading, `app.waymark`). See `docs/BUILDS.md`.
+Expo SDK 57 · React Native 0.86 (New Architecture) · TypeScript · Expo Router ·
+Reanimated 4 · TanStack Query · React Hook Form + Zod · Lottie · Supabase
+(Postgres, Auth, Storage, Edge Functions) · pgTAP · Vitest · EAS Build.
 
-### Running
+## Running it
 
 ```
-cp .env.example .env   # fill with local values printed by `supabase start`
+cp .env.example .env   # fill with the local values printed by `supabase start`
 supabase start         # local Postgres + Auth + Storage
 pnpm install
 pnpm android           # build + install the dev client (app.waymark.dev)
-adb reverse tcp:54321 tcp:54321   # device reaches the local Supabase
+adb reverse tcp:54321 tcp:54321   # the device reaches the local Supabase
 pnpm start:dev-client  # Metro for the installed dev client
 pnpm web               # Expo web
+```
+
+The app uses native modules Expo Go doesn't ship, so it runs as a development
+build.
+
+Quality gates (all green):
+
+```
 pnpm typecheck         # TypeScript
-pnpm lint              # ESLint
-pnpm test              # Vitest (pure logic)
-supabase test db       # pgTAP RLS suite
+pnpm lint              # ESLint, 0 errors / 0 warnings
+pnpm test              # Vitest, 611 tests (pure logic)
+supabase test db       # pgTAP, 104 assertions (RLS and RPCs)
 ```
 
-The app uses native modules Expo Go does not ship, so it runs as a
-development build. Local EAS builds need `eas login`, JDK 17, `ANDROID_HOME`
-and NDK 27.1.12297006; release profiles also need `credentials.json` and the
-`EXPO_PUBLIC_SUPABASE_*` variables in the profile's EAS environment:
+Android release builds run locally with `eas build --local`
+(`development`, `test`, `production` and `production-apk` profiles); see
+`docs/BUILDS.md` for the toolchain, signing and artefact checks.
 
-```
-eas build --platform android --profile development    --local --output build/waymark-dev.apk
-eas build --platform android --profile test           --local --output build/waymark-test.apk
-eas build --platform android --profile production     --local --output build/waymark.aab
-eas build --platform android --profile production-apk --local --output build/waymark.apk
-```
+## Status
 
-## Roadmap
-
-### Done
-
-- Storage RLS tests S18-S20.
-- EAS configuration for `@chutluis/waymark`: development, test and production
-  profiles that build locally, install side by side, and sign releases with
-  the owner's keystore.
-
-### Remaining
-
-- Device verification of the Airmail motion: the Kyoto scene header holding
-  30 fps on a low-end Android, and Reduce Motion suppressing all animation.
-  Web export and the auth screens were checked; a device pass is outstanding.
-- Portfolio screenshots.
-- Distribute test builds through Play internal testing and TestFlight (iOS
-  builds need macOS).
-- Demo video.
-- Minor iOS date-picker polish: tapping outside the picker sheet should commit
-  the selection.
-- Optional follow-up: an invite-creation RPC and trips-list query consolidation.
-
-### Dropped
-
-- Live web deploy. Expo web remains a supported target; no hosted portfolio
-  preview is planned.
+v1 is feature-complete against a live Supabase backend: email auth and
+onboarding, trips, itinerary, packing, shared and private notes, invite
+codes, local reminders, offline handling, covers and avatars, password reset
+and in-app account deletion. Before a store release the remaining steps are
+operational: final app name and id, hosted backend migrations and auth
+settings, publishing the privacy pages, the Play Console listing, and an iOS
+build (which needs macOS).
 
 ## Documentation
 
-- `docs/REQUIREMENTS.md` - product vision, scope, functional and non-functional
-  requirements, and success criteria.
-- `docs/ARCHITECTURE.md` - stack, project structure, data model, data-access
-  patterns, build and release, testing strategy.
-- `docs/SECURITY.md` - authentication, Row Level Security model, policies, the
-  private-versus-shared rule, and the RLS test matrix.
-- `docs/DESIGN_DECISIONS.md` - the shipped design system and the decisions
-  behind it.
-- `docs/ONBOARDING.md` - developer orientation: mental model, repo tour, setup,
-  and change workflow.
-- `docs/BUILDS.md` - build profiles, versions, environment values, signing,
-  and local build and install commands.
-
-## Prerequisites
-
-- Node 24, pnpm 11 via Corepack, Xcode, Android Studio, an iOS Simulator and
-  Android emulator.
-- A Supabase project (local development via the Supabase CLI, plus a hosted
-  project for shared builds).
-- Optional for store release: an Apple Developer account and a Google Play
-  Console account. Portfolio evidence comes from supported web, TestFlight, and
-  Play internal testing even before paid store listings.
+- `docs/REQUIREMENTS.md` - product vision, scope and success criteria.
+- `docs/ARCHITECTURE.md` - stack, structure, data model, data access, testing.
+- `docs/SECURITY.md` - authentication, the RLS model and its test matrix.
+- `docs/DESIGN_DECISIONS.md` - the design system and the decisions behind it.
+- `docs/ONBOARDING.md` - developer orientation and change workflow.
+- `docs/BUILDS.md` - build profiles, environment values, signing and release checks.
 
 ## Non-goals for v1
 
 Maps and geosearch, in-app chat, real-time collaborative editing, AI features,
 payments and subscriptions, offline write sync with conflict resolution, and
-social feeds. These are explicitly out of scope for the first release and are
-listed so scope does not creep during the build.
+social feeds.
