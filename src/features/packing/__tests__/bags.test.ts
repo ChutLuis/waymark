@@ -1,5 +1,55 @@
 import { describe, expect, it } from 'vitest';
-import { bagAt, becamePacked, isBagPacked, tagTilt } from '../bags';
+import { bagAt, becamePacked, completesBag, groupPackingItems, isBagPacked, tagTilt } from '../bags';
+import type { PackingItem } from '@/lib/types';
+
+function item(id: string, assignedTo: string | null): PackingItem {
+  return {
+    id,
+    tripId: 'trip-1',
+    label: id,
+    quantity: 1,
+    assignedTo,
+    isPacked: false,
+    sortOrder: 0,
+    createdBy: null,
+  };
+}
+
+describe('groupPackingItems', () => {
+  it('puts an item assigned to a member in that member\'s bag', () => {
+    const { loose, byBag } = groupPackingItems([item('a', 'me'), item('b', 'theo')], ['me', 'theo']);
+    expect(loose).toEqual([]);
+    expect(byBag.get('me')?.map((i) => i.id)).toEqual(['a']);
+    expect(byBag.get('theo')?.map((i) => i.id)).toEqual(['b']);
+  });
+
+  it('keeps an item assigned to a former member visible as a loose tag', () => {
+    const { loose, byBag } = groupPackingItems([item('a', 'gone')], ['me', 'theo']);
+    expect(loose.map((i) => i.id)).toEqual(['a']);
+    expect(byBag.size).toBe(0);
+  });
+
+  it('treats an unassigned item as loose', () => {
+    const { loose, byBag } = groupPackingItems([item('a', null)], ['me']);
+    expect(loose.map((i) => i.id)).toEqual(['a']);
+    expect(byBag.size).toBe(0);
+  });
+
+  it('mixes all three cases and keeps list order', () => {
+    const { loose, byBag } = groupPackingItems(
+      [item('a', 'gone'), item('b', 'me'), item('c', null), item('d', 'me'), item('e', 'gone')],
+      ['me'],
+    );
+    expect(loose.map((i) => i.id)).toEqual(['a', 'c', 'e']);
+    expect(byBag.get('me')?.map((i) => i.id)).toEqual(['b', 'd']);
+  });
+
+  it('has no bags for members with nothing assigned', () => {
+    const { loose, byBag } = groupPackingItems([], ['me']);
+    expect(loose).toEqual([]);
+    expect(byBag.has('me')).toBe(false);
+  });
+});
 
 describe('isBagPacked', () => {
   it('needs at least one item, all ticked', () => {
@@ -24,6 +74,28 @@ describe('becamePacked', () => {
 
   it('does nothing when a bag stops being full', () => {
     expect(becamePacked(true, false)).toBe(false);
+  });
+});
+
+describe('completesBag', () => {
+  const a = item('a', 'me');
+  const b = item('b', 'me');
+
+  it('is true when the press ticks the last unpacked item', () => {
+    expect(completesBag([{ ...a, isPacked: true }, b], b)).toBe(true);
+  });
+
+  it('is false when another item is still unpacked', () => {
+    expect(completesBag([a, b], a)).toBe(false);
+  });
+
+  it('is false for an untick, even in a full bag', () => {
+    const packed = { ...a, isPacked: true };
+    expect(completesBag([packed, { ...b, isPacked: true }], packed)).toBe(false);
+  });
+
+  it('is false for an empty bag', () => {
+    expect(completesBag([], a)).toBe(false);
   });
 });
 

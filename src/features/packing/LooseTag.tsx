@@ -17,7 +17,7 @@ import {
   TAG_LIFT_SCALE,
   tagToss,
 } from '@/components/motion/keyframes';
-import { motion, shadows, useTheme } from '@/theme';
+import { motion, shadows, hitTargetMin, useTheme } from '@/theme';
 import { bagAt, type BagRect } from './bags';
 
 const GEO = { height: 38, point: 13, eyelet: 7, eyeletLeft: 10, padLeft: 13, padRight: 14 } as const;
@@ -153,7 +153,7 @@ export function LooseTag({
 }
 
 const styles = StyleSheet.create({
-  tag: { flexDirection: 'row', height: GEO.height },
+  tag: { flexDirection: 'row', alignItems: 'center', minHeight: hitTargetMin },
   point: { marginRight: -0.5 },
   body: {
     height: GEO.height,

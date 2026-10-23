@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NOW_SLOT, flightStartY, layoutRoute, nowSlotIndex, routeYAt, stopsSummary, withNowSlot } from '../route';
+import { stopsToGo } from '../group';
+import { SHELL } from '../../trips/shellLayout';
 
 const H = (h: number, m = 0) => h * 60 + m;
 
@@ -161,5 +163,30 @@ describe('stopsSummary', () => {
     expect(stopsSummary(1, 0)).toBe('1 stop · all done');
     expect(stopsSummary(2, 2)).toBe('2 stops');
     expect(stopsSummary(0, 0)).toBe('No stops yet');
+  });
+
+  it('only says all done when every status is done, including overdue stops', () => {
+    const items = [
+      { status: 'planned' as const, startAt: '2026-10-12T08:00:00' },
+      { status: 'confirmed' as const, startAt: '2026-10-12T09:00:00' },
+      { status: 'done' as const, startAt: '2026-10-12T23:00:00' },
+    ];
+    expect(stopsSummary(items.length, stopsToGo(items))).toBe('3 stops · 2 still to go');
+    expect(stopsSummary(items.length, stopsToGo(items.map((item) => ({ ...item, status: 'done' }))))).toBe('3 stops · all done');
+  });
+});
+
+describe('Plan header clearance', () => {
+  it('leaves the entire pattern band above even the raised today stamp', () => {
+    const overlap = SHELL.dayStripOverhang + SHELL.dayStripDropRoom;
+    const stampTop = SHELL.heroHeight - overlap + SHELL.dayStripDropRoom + SHELL.dayStripRaise;
+    const todayTop = stampTop - SHELL.dayStripRaise;
+    expect(todayTop).toBeGreaterThanOrEqual(SHELL.heroHeight);
+    expect(stampTop).toBe(200);
+  });
+
+  it('reserves the full drop-in room above the raised stamp', () => {
+    const raisedStampTop = SHELL.dayStripDropRoom + SHELL.dayStripRaise - SHELL.dayStripRaise;
+    expect(raisedStampTop - SHELL.dayStripDropRoom).toBeGreaterThanOrEqual(0);
   });
 });

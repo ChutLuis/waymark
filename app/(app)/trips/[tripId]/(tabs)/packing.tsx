@@ -5,13 +5,14 @@ import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateViews';
 import { sampleTrack, useEntrance } from '@/components/motion';
 import { rise } from '@/components/motion/keyframes';
 import { Bag } from '@/features/packing/Bag';
 import { LooseTag, type ClaimTarget } from '@/features/packing/LooseTag';
 import { PackingItemEditor } from '@/features/packing/PackingItemEditor';
-import { isBagPacked, tagTilt, type BagRect } from '@/features/packing/bags';
+import { groupPackingItems, isBagPacked, tagTilt, type BagRect } from '@/features/packing/bags';
 import { usePackingList, useSavePackingItem, useSetPacked } from '@/features/packing/hooks';
 import { SHELL } from '@/features/trips/shellLayout';
 import { tabEntranceBase } from '@/features/trips/shellMotion';
@@ -110,15 +111,16 @@ export default function PackingScreen() {
     [me, memberList, userId],
   );
 
-  const loose = items.filter((i) => i.assignedTo === null && i.id !== hiddenId);
-  const byBag = useMemo(() => {
-    const map = new Map<string, PackingItem[]>();
-    for (const item of items) {
-      if (!item.assignedTo) continue;
-      map.set(item.assignedTo, [...(map.get(item.assignedTo) ?? []), item]);
-    }
-    return map;
-  }, [items]);
+  const grouped = useMemo(
+    () => groupPackingItems(items, memberList.map((m) => m.userId)),
+    [items, memberList],
+  );
+  const loose = grouped.loose.filter((i) => i.id !== hiddenId);
+  const byBag = grouped.byBag;
+
+  // A failed optimistic toggle/claim is rolled back in the query cache; this
+  // explains the jump. TanStack clears `isError` on the next action.
+  const saveError = setPacked.isError || save.isError;
 
   const packedNow = useMemo(
     () => Object.fromEntries(bagOwners.map((m) => [m.userId, isBagPacked(byBag.get(m.userId) ?? [])])),
@@ -138,7 +140,7 @@ export default function PackingScreen() {
       refs.forEach(([id, view]) =>
         view.measureInWindow((x, y, width, height) => {
           measured.push({ id, x, y, width, height });
-          if (measured.length === refs.length) rects.value = measured;
+          if (measured.length === refs.length) rects.set(measured);
         }),
       );
     });
@@ -156,7 +158,7 @@ export default function PackingScreen() {
     (id: string, bagId: string | null) => {
       setDragging(null);
       setHovered(null);
-      rects.value = [];
+      rects.set([]);
       if (!bagId) return;
       const item = items.find((i) => i.id === id);
       if (!item) return;
@@ -171,9 +173,14 @@ export default function PackingScreen() {
     [items, save, rects],
   );
 
-  if (packing.isPending) return <LoadingState />;
+  // Grouping needs the members: without them every assigned item would read
+  // as loose (and claimable) until they arrive.
+  if (packing.isPending || members.isPending) return <LoadingState />;
   if (packing.isError) {
     return <ErrorState title="Couldn't load the packing list" onRetry={() => packing.refetch()} />;
+  }
+  if (members.isError) {
+    return <ErrorState title="Couldn't load who's on this trip" onRetry={() => members.refetch()} />;
   }
 
   const rows: TripMember[][] = [];
@@ -195,6 +202,12 @@ export default function PackingScreen() {
           <>
             <Progress items={items} />
 
+            {saveError ? (
+              <View style={styles.errorSlot}>
+                <ErrorBanner message="Couldn't save that change — check your connection" />
+              </View>
+            ) : null}
+
             {loose.length > 0 ? (
               <>
                 <View style={styles.looseHead}>
@@ -206,6 +219,8 @@ export default function PackingScreen() {
                   </AppText>
                 </View>
                 <View style={[styles.tags, dragging ? styles.tagsLifted : null]}>
+                  {/* The ref is a non-reactive entrance snapshot, recorded after this render. */}
+                  {/* eslint-disable-next-line react-hooks/refs */}
                   {loose.map((item, index) => (
                     <LooseTag
                       key={item.id}
@@ -305,6 +320,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.gutter,
   },
   dragHint: { letterSpacing: 0.8 },
+  errorSlot: { paddingTop: spacing.s5, paddingHorizontal: spacing.gutter },
   tags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -316,5 +332,5 @@ const styles = StyleSheet.create({
   },
   tagsLifted: { zIndex: 20 },
   bags: { paddingTop: spacing.s12 + 6, paddingHorizontal: spacing.cardGutter, gap: spacing.s12 },
-  bagRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  bagRow: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
 });

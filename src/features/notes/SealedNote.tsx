@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import Animated, {
   Easing,
@@ -25,28 +25,9 @@ import {
   waxDrop,
 } from '@/components/motion/keyframes';
 import { haptic } from '@/lib/haptics';
-import { motion, radius, shadows, useTheme } from '@/theme';
+import { motion, radius, shadows, spacing, typeScale, useTheme } from '@/theme';
+import { letterRules, SEALED_NOTE as GEO, sealedNoteGeometry } from './geometry';
 
-/** Geometry from README 06, in points. */
-const GEO = {
-  sealed: 150,
-  open: 252,
-  body: 150,
-  pocket: 104,
-  flap: 78,
-  letterInset: 16,
-  letterTop: 8,
-  letterHeight: 132,
-  ruleFirst: 33,
-  rulePitch: 22,
-  sealBox: 58,
-  sealTop: 47,
-  disc: 42,
-  ringR: 27,
-  ringStroke: 3,
-  perspective: 700,
-  tilt: -1.4,
-} as const;
 const RING_LENGTH = 2 * Math.PI * GEO.ringR;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -136,10 +117,27 @@ function SealHalf({
 export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps) {
   const { colors } = useTheme();
   const { ms } = useMotion();
+  const { fontScale } = useWindowDimensions();
   const isFocused = useIsFocused();
   const [phase, setPhase] = useState<Phase>('sealed');
   const phaseRef = useRef<Phase>('sealed');
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [measurement, setMeasurement] = useState<{
+    fontScale: number;
+    body: string;
+    bodyTop?: number;
+    textHeight?: number;
+    offsets?: number[];
+  }>({ fontScale, body });
+  const measured = measurement.fontScale === fontScale && measurement.body === body ? measurement : undefined;
+  const geo = sealedNoteGeometry({
+    fontScale,
+    lineHeight: typeScale.letter.lineHeight!,
+    kickerLineHeight: typeScale.tagSm.lineHeight!,
+    measuredBodyTop: measured?.bodyTop,
+    measuredTextHeight: measured?.textHeight,
+  });
+  const openHeight = useRef(geo.open);
 
   const height = useSharedValue<number>(GEO.sealed);
   const flap = useSharedValue(0);
@@ -153,6 +151,13 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
   const letter = useTimeline(1);
   const wax = useTimeline(1);
   const holdStart = useRef(0);
+
+  useEffect(() => {
+    openHeight.current = geo.open;
+    if (phaseRef.current === 'open') {
+      height.set(withTiming(geo.open, { duration: ms(motion.duration.envelope), easing: easing('envelope') }));
+    }
+  }, [geo.open, height, ms]);
 
   const go = useCallback((next: Phase) => {
     phaseRef.current = next;
@@ -170,12 +175,12 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
   const sealNow = useCallback(() => {
     clearTimers();
     [height, flap, ring, ringOpacity, pressed, halves].forEach((v) => cancelAnimation(v));
-    height.value = GEO.sealed;
-    flap.value = 0;
-    ring.value = 0;
-    ringOpacity.value = 1;
-    pressed.value = 1;
-    halves.value = 0;
+    height.set(GEO.sealed);
+    flap.set(0);
+    ring.set(0);
+    ringOpacity.set(1);
+    pressed.set(1);
+    halves.set(0);
     letter.set(1);
     wax.set(1);
     go('sealed');
@@ -197,13 +202,13 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
     clearTimers();
     go('opening');
     haptic('rigid');
-    ringOpacity.value = withTiming(0, { duration: ms(s.ringFade) });
-    halves.value = 1;
+    ringOpacity.set(withTiming(0, { duration: ms(s.ringFade) }));
+    halves.set(1);
     left.run(s.leftFall);
     right.run(s.rightFall);
-    flap.value = withDelay(ms(s.flapAt), withTiming(180, { duration: ms(s.flap), easing: easing('flap') }));
+    flap.set(withDelay(ms(s.flapAt), withTiming(180, { duration: ms(s.flap), easing: easing('flap') })));
     later(() => {
-      height.value = withTiming(GEO.open, { duration: ms(motion.duration.envelope), easing: easing('envelope') });
+      height.set(withTiming(openHeight.current, { duration: ms(motion.duration.envelope), easing: easing('envelope') }));
       letter.run(s.letter);
       go('open');
     }, ms(s.openAt));
@@ -215,12 +220,12 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
     holdStart.current = Date.now();
     // The hold is a privacy gesture: its 600 ms never shrinks, even with
     // reduced motion.
-    ring.value = withTiming(1, {
+    ring.set(withTiming(1, {
       duration: motion.duration.hold,
       easing: Easing.linear,
       reduceMotion: ReduceMotion.Never,
-    });
-    pressed.value = withTiming(SEAL_PRESSED_SCALE, { duration: ms(motion.choreo.seal.press) });
+    }));
+    pressed.set(withTiming(SEAL_PRESSED_SCALE, { duration: ms(motion.choreo.seal.press) }));
     later(crack, motion.duration.hold);
   };
 
@@ -229,8 +234,8 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
     clearTimers();
     const held = Math.min(motion.duration.hold, Date.now() - holdStart.current);
     // The ring drains back the way it came; nothing opens.
-    ring.value = withTiming(0, { duration: held, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
-    pressed.value = withTiming(1, { duration: ms(motion.choreo.seal.press) });
+    ring.set(withTiming(0, { duration: held, easing: Easing.linear, reduceMotion: ReduceMotion.Never }));
+    pressed.set(withTiming(1, { duration: ms(motion.choreo.seal.press) }));
     go('sealed');
   };
 
@@ -239,25 +244,29 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
     const s = motion.choreo.seal;
     go('resealing');
     haptic('selection');
-    height.value = withTiming(GEO.sealed, { duration: ms(motion.duration.envelope), easing: easing('envelope') });
-    flap.value = withDelay(ms(s.resealFlapAt), withTiming(0, { duration: ms(s.resealFlap), easing: easing('flap') }));
+    height.set(withTiming(GEO.sealed, { duration: ms(motion.duration.envelope), easing: easing('envelope') }));
+    flap.set(withDelay(ms(s.resealFlapAt), withTiming(0, { duration: ms(s.resealFlap), easing: easing('flap') })));
     later(() => {
-      halves.value = 2;
-      ring.value = 0;
-      ringOpacity.value = 1;
+      halves.set(2);
+      ring.set(0);
+      ringOpacity.set(1);
       wax.run(s.wax);
     }, ms(s.resealFlapAt + s.resealWaxAfterFlap));
     later(() => {
       haptic('light');
-      halves.value = 0;
-      pressed.value = 1;
+      halves.set(0);
+      pressed.set(1);
       go('sealed');
     }, ms(s.resealFlapAt + s.resealWaxAfterFlap + s.waxContact));
   };
 
   const wrapperStyle = useAnimatedStyle(() => ({ height: height.value }));
-  const bodyTopStyle = useAnimatedStyle(() => ({ top: height.value - GEO.body }));
-  const sealBoxStyle = useAnimatedStyle(() => ({ top: height.value - GEO.body + GEO.sealTop }));
+  const bodyTopStyle = useAnimatedStyle(() => ({ transform: [{ translateY: height.value - GEO.body }] }));
+  const sealBoxStyle = useAnimatedStyle(() => ({ transform: [{ translateY: height.value - GEO.body }] }));
+  // The flap keeps a pure perspective + rotateX transform and is placed by
+  // layout (`top`): Android approximates perspective with a camera distance
+  // decomposed from the whole matrix, so a translate in the same transform
+  // stretched the opened flap far above the letter.
   const flapTransform = () => {
     'worklet';
     return [{ perspective: GEO.perspective }, { rotateX: `${flap.value}deg` }];
@@ -290,40 +299,78 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
         <FlapShape color={colors.kraftInside} />
       </Animated.View>
 
-      <Animated.View
-        style={[styles.letter, { backgroundColor: colors.paper, boxShadow: shadows.letter }, letterStyle]}
-      >
-        {Array.from({ length: 5 }, (_, i) => (
-          <View
-            key={i}
-            style={[styles.rule, { top: GEO.ruleFirst + i * GEO.rulePitch, backgroundColor: colors.letterRule }]}
-          />
-        ))}
-        {revealed ? (
+      {revealed ? (
+        <View style={styles.letterClip} pointerEvents="box-none">
+        <Animated.View
+          style={[styles.letter, { height: geo.openLetterHeight, backgroundColor: colors.paper, boxShadow: shadows.letter }, letterStyle]}
+        >
+          {Array.from({ length: 5 }, (_, i) => (
+            <View
+              key={i}
+              style={[styles.rule, {
+                top: measured?.offsets?.[i] !== undefined
+                  ? (measured.bodyTop ?? geo.bodyTop) + measured.offsets[i]
+                  : geo.ruleFirst + i * geo.rulePitch,
+                backgroundColor: colors.letterRule,
+              }]}
+            />
+          ))}
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Edit private note"
-            disabled={!isOpen || !onEdit}
-            onPress={onEdit}
+            accessible={isOpen}
+            accessibilityElementsHidden={!isOpen}
+            importantForAccessibility={isOpen ? 'yes' : 'no-hide-descendants'}
+            accessibilityRole={onEdit ? 'button' : 'text'}
+            accessibilityLabel={`Private note, only you. ${dateLabel}. ${body}`}
+            accessibilityHint={onEdit ? 'Tap to edit the private note' : undefined}
+            accessibilityActions={isOpen && onEdit ? [{ name: 'edit', label: 'Edit private note' }] : undefined}
+            onAccessibilityAction={(event) => {
+              if (event.nativeEvent.actionName === 'edit' && isOpen) onEdit?.();
+            }}
+            onPress={isOpen ? onEdit : undefined}
             style={styles.letterPress}
           >
             <AppText role="tagSm" tone="secondary" style={styles.letterKicker}>
               ONLY YOU · {dateLabel}
             </AppText>
-            <AppText role="letter" numberOfLines={4} style={styles.letterBody}>
+            <AppText
+              role="letter"
+              numberOfLines={GEO.writtenLines}
+              style={styles.letterBody}
+              onLayout={(event) => {
+                const bodyTop = event.nativeEvent.layout.y;
+                setMeasurement((previous) => {
+                  const current = previous.fontScale === fontScale && previous.body === body;
+                  if (current && previous.bodyTop === bodyTop) return previous;
+                  return { ...(current ? previous : {}), fontScale, body, bodyTop };
+                });
+              }}
+              onTextLayout={(event) => {
+                const rules = letterRules(event.nativeEvent.lines);
+                setMeasurement((previous) => {
+                  const current = previous.fontScale === fontScale && previous.body === body;
+                  if (current && previous.textHeight === rules.textHeight &&
+                    previous.offsets?.length === rules.offsets.length &&
+                    previous.offsets.every((offset, i) => offset === rules.offsets[i])) return previous;
+                  return { ...(current ? previous : {}), fontScale, body, ...rules };
+                });
+              }}
+            >
               {body}
             </AppText>
           </Pressable>
-        ) : null}
-      </Animated.View>
+        </Animated.View>
+        </View>
+      ) : null}
 
       <Animated.View
         style={[styles.body, { backgroundColor: colors.kraft, boxShadow: shadows.kraft }, bodyTopStyle]}
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={isOpen ? 'Seal the note again' : 'Sealed note, only you'}
-          accessibilityState={{ disabled: !isOpen }}
+          accessible={isOpen}
+          accessibilityElementsHidden={!isOpen}
+          importantForAccessibility={isOpen ? 'yes' : 'no-hide-descendants'}
+          accessibilityLabel="Seal the note again"
           onPress={reseal}
           style={StyleSheet.absoluteFill}
         >
@@ -345,7 +392,7 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
           <View style={styles.labelRow}>
             <View style={styles.labelLeft}>
               <Lock size={13} color={ink} strokeWidth={2.4} />
-              <AppText role="kickerSm" style={{ color: ink }}>
+              <AppText role="kickerSm" numberOfLines={1} style={[styles.labelText, { color: ink }]}>
                 {revealed ? 'OPENED · ONLY YOU' : 'SEALED · ONLY YOU'}
               </AppText>
             </View>
@@ -360,14 +407,19 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
         <FlapShape color={colors.kraftFlap} />
       </Animated.View>
 
-      <Animated.View style={[styles.sealBox, sealBoxStyle]} pointerEvents={phase === 'sealed' || phase === 'holding' ? 'auto' : 'none'}>
+      <Animated.View
+        style={[styles.sealBox, sealBoxStyle]}
+        pointerEvents={phase === 'sealed' || phase === 'holding' ? 'auto' : 'none'}
+        importantForAccessibility={revealed ? 'no-hide-descendants' : 'auto'}
+        accessibilityElementsHidden={revealed}
+      >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Wax seal"
-          accessibilityHint="Hold to open the sealed note"
+          accessibilityLabel={`Private sealed note, only you. ${dateLabel}. Hold the seal to open.`}
+          accessibilityHint="Hold for 600 milliseconds to open the private note"
           accessibilityActions={[{ name: 'activate', label: 'Open sealed note' }]}
           onAccessibilityAction={(event) => {
-            if (event.nativeEvent.actionName === 'activate' && phaseRef.current === 'sealed') crack();
+            if (event.nativeEvent.actionName === 'activate') onPressIn();
           }}
           onPressIn={onPressIn}
           onPressOut={onPressOut}
@@ -380,7 +432,7 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
                 cy={GEO.sealBox / 2}
                 r={GEO.ringR}
                 fill="none"
-                stroke={colors.paper}
+                stroke={colors.kraftInk}
                 strokeOpacity={0.35}
                 strokeWidth={GEO.ringStroke}
               />
@@ -389,7 +441,7 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
                 cy={GEO.sealBox / 2}
                 r={GEO.ringR}
                 fill="none"
-                stroke={colors.paper}
+                stroke={colors.kraftInk}
                 strokeWidth={GEO.ringStroke}
                 strokeLinecap="round"
                 strokeDasharray={RING_LENGTH}
@@ -408,24 +460,25 @@ export function SealedNote({ body, dateLabel, initial, onEdit }: SealedNoteProps
 
 const styles = StyleSheet.create({
   wrapper: { transform: [{ rotate: `${GEO.tilt}deg` }] },
+  letterClip: { ...StyleSheet.absoluteFill, overflow: 'hidden', zIndex: 1 },
   letter: {
     position: 'absolute',
     left: GEO.letterInset,
     right: GEO.letterInset,
     top: GEO.letterTop,
-    height: GEO.letterHeight,
     borderRadius: radius.airmailInner,
     overflow: 'hidden',
     zIndex: 1,
   },
   rule: { position: 'absolute', left: 0, right: 0, height: 1 },
-  letterPress: { flex: 1, paddingVertical: 12, paddingHorizontal: 14 },
+  letterPress: { flex: 1, paddingVertical: GEO.letterPadding, paddingHorizontal: 14 },
   letterKicker: { letterSpacing: 0.8 },
-  letterBody: { marginTop: 6 },
+  letterBody: { marginTop: GEO.bodyGap },
   body: {
     position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
     height: GEO.body,
     borderRadius: radius.card,
     overflow: 'hidden',
@@ -436,13 +489,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 40,
+    bottom: 36,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
-  hint: { lineHeight: 12, letterSpacing: 1 },
+  hint: { letterSpacing: 1 },
   labelRow: {
     position: 'absolute',
     left: 16,
@@ -451,13 +504,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    // Large text: the label truncates before it can run into the date.
+    gap: spacing.s3,
   },
-  labelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  flap: { position: 'absolute', left: 0, right: 0, height: GEO.flap, transformOrigin: '50% 0%' },
+  labelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  labelText: { flexShrink: 1 },
+  flap: { position: 'absolute', left: 0, right: 0, top: 0, height: GEO.flap, transformOrigin: '50% 0%' },
   flapBack: { zIndex: 0 },
   flapFront: { zIndex: 3 },
   sealBox: {
     position: 'absolute',
+    top: GEO.sealTop,
     left: '50%',
     width: GEO.sealBox,
     height: GEO.sealBox,

@@ -14,10 +14,11 @@ export interface StripDay {
   weekday: string;
   day: number | string;
   label: string;
+  hasStops?: boolean;
 }
 
 /** Today's stamp sits this much higher than the rest. */
-const TODAY_RAISE = 4;
+const TODAY_RAISE = SHELL.dayStripRaise;
 /** The past-day postmark: a 24 pt ring and three cancel lines off the right edge. */
 const PAST_RING = { size: 24, right: -7, top: 4, stroke: 1.25 } as const;
 const PAST_LINES = { width: 22, right: -10, top: 30, pitch: 4, count: 3, stroke: 1.25 } as const;
@@ -37,7 +38,7 @@ function PastPostmark() {
           cy={PAST_RING.size / 2}
           r={(PAST_RING.size - PAST_RING.stroke) / 2}
           fill="none"
-          stroke={colors.postmarkFaint}
+          stroke={colors.dayPostmark}
           strokeWidth={PAST_RING.stroke}
         />
       </Svg>
@@ -54,7 +55,7 @@ function PastPostmark() {
             x2={PAST_LINES.width}
             y1={i * PAST_LINES.pitch + PAST_LINES.stroke / 2}
             y2={i * PAST_LINES.pitch + PAST_LINES.stroke / 2}
-            stroke={colors.cancelFaint}
+            stroke={colors.dayCancel}
             strokeWidth={PAST_LINES.stroke}
           />
         ))}
@@ -100,6 +101,7 @@ function DayStamp({
   const filled = selected;
   const weekdayColor = filled ? colors.paper : isPast ? colors.ink3 : isToday ? colors.airmailBlue : colors.ink2;
   const numberColor = filled ? colors.paper : isPast ? colors.ink3 : colors.ink;
+  const dotColor = filled ? colors.paper : isToday ? colors.airmailBlue : isPast ? colors.ink3 : colors.ink;
 
   return (
     <Animated.View style={[isToday ? styles.raised : null, style]}>
@@ -119,12 +121,23 @@ function DayStamp({
           <View style={styles.content}>
             {/* Always three letters (SAT, SUN, MON): the word never shrinks or
                 wraps (N26). */}
-            <AppText role="monoXs" numberOfLines={1} style={[styles.weekday, { color: weekdayColor }]}>
+            <AppText
+              role="monoXs"
+              numberOfLines={1}
+              maxFontSizeMultiplier={STAMP_TEXT_SCALE_MAX}
+              style={[styles.weekday, { color: weekdayColor }]}
+            >
               {day.weekday}
             </AppText>
-            <AppText role="dayNumber" style={{ color: numberColor }}>
+            <AppText
+              role="dayNumber"
+              numberOfLines={1}
+              maxFontSizeMultiplier={STAMP_TEXT_SCALE_MAX}
+              style={{ color: numberColor }}
+            >
               {day.day}
             </AppText>
+            <View style={[styles.stopDot, { backgroundColor: dotColor, opacity: day.hasStops ? 1 : 0 }]} />
           </View>
         </PerforatedStamp>
         {isPast && !filled ? <PastPostmark /> : null}
@@ -139,6 +152,12 @@ function DayStamp({
  * off the right edge to hint that it scrolls. Each stamp drops in on the tab
  * entrance, 45 ms apart.
  */
+/**
+ * Day stamps are fixed 48×56 pieces of art; larger text no longer fits two
+ * digits. The full date is in each stamp's accessibility label.
+ */
+const STAMP_TEXT_SCALE_MAX = 1.2;
+
 export function DayStrip({
   days,
   selectedKey,
@@ -194,12 +213,12 @@ export function DayStrip({
 }
 
 /** Height the strip occupies at the top of the Plan pane. */
-export const DAY_STRIP_HEIGHT = SHELL.dayStripDropRoom + dayStampLayout.height + STAMP_SHADOW_MARGIN;
+export const DAY_STRIP_HEIGHT = SHELL.dayStripDropRoom + TODAY_RAISE + dayStampLayout.height + STAMP_SHADOW_MARGIN;
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 0, height: DAY_STRIP_HEIGHT },
   strip: {
-    paddingTop: SHELL.dayStripDropRoom,
+    paddingTop: SHELL.dayStripDropRoom + TODAY_RAISE,
     paddingBottom: STAMP_SHADOW_MARGIN,
     paddingHorizontal: spacing.s7,
     gap: dayStampLayout.gap,
@@ -208,6 +227,7 @@ const styles = StyleSheet.create({
   raised: { marginTop: -TODAY_RAISE },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 1 },
   weekday: { flexShrink: 0 },
+  stopDot: { width: 4, height: 4, borderRadius: 2, marginTop: 1 },
   overlay: { position: 'absolute' },
   pressed: { opacity: 0.7 },
 });

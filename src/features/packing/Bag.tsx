@@ -6,9 +6,9 @@ import { AppText } from '@/components/AppText';
 import { sampleTrack, useEntrance, useMotion, useTimeline } from '@/components/motion';
 import { bagClaimSquash, bagSlamSquash, checkboxPop, claimRow, packedSlam } from '@/components/motion/keyframes';
 import { haptic, hapticAfter } from '@/lib/haptics';
-import { motion, radius, shadows, useTheme } from '@/theme';
+import { motion, radius, shadows, hitTargetMin, useTheme } from '@/theme';
 import type { PackingItem } from '@/lib/types';
-import { becamePacked } from './bags';
+import { becamePacked, completesBag } from './bags';
 
 const GEO = {
   handle: { width: 46, height: 14, top: -12, stroke: 2 },
@@ -119,6 +119,10 @@ export const Bag = forwardRef<View, BagProps>(function Bag(
   const stampShown = useSharedValue(packed ? 1 : 0);
   const wasPacked = useRef<boolean | null>(null);
   const firstClaim = useRef(true);
+  // The slam is feedback for a press on this device. Refetches from another
+  // member, and an optimistic rollback that restores the previous list, must
+  // not re-slam a bag the user did not just complete.
+  const slamArmed = useRef(false);
 
   useEffect(() => {
     if (firstClaim.current) {
@@ -132,11 +136,15 @@ export const Bag = forwardRef<View, BagProps>(function Bag(
 
   // PACKED slams on the false → true change only, detected here before the
   // frame paints: the slam drops to 0 and the stamp shows in the same tick.
-  // Mount and refetch stay still; a bag that stops being full loses it at once.
+  // Mount and refetch stay still — and so does a change this device did not
+  // cause, since only a local press arms the slam. A bag that stops being
+  // full loses it at once.
   useLayoutEffect(() => {
     const slams = becamePacked(wasPacked.current, packed);
+    const local = slamArmed.current;
+    slamArmed.current = false;
     wasPacked.current = packed;
-    if (!slams) {
+    if (!slams || !local) {
       stampShown.value = packed ? 1 : 0;
       return;
     }
@@ -207,7 +215,12 @@ export const Bag = forwardRef<View, BagProps>(function Bag(
             key={item.id}
             item={item}
             claimed={claimedIds.has(item.id)}
-            onToggle={() => onToggle(item)}
+            onToggle={() => {
+              // This press is what fills the bag, so the slam that follows is
+              // feedback for it (armed before the parent's optimistic update).
+              slamArmed.current = completesBag(items, item);
+              onToggle(item);
+            }}
             onEdit={() => onEdit(item)}
           />
         ))}
@@ -251,6 +264,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 6,
   },
   bag: {
+    flex: 1,
     minHeight: GEO.minHeight,
     borderRadius: 6,
     borderWidth: 1.5,
@@ -261,7 +275,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
   headerTitle: { flexShrink: 1 },
   rule: { borderTopWidth: 1.5, borderStyle: 'dashed', marginTop: 10, marginBottom: 4 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, minHeight: hitTargetMin },
   checkbox: {
     width: GEO.checkbox,
     height: GEO.checkbox,

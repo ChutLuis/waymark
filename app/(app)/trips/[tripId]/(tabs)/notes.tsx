@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/StateViews';
 import { sampleTrack, useEntrance } from '@/components/motion';
 import { pileDeal, rise } from '@/components/motion/keyframes';
 import { NoteEditor } from '@/features/notes/NoteEditor';
+import { NoteReader } from '@/features/notes/NoteReader';
 import { PostcardNote } from '@/features/notes/PostcardNote';
 import { SealedNote } from '@/features/notes/SealedNote';
 import { daysAgoLabel } from '@/features/notes/labels';
@@ -18,7 +19,7 @@ import { SHELL } from '@/features/trips/shellLayout';
 import { tabEntranceBase } from '@/features/trips/shellMotion';
 import { useTrip, useTripMembers } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
-import { motion, radius, spacing, useTheme } from '@/theme';
+import { hitTargetMin, motion, radius, spacing, useTheme } from '@/theme';
 import { formatShortDate } from '@/lib/format/date';
 import type { TripNote } from '@/lib/types';
 
@@ -85,6 +86,8 @@ export default function NotesScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [editorVisible, setEditorVisible] = useState(false);
   const [editingNote, setEditingNote] = useState<TripNote | null>(null);
+  const [readingNoteId, setReadingNoteId] = useState<string | null>(null);
+  const [editAfterReading, setEditAfterReading] = useState<TripNote | null>(null);
 
   const openEditor = (note: TripNote | null) => {
     setEditingNote(note);
@@ -92,6 +95,7 @@ export default function NotesScreen() {
   };
 
   const all = useMemo(() => notes.data ?? [], [notes.data]);
+  const readingNote = all.find((note) => note.id === readingNoteId && !note.isPrivate) ?? null;
   const shared = all.filter((n) => !n.isPrivate);
   const mine = all.filter((n) => n.isPrivate);
 
@@ -113,6 +117,8 @@ export default function NotesScreen() {
     return member?.profile.displayName.split(' ')[0] ?? 'A member';
   };
   const initialOf = (authorId: string): string => (firstNameOf(authorId)[0] ?? '?').toUpperCase();
+  const authorNameOf = (authorId: string): string =>
+    members.data?.find((member) => member.userId === authorId)?.profile.displayName ?? 'A member';
 
   if (notes.isPending) return <LoadingState />;
   if (notes.isError) {
@@ -154,6 +160,8 @@ export default function NotesScreen() {
           />
         ) : (
           <View style={styles.pile}>
+            {/* The ref is a non-reactive entrance snapshot, recorded after this render. */}
+            {/* eslint-disable-next-line react-hooks/refs */}
             {visible.map((note, index) => {
               const deal = !dealt.current.has(note.id);
               const date = formatShortDate(note.updatedAt, now).toUpperCase();
@@ -172,9 +180,11 @@ export default function NotesScreen() {
                       body={note.body}
                       kicker={`SHARED · ${daysAgoLabel(note.updatedAt, now, date)}`}
                       from={note.authorId === userId ? 'You' : firstNameOf(note.authorId)}
+                      dateLabel={date}
                       country={country}
                       tripName={trip.data?.name ?? ''}
                       tilt={POSTCARD_TILTS[postcardIndex++ % POSTCARD_TILTS.length]}
+                      onRead={() => setReadingNoteId(note.id)}
                       onEdit={mineToEdit}
                     />
                   )}
@@ -185,6 +195,21 @@ export default function NotesScreen() {
         )}
       </ScrollView>
 
+      <NoteReader
+        note={readingNote}
+        author={readingNote ? authorNameOf(readingNote.authorId) : ''}
+        dateLabel={readingNote ? formatShortDate(readingNote.updatedAt, now) : ''}
+        onClose={() => setReadingNoteId(null)}
+        onClosed={() => {
+          // The editor opens once the reader's modal is gone (iOS can't stack them).
+          if (editAfterReading) openEditor(editAfterReading);
+          setEditAfterReading(null);
+        }}
+        onEdit={readingNote?.authorId === userId && readingNote ? () => {
+          setEditAfterReading(readingNote);
+          setReadingNoteId(null);
+        } : undefined}
+      />
       <NoteEditor
         visible={editorVisible}
         onClose={() => setEditorVisible(false)}
@@ -208,7 +233,7 @@ const styles = StyleSheet.create({
     gap: spacing.s5,
   },
   actionButton: {
-    height: 40,
+    minHeight: hitTargetMin,
     paddingLeft: 10,
     paddingRight: 14,
     borderRadius: radius.codeBox,

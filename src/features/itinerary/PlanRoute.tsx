@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import Animated, {
   type SharedValue,
@@ -23,7 +23,7 @@ import {
 import { StopStamp, STOP_STAMP_HEIGHT, STOP_STAMP_WIDTH } from '@/features/trips/StopStamp';
 import { countdownLabel, freeTimeLabel, type CountryKey } from '@/features/trips/destinations';
 import { formatTimePadded } from '@/lib/format/date';
-import { motion, radius, shadows, useTheme } from '@/theme';
+import { hitTargetMin, motion, radius, shadows, typeScale, useTheme } from '@/theme';
 import type { ItineraryItem } from '@/lib/types';
 import { minutesUntil, statusLabel, type DayRow } from './group';
 import {
@@ -174,6 +174,9 @@ function RouteStop({
   // Held in state with the press time: a ref read during render goes stale
   // under the React Compiler's memoisation.
   const [pending, setPending] = useState<{ status: ItineraryItem['status']; at: number } | null>(null);
+  // Keep the local press until contact, even if the optimistic cache catches
+  // up before the stamp's layout effect starts.
+  const [localPress, setLocalPress] = useState<{ status: ItineraryItem['status']; at: number } | null>(null);
   // Whether the current press advances the stamp, fixed when it starts: the
   // tap itself makes a done stamp, which would otherwise dim mid-press.
   const [pressAdvances, setPressAdvances] = useState(false);
@@ -216,9 +219,15 @@ function RouteStop({
   const nextStatus = status === 'planned' ? 'confirmed' : status === 'confirmed' ? 'done' : null;
   const advance = () => {
     if (!nextStatus) return;
-    setPending({ status: nextStatus, at: Date.now() });
+    const press: { status: ItineraryItem['status']; at: number } = { status: nextStatus, at: Date.now() };
+    setPending(press);
+    setLocalPress(press);
     // A change that fails seeks the stamp back to the stored status.
-    onAdvance({ ...live, status }, () => setPending(null));
+    onAdvance({ ...live, status }, () => {
+      setPending(null);
+      setLocalPress(null);
+      setStamped(null);
+    });
   };
   const stampLabel = nextStatus
     ? `Mark ${item.title} ${statusLabel(nextStatus).toLowerCase()}`
@@ -247,7 +256,7 @@ function RouteStop({
             accessibilityRole="button"
             accessibilityLabel={`Edit ${item.title}`}
             onPress={() => onEdit(live)}
-            style={({ pressed }) => pressed && styles.pressed}
+            style={({ pressed }) => [styles.editTarget, pressed && styles.pressed]}
           >
             <View style={styles.ticketHead}>
               <AppText role="kicker" tone="accent" style={styles.ticketKicker}>
@@ -279,7 +288,7 @@ function RouteStop({
             accessibilityRole="button"
             accessibilityLabel={`Edit ${item.title}`}
             onPress={() => onEdit(live)}
-            style={({ pressed }) => pressed && styles.pressed}
+            style={({ pressed }) => [styles.editTarget, pressed && styles.pressed]}
           >
             {kind === 'compact' ? (
               <View style={styles.compactRow}>
@@ -314,11 +323,23 @@ function RouteStop({
           </Pressable>
         </Animated.View>
       )}
-      <Animated.View style={[styles.stamp, stampTopStyle, popStyle]}>
+      <Animated.View
+        style={[
+          styles.stamp,
+          item.status === 'planned' && { backgroundColor: colors.bg, borderRadius: radius.chip },
+          stampTopStyle,
+          popStyle,
+        ]}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={stampLabel}
-          hitSlop={4}
+          hitSlop={{
+            left: (hitTargetMin - STOP_STAMP_WIDTH) / 2,
+            right: (hitTargetMin - STOP_STAMP_WIDTH) / 2,
+            top: (hitTargetMin - STOP_STAMP_HEIGHT) / 2,
+            bottom: (hitTargetMin - STOP_STAMP_HEIGHT) / 2,
+          }}
           onPressIn={() => setPressAdvances(nextStatus !== null)}
           onPress={() => (nextStatus ? advance() : onEdit(live))}
           // No dim when the tap advances the stamp: its segment starts on
@@ -328,13 +349,14 @@ function RouteStop({
         >
           <StopStamp
             status={status}
-            pressedAt={pending?.at ?? null}
+            pressedAt={localPress?.status === status ? localPress.at : null}
             country={country}
-            onContact={(landed) => {
+            onContact={(landed, local) => {
               // One commit swaps the text and mounts the new tag hidden, so it
               // never paints at rest before stamping in.
-              setStamped(landed);
+              setStamped(local ? landed : null);
               setShown(landed);
+              setLocalPress(null);
             }}
           />
         </Pressable>
@@ -344,12 +366,12 @@ function RouteStop({
 }
 
 /** A "6 h 30 free" label in a gap, riding the reflow. */
-function FreeLabel({ top, minutes, reflow }: { top: number; minutes: number; reflow: boolean }) {
+function FreeLabel({ top, height, minutes, reflow }: { top: number; height: number; minutes: number; reflow: boolean }) {
   const y = useReflow(top, reflow);
   const style = useAnimatedStyle(() => ({ top: y.value }));
   return (
-    <Animated.View style={[styles.free, style]}>
-      <AppText role="metaSm" tone="muted">
+    <Animated.View style={[styles.free, { height }, style]}>
+      <AppText role="metaSm" tone="muted" numberOfLines={1}>
         {freeTimeLabel(minutes)}
       </AppText>
     </Animated.View>
@@ -395,6 +417,8 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
   const { colors } = useTheme();
   const { reduced, ms } = useMotion();
   const [heights, setHeights] = useState<Record<string, number>>({});
+  // The free-time label grows with the text size; a gap too short for it shows none.
+  const freeLabelHeight = Math.ceil(GEO.freeLabel * useWindowDimensions().fontScale);
 
   const stops = useMemo(() => {
     const out: { item: ItineraryItem; kind: RowKind; freeBefore: boolean; freeMinutes: number }[] = [];
@@ -462,7 +486,8 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
   const planeY = useSharedValue(startY ?? firstY);
   const routeTop = useSharedValue(firstY);
   const nowTag = useTimeline(entering ? 0 : 1);
-  const mountedAt = useRef(Date.now());
+  const [openedAt] = useState(() => Date.now());
+  const mountedAt = useRef(openedAt);
   // The entrance's clock, like useEntrance's, starts on the first frame.
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -489,6 +514,7 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
     // Fly once the rows have been measured, keeping the entrance's clock.
     if (!measured || startY === null) return;
     flown.current = true;
+    // eslint-disable-next-line react-hooks/purity -- This effect samples the clock after commit, not during render.
     const delay = Math.max(0, ms(base + motion.choreo.plan.plane) - (Date.now() - mountedAt.current));
     if (reduced) {
       planeY.value = nowY;
@@ -509,7 +535,11 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstY]);
 
-  const inkEnd = day === 'past' ? lastY : day === 'today' ? null : firstY;
+  let lastStampedY = firstY;
+  stops.forEach((s, i) => {
+    if (s.item.status !== 'planned') lastStampedY = stampYs[i] ?? lastStampedY;
+  });
+  const inkEnd = day === 'past' ? lastStampedY : day === 'today' ? null : firstY;
   const inkStyle = useAnimatedStyle(() => ({
     top: routeTop.value,
     height: Math.max(0, (inkEnd ?? planeY.value) - routeTop.value),
@@ -535,13 +565,14 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
         if (!row.freeBefore || i === 0 || !minutes) return null;
         const prevBottom = laidTops[i - 1] + laid[i - 1].height;
         const gap = laidTops[i] - prevBottom;
-        if (gap < GEO.freeLabel + 8) return null;
+        if (gap < freeLabelHeight + 8) return null;
         return (
           <FreeLabel
             // Keyed by the stop below the gap, so a label keeps its text and
             // slides when the slot moves in or out of its gap.
             key={`free-${stops[slotAt !== null && i > slotAt ? i - 1 : i].item.id}`}
-            top={prevBottom + (gap - GEO.freeLabel) / 2}
+            top={prevBottom + (gap - freeLabelHeight) / 2}
+            height={freeLabelHeight}
             minutes={minutes}
             reflow={reflow}
           />
@@ -609,7 +640,8 @@ const styles = StyleSheet.create({
   stamp: { position: 'absolute', left: GEO.stampLeft, width: STOP_STAMP_WIDTH, height: STOP_STAMP_HEIGHT },
   rowText: { position: 'absolute', left: GEO.textLeft, right: GEO.textRight },
   compactRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
-  compactTitle: { fontSize: 17, lineHeight: 22 },
+  compactTitle: { fontSize: typeScale.button.fontSize, lineHeight: typeScale.button.lineHeight },
+  editTarget: { minHeight: hitTargetMin, justifyContent: 'center' },
   baselineRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
   flexText: { flexShrink: 1 },
   subLine: { marginTop: 2 },
@@ -627,8 +659,8 @@ const styles = StyleSheet.create({
   },
   ticketHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ticketKicker: { letterSpacing: 0.6, flexShrink: 1 },
-  ticketTime: { fontSize: 14, lineHeight: 18 },
-  free: { position: 'absolute', left: GEO.textLeft, right: GEO.textRight, height: GEO.freeLabel },
+  ticketTime: { fontSize: typeScale.routeTime.fontSize, lineHeight: typeScale.routeTime.lineHeight },
+  free: { position: 'absolute', left: GEO.textLeft, right: GEO.textRight },
   plane: {
     position: 'absolute',
     top: 0,

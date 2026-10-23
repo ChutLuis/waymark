@@ -14,6 +14,7 @@ import {
   buildDayRows,
   defaultSelectedDay,
   nextStop as findNextStop,
+  stopsToGo,
   tripDaysList,
   type DayRow,
 } from '@/features/itinerary/group';
@@ -23,7 +24,7 @@ import { matchDestination } from '@/features/trips/destinations';
 import { SHELL } from '@/features/trips/shellLayout';
 import { tabEntranceBase } from '@/features/trips/shellMotion';
 import { useTrip } from '@/features/trips/hooks';
-import { motion, radius, spacing, useTheme } from '@/theme';
+import { hitTargetMin, motion, radius, spacing, typeScale, useTheme } from '@/theme';
 import { toDateOnly } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
 
@@ -50,12 +51,14 @@ function TitleBlock({
   title,
   summary,
   base,
+  quietAdd = false,
   onAdd,
 }: {
   kicker: string;
   title: string;
   summary: string;
   base: number;
+  quietAdd?: boolean;
   onAdd: () => void;
 }) {
   const { colors } = useTheme();
@@ -65,6 +68,7 @@ function TitleBlock({
     opacity: sampleTrack(keys.opacity, p.value, motion.easing.standard),
     transform: [{ translateY: sampleTrack(keys.translateY, p.value, motion.easing.standard) }],
   }));
+  const fg = quietAdd ? colors.ink : colors.paper;
   return (
     <Animated.View style={[styles.titleRow, style]}>
       <View style={styles.titleBlock}>
@@ -82,10 +86,16 @@ function TitleBlock({
         accessibilityRole="button"
         accessibilityLabel="Add an itinerary item"
         onPress={onAdd}
-        style={({ pressed }) => [styles.addButton, { backgroundColor: colors.ink }, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.addButton,
+          quietAdd
+            ? { backgroundColor: colors.paper, borderWidth: 1.5, borderColor: colors.border }
+            : { backgroundColor: colors.ink },
+          pressed && styles.pressed,
+        ]}
       >
-        <Plus size={18} color={colors.paper} strokeWidth={2.4} />
-        <AppText role="pillLabel" style={{ color: colors.paper }}>
+        <Plus size={18} color={fg} strokeWidth={2.4} />
+        <AppText role="pillLabel" style={{ color: fg }}>
           Add
         </AppText>
       </Pressable>
@@ -134,13 +144,19 @@ export default function PlanScreen() {
   const hasDates = days.length > 0;
   // Untimed items get a trailing "ANY" stamp (README: Not designed fallback).
   const untimed = useMemo(() => items.filter((item) => !item.startAt), [items]);
-  const strip = useMemo(
-    () =>
-      untimed.length > 0
-        ? [...days, { key: 'ANY', weekday: 'ANY', day: '—', label: 'Anytime' }]
-        : days,
-    [days, untimed.length],
-  );
+  const scheduledDayKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const item of items) {
+      if (item.startAt) keys.add(toDateOnly(new Date(item.startAt)));
+    }
+    return keys;
+  }, [items]);
+  const strip = useMemo(() => {
+    const dayStamps = days.map((d) => ({ ...d, hasStops: scheduledDayKeys.has(d.key) }));
+    return untimed.length > 0
+      ? [...dayStamps, { key: 'ANY', weekday: 'ANY', day: '—', label: 'Anytime', hasStops: true }]
+      : dayStamps;
+  }, [days, scheduledDayKeys, untimed.length]);
 
   // Default the selected day (today if within the trip, else the first day)
   // without an effect; an explicit tap overrides it.
@@ -179,12 +195,7 @@ export default function PlanScreen() {
         : selectedDay > todayKey
           ? 'future'
           : 'today';
-  const toGo =
-    routeDay === 'past'
-      ? 0
-      : routeDay === 'today'
-        ? dayItems.filter((i) => (i.startAt ? new Date(i.startAt) > now : i.status !== 'done')).length
-        : dayItems.filter((i) => i.status !== 'done').length;
+  const toGo = stopsToGo(dayItems);
 
   const dayIndex = days.findIndex((d) => d.key === selectedDay);
   const kicker = !hasDates
@@ -230,6 +241,7 @@ export default function PlanScreen() {
           title={title}
           summary={stopsSummary(dayItems.length, toGo)}
           base={base}
+          quietAdd={items.length === 0}
           onAdd={() => openEditor(null)}
         />
 
@@ -274,6 +286,7 @@ export default function PlanScreen() {
         tripId={tripId}
         item={editingItem}
         tripStartDate={trip.data?.startDate ?? null}
+        selectedDay={hasDates ? selectedDay : null}
       />
     </View>
   );
@@ -295,9 +308,9 @@ const styles = StyleSheet.create({
   },
   titleBlock: { flex: 1, minWidth: 0 },
   dayTitle: { marginTop: 4 },
-  summary: { marginTop: 2, fontSize: 15, lineHeight: 20 },
+  summary: { marginTop: 2, fontSize: typeScale.bodySm.fontSize, lineHeight: typeScale.bodySm.lineHeight },
   addButton: {
-    height: 40,
+    minHeight: hitTargetMin,
     marginTop: 8,
     paddingLeft: 10,
     paddingRight: 14,

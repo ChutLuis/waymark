@@ -1,17 +1,20 @@
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Minus, Plus } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { Chip } from '@/components/Chip';
-import { Sheet } from '@/components/Sheet';
+import { ErrorBanner } from '@/components/ErrorBanner';
+import { EDITOR_OFFLINE_HINT, EDITOR_OFFLINE_QUEUED, OfflineNotice } from '@/components/OfflineNotice';
+import { Sheet, type DiscardConfirm } from '@/components/Sheet';
 import { TextField } from '@/components/TextField';
-import { hairlineWidth, radius, spacing, useTheme } from '@/theme';
+import { disabledOpacity, hairlineWidth, pressedOpacity, radius, spacing, useTheme } from '@/theme';
 import { packingItemSchema, type PackingItemForm } from '@/lib/validation/schemas';
 import { confirmDestructive } from '@/lib/confirm';
 import type { PackingItem, TripMember } from '@/lib/types';
+import { useIsOnline } from '@/lib/useIsOnline';
 import { useDeletePackingItem, useSavePackingItem } from './hooks';
 
 interface PackingItemEditorProps {
@@ -22,11 +25,27 @@ interface PackingItemEditorProps {
   members: TripMember[];
 }
 
-function defaultsFor(item: PackingItem | null): PackingItemForm {
+const DISCARD_NEW_ITEM: DiscardConfirm = {
+  title: 'Discard this item?',
+  message: 'It hasn’t been added to the list yet.',
+  confirmLabel: 'Discard',
+};
+
+const DISCARD_ITEM_EDITS: DiscardConfirm = {
+  title: 'Discard changes?',
+  message: 'Your edits to this item won’t be saved.',
+  confirmLabel: 'Discard',
+};
+
+function defaultsFor(item: PackingItem | null, members: TripMember[]): PackingItemForm {
+  // An item assigned to someone who has left the trip reads as unassigned, so
+  // saving it clears the stale assignment instead of failing on a non-member.
+  const assignedTo =
+    item?.assignedTo && members.some((m) => m.userId === item.assignedTo) ? item.assignedTo : null;
   return {
     label: item?.label ?? '',
     quantity: item?.quantity ?? 1,
-    assignedTo: item?.assignedTo ?? null,
+    assignedTo,
   };
 }
 
@@ -40,38 +59,82 @@ export function PackingItemEditor({
   const { colors } = useTheme();
   const save = useSavePackingItem(tripId);
   const remove = useDeletePackingItem(tripId);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const online = useIsOnline();
 
-  const { control, handleSubmit, reset } = useForm<PackingItemForm>({
+  const { control, handleSubmit, reset, formState: { isDirty, isSubmitting } } = useForm<PackingItemForm>({
     resolver: zodResolver(packingItemSchema),
-    defaultValues: defaultsFor(item),
+    defaultValues: defaultsFor(item, members),
   });
+  // Locked (no second save, no discard) until what was sent lands.
+  const busy = isSubmitting || save.isPending || remove.isPending;
+  const saving = useRef(false);
+  // A locked field that still has focus would keep taking keystrokes.
+  useEffect(() => {
+    if (busy) Keyboard.dismiss();
+  }, [busy]);
+
+  // A fresh open starts without the last attempt's error, as a new session.
+  const [wasVisible, setWasVisible] = useState(visible);
+  const [sessionId, setSessionId] = useState(0);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    setSessionId(sessionId + 1);
+    if (visible) setSaveError(null);
+  }
+  // A save queued offline can land after the sheet closed or reopened for
+  // another item: it may only close (or report into) its own session.
+  const liveSession = useRef(0);
+  useEffect(() => {
+    liveSession.current = visible ? sessionId : -1;
+  }, [visible, sessionId]);
+  const isLive = (id: number) => liveSession.current === id;
 
   useEffect(() => {
-    if (visible) reset(defaultsFor(item));
-  }, [visible, item, reset]);
+    if (visible) reset(defaultsFor(item, members));
+  }, [visible, item, members, reset]);
 
-  const onSave = handleSubmit(async (form) => {
-    await save.mutateAsync({
-      itemId: item?.id ?? null,
-      input: {
-        label: form.label,
-        quantity: form.quantity,
-        assignedTo: form.assignedTo,
-      },
-    });
-    onClose();
-  });
+  // handleSubmit runs from the tap, not during render.
+  const onSave = () =>
+    handleSubmit(async (form) => {
+      if (saving.current) return;
+      saving.current = true;
+      const id = sessionId;
+      setSaveError(null);
+      try {
+        await save.mutateAsync({
+          itemId: item?.id ?? null,
+          input: {
+            label: form.label,
+            quantity: form.quantity,
+            assignedTo: form.assignedTo,
+          },
+        });
+        if (isLive(id)) onClose();
+      } catch {
+        // Keep the sheet open with what the user typed; the banner explains.
+        if (isLive(id)) setSaveError("Couldn't save your item — check your connection and try again.");
+      } finally {
+        saving.current = false;
+      }
+    })();
 
   const onDelete = async () => {
-    if (!item) return;
+    if (!item || busy) return;
+    const id = sessionId;
     const confirmed = await confirmDestructive(
       'Delete this item?',
       'It disappears from the packing list for everyone on the trip.',
       'Delete',
     );
     if (!confirmed) return;
-    await remove.mutateAsync(item.id);
-    onClose();
+    setSaveError(null);
+    try {
+      await remove.mutateAsync(item.id);
+      if (isLive(id)) onClose();
+    } catch {
+      if (isLive(id)) setSaveError("Couldn't delete your item — check your connection and try again.");
+    }
   };
 
   return (
@@ -79,10 +142,14 @@ export function PackingItemEditor({
       visible={visible}
       title={item ? 'Edit item' : 'New item'}
       onClose={onClose}
+      // A save already on its way can't be discarded.
+      discardConfirm={isDirty && !busy ? (item ? DISCARD_ITEM_EDITS : DISCARD_NEW_ITEM) : null}
       actionLabel={item ? 'Save' : 'Add'}
       onAction={onSave}
-      actionDisabled={save.isPending}
+      actionDisabled={busy}
     >
+      {!online ? <OfflineNotice message={busy ? EDITOR_OFFLINE_QUEUED : EDITOR_OFFLINE_HINT} reveal={busy} /> : null}
+      {saveError ? <ErrorBanner message={saveError} /> : null}
       <Controller
         control={control}
         name="label"
@@ -94,6 +161,7 @@ export function PackingItemEditor({
             onBlur={field.onBlur}
             error={fieldState.error?.message}
             autoFocus={!item}
+            editable={!busy}
           />
         )}
       />
@@ -109,15 +177,15 @@ export function PackingItemEditor({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Decrease quantity"
-                accessibilityState={{ disabled: field.value <= 1 }}
-                disabled={field.value <= 1}
+                accessibilityState={{ disabled: busy || field.value <= 1 }}
+                disabled={busy || field.value <= 1}
                 onPress={() => field.onChange(field.value - 1)}
                 style={({ pressed }) => [
                   styles.stepperButton,
                   {
                     backgroundColor: colors.bg,
                     borderColor: colors.border,
-                    opacity: field.value <= 1 ? 0.4 : pressed ? 0.7 : 1,
+                    opacity: busy || field.value <= 1 ? disabledOpacity : pressed ? pressedOpacity : 1,
                   },
                 ]}
               >
@@ -129,13 +197,15 @@ export function PackingItemEditor({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Increase quantity"
+                accessibilityState={{ disabled: busy }}
+                disabled={busy}
                 onPress={() => field.onChange(field.value + 1)}
                 style={({ pressed }) => [
                   styles.stepperButton,
                   {
                     backgroundColor: colors.bg,
                     borderColor: colors.border,
-                    opacity: pressed ? 0.7 : 1,
+                    opacity: busy ? disabledOpacity : pressed ? pressedOpacity : 1,
                   },
                 ]}
               >
@@ -160,6 +230,7 @@ export function PackingItemEditor({
                   label={member.profile.displayName.split(' ')[0]}
                   selected={field.value === member.userId}
                   onPress={() => field.onChange(member.userId)}
+                  disabled={busy}
                   leading={
                     <Avatar
                       name={member.profile.displayName}
@@ -174,6 +245,7 @@ export function PackingItemEditor({
                 label="No one yet"
                 selected={field.value === null}
                 onPress={() => field.onChange(null)}
+                disabled={busy}
               />
             </View>
           </View>
@@ -183,8 +255,13 @@ export function PackingItemEditor({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Delete item"
+          accessibilityState={{ disabled: busy }}
+          disabled={busy}
           onPress={onDelete}
-          style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.deleteButton,
+            (pressed || remove.isPending) && styles.pressed,
+          ]}
         >
           <AppText role="button" tone="danger">
             Delete item

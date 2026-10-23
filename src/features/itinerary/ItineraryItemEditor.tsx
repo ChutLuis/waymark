@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Controller, useForm } from 'react-hook-form';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Bell } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
@@ -8,25 +8,30 @@ import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { DatePair } from '@/components/DatePair';
 import { DateTimeField } from '@/components/DateTimeField';
+import { ErrorBanner } from '@/components/ErrorBanner';
+import { EDITOR_OFFLINE_HINT, EDITOR_OFFLINE_QUEUED, OfflineNotice } from '@/components/OfflineNotice';
 import { SegmentedControl } from '@/components/SegmentedControl';
-import { Sheet } from '@/components/Sheet';
+import { Sheet, type DiscardConfirm } from '@/components/Sheet';
 import { TextField } from '@/components/TextField';
 import { Toggle } from '@/components/Toggle';
-import { iconStrokeWidth, spacing, useTheme } from '@/theme';
+import { hitTargetMin, iconStrokeWidth, spacing, typeScale, useTheme } from '@/theme';
 import { itineraryItemSchema, type ItineraryItemForm } from '@/lib/validation/schemas';
 import { confirmDestructive } from '@/lib/confirm';
-import { ensureNotificationPermission } from '@/lib/notifications';
 import { formatDateTime } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
+import { useIsOnline } from '@/lib/useIsOnline';
 import { useDeleteItineraryItem, useSaveItineraryItem } from './hooks';
+import { newItemStartAt } from './group';
 import {
   REMINDER_OFFSETS,
+  ensureReminderPermission,
   reminderFireDate,
   useClearReminder,
   useReminder,
   useSetReminder,
   type ReminderOffset,
 } from '@/features/reminders/hooks';
+import { useRemindersEnabled } from '@/features/reminders/preference';
 
 interface ItineraryItemEditorProps {
   visible: boolean;
@@ -36,6 +41,8 @@ interface ItineraryItemEditorProps {
   item: ItineraryItem | null;
   /** Used to seed the date picker for new items. */
   tripStartDate: string | null;
+  /** Selected Plan day for a new item; ANY/null keep it unscheduled. */
+  selectedDay?: string | null;
 }
 
 const STATUS_OPTIONS: { value: ItineraryItem['status']; label: string }[] = [
@@ -44,12 +51,24 @@ const STATUS_OPTIONS: { value: ItineraryItem['status']; label: string }[] = [
   { value: 'done', label: 'Done' },
 ];
 
-function defaultsFor(item: ItineraryItem | null): ItineraryItemForm {
+const DISCARD_NEW_STOP: DiscardConfirm = {
+  title: 'Discard this stop?',
+  message: 'It hasn’t been added to the plan yet.',
+  confirmLabel: 'Discard',
+};
+
+const DISCARD_STOP_EDITS: DiscardConfirm = {
+  title: 'Discard changes?',
+  message: 'Your edits to this stop won’t be saved.',
+  confirmLabel: 'Discard',
+};
+
+function defaultsFor(item: ItineraryItem | null, selectedDay: string | null): ItineraryItemForm {
   return {
     title: item?.title ?? '',
     description: item?.description ?? '',
     location: item?.location ?? '',
-    startAt: item?.startAt ?? null,
+    startAt: item ? item.startAt : newItemStartAt(selectedDay),
     endAt: item?.endAt ?? null,
     status: item?.status ?? 'planned',
   };
@@ -61,6 +80,7 @@ export function ItineraryItemEditor({
   tripId,
   item,
   tripStartDate,
+  selectedDay = null,
 }: ItineraryItemEditorProps) {
   const { colors } = useTheme();
   const save = useSaveItineraryItem(tripId);
@@ -69,37 +89,76 @@ export function ItineraryItemEditor({
   const setReminder = useSetReminder();
   const clearReminder = useClearReminder();
 
-  const { control, handleSubmit, reset, setValue, watch } = useForm<ItineraryItemForm>({
+  const { control, handleSubmit, reset, setValue, formState: { isDirty, isSubmitting } } = useForm<ItineraryItemForm>({
     resolver: zodResolver(itineraryItemSchema),
-    defaultValues: defaultsFor(item),
+    defaultValues: defaultsFor(item, selectedDay),
   });
 
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderOffset, setReminderOffset] = useState<ReminderOffset>(60);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [remindersUnavailable, setRemindersUnavailable] = useState(false);
-
+  const remindersOn = useRemindersEnabled();
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // Everything that is still on its way, reminders included: the form stays
+  // locked (and can't be saved twice or discarded) until it lands.
+  const busy =
+    isSubmitting || save.isPending || remove.isPending || setReminder.isPending || clearReminder.isPending;
+  const saving = useRef(false);
+  const online = useIsOnline();
+  // A locked field that still has focus would keep taking keystrokes.
   useEffect(() => {
+    if (busy) Keyboard.dismiss();
+  }, [busy]);
+  const [session, setSession] = useState<{
+    id: number;
+    visible: boolean;
+    item: ItineraryItem | null;
+    selectedDay: string | null;
+  }>({ id: 0, visible: false, item: null, selectedDay: null });
+  // Until this device's reminders have loaded, the stop's reminder is unknown:
+  // not a change, and not something a save may clear.
+  const [reminderKnown, setReminderKnown] = useState(false);
+  if (session.visible !== visible || session.item !== item || session.selectedDay !== selectedDay) {
+    setSession({ id: session.id + 1, visible, item, selectedDay });
     if (visible) {
-      reset(defaultsFor(item));
+      setReminderKnown(existingReminder.data !== undefined);
       setReminderEnabled(existingReminder.data != null);
       setReminderOffset(existingReminder.data?.offsetMinutes ?? 60);
       setPermissionDenied(false);
       setRemindersUnavailable(false);
+      setSaveError(null);
     }
-    // Reminder state is intentionally only read when the sheet opens.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, item, reset]);
+  } else if (visible && !reminderKnown && existingReminder.data !== undefined) {
+    setReminderKnown(true);
+    setReminderEnabled(existingReminder.data !== null);
+    setReminderOffset(existingReminder.data?.offsetMinutes ?? 60);
+  }
+  // A save queued offline can land after the sheet closed, or while it shows
+  // another stop: it may only close the session it was started from.
+  const liveSession = useRef(0);
+  useEffect(() => {
+    liveSession.current = visible ? session.id : -1;
+  }, [visible, session.id]);
+  const closeSession = (id: number) => {
+    if (liveSession.current === id) onClose();
+  };
 
-  const startAt = watch('startAt');
-  const endAt = watch('endAt');
+  useEffect(() => {
+    if (visible) {
+      reset(defaultsFor(item, selectedDay));
+    }
+  }, [visible, item, selectedDay, reset]);
+
+  const startAt = useWatch({ control, name: 'startAt' });
+  const endAt = useWatch({ control, name: 'endAt' });
 
   const onToggleReminder = useCallback(async (next: boolean) => {
     if (!next) {
       setReminderEnabled(false);
       return;
     }
-    const outcome = await ensureNotificationPermission();
+    const outcome = await ensureReminderPermission();
     if (outcome === 'granted') {
       setReminderEnabled(true);
     } else if (outcome === 'denied') {
@@ -109,55 +168,102 @@ export function ItineraryItemEditor({
     }
   }, []);
 
-  const onSave = handleSubmit(async (form) => {
-    const saved = await save.mutateAsync({
-      itemId: item?.id ?? null,
-      input: {
-        title: form.title,
-        description: form.description || null,
-        location: form.location || null,
-        startAt: form.startAt,
-        endAt: form.endAt,
-        status: form.status,
-      },
-    });
-    if (reminderEnabled && form.startAt) {
-      await setReminder.mutateAsync({
-        item: { id: saved.id, title: saved.title, tripId },
-        startAt: form.startAt,
-        offsetMinutes: reminderOffset,
+  // A failed save keeps the sheet open with everything typed, so Save can
+  // simply be tapped again.
+  // handleSubmit runs from the tap, not during render.
+  const onSave = () =>
+    handleSubmit(async (form) => {
+      if (saving.current) return;
+      saving.current = true;
+      try {
+        await saveStop(form);
+      } finally {
+        saving.current = false;
+      }
+    })();
+
+  const saveStop = async (form: ItineraryItemForm) => {
+    const sessionId = session.id;
+    setSaveError(null);
+    let saved: ItineraryItem;
+    try {
+      saved = await save.mutateAsync({
+        itemId: item?.id ?? null,
+        input: {
+          title: form.title,
+          description: form.description || null,
+          location: form.location || null,
+          startAt: form.startAt,
+          endAt: form.endAt,
+          status: form.status,
+        },
       });
-    } else if (item && existingReminder.data) {
-      await clearReminder.mutateAsync(item.id);
+    } catch {
+      setSaveError("Couldn't save this stop. Check your connection and try again.");
+      return;
     }
-    onClose();
-  });
+    // The stop is saved; a reminder that can't be set doesn't undo that.
+    try {
+      if (!reminderKnown) {
+        // Nothing to decide yet: leave whatever reminder this device has.
+      } else if (remindersOn && reminderEnabled && form.startAt) {
+        await setReminder.mutateAsync({
+          item: { id: saved.id, title: saved.title, tripId },
+          startAt: form.startAt,
+          offsetMinutes: reminderOffset,
+        });
+      } else if (item && existingReminder.data) {
+        await clearReminder.mutateAsync(item.id);
+      }
+    } catch {
+      // Reminders are best-effort and local to this device.
+    }
+    closeSession(sessionId);
+  };
 
   const onDelete = async () => {
-    if (!item) return;
+    if (!item || busy) return;
+    const sessionId = session.id;
     const confirmed = await confirmDestructive(
       'Delete this item?',
       'It disappears from the itinerary for everyone on the trip.',
       'Delete',
     );
     if (!confirmed) return;
-    if (existingReminder.data) await clearReminder.mutateAsync(item.id);
-    await remove.mutateAsync(item.id);
-    onClose();
+    setSaveError(null);
+    try {
+      await remove.mutateAsync(item.id);
+    } catch {
+      setSaveError("Couldn't delete this stop. Check your connection and try again.");
+      return;
+    }
+    if (existingReminder.data) await clearReminder.mutateAsync(item.id).catch(() => {});
+    closeSession(sessionId);
   };
 
   const fireDate =
     reminderEnabled && startAt ? reminderFireDate(startAt, reminderOffset) : null;
+  const savedReminder = existingReminder.data ?? null;
+  const reminderChanged =
+    reminderKnown &&
+    (reminderEnabled !== (savedReminder !== null) ||
+      (savedReminder !== null && reminderEnabled && reminderOffset !== savedReminder.offsetMinutes));
+  // A save already on its way can't be discarded.
+  const discardConfirm =
+    (isDirty || reminderChanged) && !busy ? (item ? DISCARD_STOP_EDITS : DISCARD_NEW_STOP) : null;
 
   return (
     <Sheet
       visible={visible}
       title={item ? 'Edit item' : 'New item'}
       onClose={onClose}
+      discardConfirm={discardConfirm}
       actionLabel={item ? 'Save' : 'Add'}
       onAction={onSave}
-      actionDisabled={save.isPending}
+      actionDisabled={busy}
     >
+      {!online ? <OfflineNotice message={busy ? EDITOR_OFFLINE_QUEUED : EDITOR_OFFLINE_HINT} reveal={busy} /> : null}
+      {saveError ? <ErrorBanner message={saveError} /> : null}
       <Controller
         control={control}
         name="title"
@@ -169,6 +275,7 @@ export function ItineraryItemEditor({
             onBlur={field.onBlur}
             error={fieldState.error?.message}
             autoFocus={!item}
+            editable={!busy}
           />
         )}
       />
@@ -179,6 +286,7 @@ export function ItineraryItemEditor({
           <TextField
             label="Location"
             optionalTag="optional"
+            editable={!busy}
             value={field.value}
             onChangeText={field.onChange}
             onBlur={field.onBlur}
@@ -192,6 +300,7 @@ export function ItineraryItemEditor({
           <TextField
             label="Notes"
             optionalTag="optional"
+            editable={!busy}
             value={field.value}
             onChangeText={field.onChange}
             onBlur={field.onBlur}
@@ -202,7 +311,7 @@ export function ItineraryItemEditor({
       <DatePair
         clearLabel="Clear times"
         onClear={
-          startAt || endAt
+          (startAt || endAt) && !busy
             ? () => {
                 setValue('startAt', null, { shouldDirty: true });
                 setValue('endAt', null, { shouldDirty: true });
@@ -217,10 +326,15 @@ export function ItineraryItemEditor({
               <DateTimeField
                 label="STARTS"
                 size="md"
+                disabled={busy}
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add date"
-                initialDate={tripStartDate ? new Date(`${tripStartDate}T10:00:00`) : undefined}
+                initialDate={
+                  selectedDay && selectedDay !== 'ANY'
+                    ? new Date(`${selectedDay}T10:00:00`)
+                    : tripStartDate ? new Date(`${tripStartDate}T10:00:00`) : undefined
+                }
               />
             )}
           />
@@ -233,6 +347,7 @@ export function ItineraryItemEditor({
               <DateTimeField
                 label="ENDS"
                 size="md"
+                disabled={busy}
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add date"
@@ -256,11 +371,12 @@ export function ItineraryItemEditor({
               value={field.value}
               onChange={field.onChange}
               accessibilityLabel="Status"
+              disabled={busy}
             />
           </View>
         )}
       />
-      {startAt ? (
+      {startAt && remindersOn ? (
         <Card padded style={styles.reminderCard}>
           <View style={styles.reminderHeader}>
             <View style={styles.reminderTitle}>
@@ -273,6 +389,7 @@ export function ItineraryItemEditor({
               value={reminderEnabled}
               onValueChange={onToggleReminder}
               accessibilityLabel="Remind me"
+              disabled={busy}
             />
           </View>
           {permissionDenied ? (
@@ -292,6 +409,7 @@ export function ItineraryItemEditor({
                     label={offset.label}
                     selected={reminderOffset === offset.value}
                     onPress={() => setReminderOffset(offset.value)}
+                    disabled={busy}
                   />
                 ))}
               </View>
@@ -308,8 +426,10 @@ export function ItineraryItemEditor({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Delete item"
+          accessibilityState={{ disabled: busy }}
+          disabled={busy}
           onPress={onDelete}
-          style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.deleteButton, (pressed || busy) && styles.pressed]}
         >
           <AppText role="button" tone="danger">
             Delete item
@@ -339,8 +459,8 @@ const styles = StyleSheet.create({
     gap: spacing.s2 + 1,
   },
   reminderTitleText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: typeScale.tagLabel.fontSize,
+    lineHeight: typeScale.tagLabel.lineHeight,
   },
   offsetRow: {
     flexDirection: 'row',
@@ -349,14 +469,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.s3,
   },
   reminderCaption: {
-    fontSize: 12,
-    lineHeight: 16,
     marginTop: spacing.s2 + 2,
   },
   deleteButton: {
     alignItems: 'center',
     paddingVertical: spacing.s2,
-    minHeight: 44,
+    minHeight: hitTargetMin,
     justifyContent: 'center',
   },
   pressed: {
