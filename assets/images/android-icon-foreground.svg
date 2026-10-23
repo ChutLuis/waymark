@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <pattern id="fg-stripes" width="128" height="128" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <rect width="128" height="128" fill="#FFFCF5" />
+      <rect x="0" y="0" width="38" height="128" fill="#C8323C" />
+      <rect x="64" y="0" width="38" height="128" fill="#24479A" />
+    </pattern>
+    <filter id="fg-shadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#15223B" flood-opacity="0.28" />
+    </filter>
+  </defs>
+
+  <!-- Scaled to 0.84 about the centre so even the rounded corners of the striped
+       border stay inside the 66 dp safe circle (radius 313 of 1024) that round
+       launcher masks keep: farthest point 369 × 0.84 = 310. -->
+  <g transform="translate(512 512) scale(0.84) translate(-512 -512)">
+  <g filter="url(#fg-shadow)">
+    <!-- Outer airmail border square -->
+    <rect x="224" y="224" width="576" height="576" rx="92" fill="url(#fg-stripes)" />
+    <!-- Inner cream paper square -->
+    <rect x="268" y="268" width="488" height="488" rx="60" fill="#FFFCF5" />
+    <!-- Inner navy rule -->
+    <rect x="290" y="290" width="444" height="444" rx="44" fill="none" stroke="#15223B" stroke-width="7" />
+  </g>
+
+  <!-- Par Avion wing chevron -->
+  <polygon points="512,326 444,354 464,365 512,346 560,365 580,354" fill="#C8323C" />
+
+  <!-- Bold Besley slab-serif "W" -->
+  <path
+    d="M 346 404 L 434 404 L 434 432 L 412 432 L 454 586 L 501 440 L 529 440 L 575 586 L 618 432 L 596 432 L 596 404 L 678 404 L 678 432 L 656 432 L 592 650 L 552 650 L 508 512 L 464 650 L 424 650 L 362 432 L 346 432 Z"
+    fill="#15223B"
+  />
+
+  <!-- Bottom accent bar -->
+  <line x1="406" y1="686" x2="618" y2="686" stroke="#24479A" stroke-width="6" stroke-linecap="round" />
+  </g>
+</svg>

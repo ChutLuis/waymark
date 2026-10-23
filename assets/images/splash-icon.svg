@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 1024 1024">
+  <defs>
+    <pattern id="splash-stripes" width="160" height="160" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <rect width="160" height="160" fill="#FFFCF5" />
+      <rect x="0" y="0" width="48" height="160" fill="#C8323C" />
+      <rect x="80" y="0" width="48" height="160" fill="#24479A" />
+    </pattern>
+    <filter id="splash-shadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#15223B" flood-opacity="0.32" />
+    </filter>
+  </defs>
+  <g filter="url(#splash-shadow)">
+    <rect x="96" y="96" width="832" height="832" rx="140" fill="url(#splash-stripes)" stroke="#FFFCF5" stroke-width="12" />
+    <rect x="168" y="168" width="688" height="688" rx="92" fill="#FFFCF5" />
+    <rect x="200" y="200" width="624" height="624" rx="68" fill="none" stroke="#15223B" stroke-width="10" />
+  </g>
+  <polygon points="512,248 416,286 444,300 512,272 580,300 608,286" fill="#C8323C" />
+  <path
+    d="M 276 356 L 398 356 L 398 394 L 368 394 L 428 612 L 496 406 L 536 406 L 602 612 L 662 394 L 632 394 L 632 356 L 750 356 L 750 394 L 718 394 L 626 704 L 570 704 L 508 508 L 444 704 L 388 704 L 300 394 L 276 394 Z"
+    fill="#15223B"
+  />
+  <line x1="356" y1="756" x2="668" y2="756" stroke="#24479A" stroke-width="8" stroke-linecap="round" />
+</svg>

@@ -34,10 +34,15 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (every variant; only the example is tracked)
 .env
+.env.*
 .env*.local
 !.env.example
+
+# release signing metadata, filled per machine and never committed
+credentials.json
+/credentials/
 
 # typescript
 *.tsbuildinfo

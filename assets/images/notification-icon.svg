@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="232 232 560 560">
+  <!-- Android status-bar notification icon: white on transparent (the system
+       tints it), the monochrome launcher mark cropped to fill the 24 dp box. -->
+  <rect x="256" y="256" width="512" height="512" rx="76" fill="none" stroke="#FFFFFF" stroke-width="36" />
+  <polygon points="512,322 432,354 456,367 512,345 568,367 592,354" fill="#FFFFFF" />
+  <path
+    d="M 336 404 L 434 404 L 434 436 L 412 436 L 454 590 L 501 444 L 529 444 L 575 590 L 618 436 L 596 436 L 596 404 L 688 404 L 688 436 L 666 436 L 598 666 L 552 666 L 508 528 L 464 666 L 418 666 L 352 436 L 336 436 Z"
+    fill="#FFFFFF"
+  />
+</svg>

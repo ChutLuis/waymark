@@ -83,10 +83,79 @@ const config: ExpoConfig = {
     icon: './assets/expo.icon',
     bundleIdentifier: variant.id,
     buildNumber: String(buildNumber(VERSION, BUILD)),
+    config: {
+      usesNonExemptEncryption: false,
+    },
+    privacyManifests: {
+      NSPrivacyTracking: false,
+      NSPrivacyTrackingDomains: [],
+      NSPrivacyCollectedDataTypes: [
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeEmailAddress',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeName',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypePhotosorVideos',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeOtherUserContent',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeUserID',
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        },
+      ],
+    },
   },
   android: {
     package: variant.id,
     versionCode: buildNumber(VERSION, BUILD),
+    // Permissions libraries merge in that Waymark never uses: photos come from
+    // the system photo picker (no storage access), reminders are local
+    // notifications (no FCM push, no launcher badges), and the session store
+    // never asks for biometrics.
+    blockedPermissions: [
+      'android.permission.CAMERA',
+      'android.permission.RECORD_AUDIO',
+      'android.permission.SYSTEM_ALERT_WINDOW',
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.USE_BIOMETRIC',
+      'android.permission.USE_FINGERPRINT',
+      'com.google.android.c2dm.permission.RECEIVE',
+      'android.permission.READ_APP_BADGE',
+      'com.sec.android.provider.badge.permission.READ',
+      'com.sec.android.provider.badge.permission.WRITE',
+      'com.htc.launcher.permission.READ_SETTINGS',
+      'com.htc.launcher.permission.UPDATE_SHORTCUT',
+      'com.sonyericsson.home.permission.BROADCAST_BADGE',
+      'com.sonymobile.home.permission.PROVIDER_INSERT_BADGE',
+      'com.anddoes.launcher.permission.UPDATE_COUNT',
+      'com.majeur.launcher.permission.UPDATE_BADGE',
+      'com.huawei.android.launcher.permission.CHANGE_BADGE',
+      'com.huawei.android.launcher.permission.READ_SETTINGS',
+      'com.huawei.android.launcher.permission.WRITE_SETTINGS',
+      'com.oppo.launcher.permission.READ_SETTINGS',
+      'com.oppo.launcher.permission.WRITE_SETTINGS',
+      'me.everything.badger.permission.BADGE_COUNT_READ',
+      'me.everything.badger.permission.BADGE_COUNT_WRITE',
+    ],
     adaptiveIcon: {
       backgroundColor: '#E2E9EE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -112,8 +181,59 @@ const config: ExpoConfig = {
         },
       },
     ],
-    '@react-native-community/datetimepicker',
-    'expo-secure-store',
+    [
+      // Android's date and time dialogs in the Airmail palette instead of the
+      // stock teal (values from src/theme/tokens.ts: airmailBlue, paper, ink,
+      // ink2, hairline). The night variants apply with the system dark theme.
+      '@react-native-community/datetimepicker',
+      {
+        android: {
+          datePicker: {
+            colorAccent: { light: '#24479A', dark: '#7E9CF0' },
+            colorControlActivated: { light: '#24479A', dark: '#7E9CF0' },
+            windowBackground: { light: '#FFFCF5', dark: '#1A2438' },
+            textColor: { light: '#15223B', dark: '#EEF1F6' },
+            textColorPrimary: { light: '#15223B', dark: '#EEF1F6' },
+            textColorSecondary: { light: '#46536B', dark: '#B4BFD1' },
+            // Header text over the accent band: AppCompat's white in light;
+            // navy in dark, where the band is the light periwinkle.
+            textColorPrimaryInverse: { light: '#FFFFFF', dark: '#15223B' },
+            textColorSecondaryInverse: { light: '#B3FFFFFF', dark: '#2E3A52' },
+          },
+          timePicker: {
+            background: { light: '#FFFCF5', dark: '#1A2438' },
+            headerBackground: { light: '#24479A', dark: '#7E9CF0' },
+            numbersBackgroundColor: { light: '#ECE5D7', dark: '#2B3752' },
+            numbersSelectorColor: { light: '#24479A', dark: '#7E9CF0' },
+            numbersTextColor: { light: '#15223B', dark: '#EEF1F6' },
+          },
+        },
+      },
+    ],
+    './plugins/withTimePickerDialogTheme',
+    [
+      'expo-notifications',
+      {
+        // Status-bar icon: white on transparent (Android tints it), tinted
+        // PAR AVION blue in the shade.
+        icon: './assets/images/notification-icon.png',
+        color: '#24479A',
+      },
+    ],
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Waymark uses photos you choose as a trip cover or profile picture.',
+        cameraPermission: false,
+        microphonePermission: false,
+      },
+    ],
+    [
+      'expo-secure-store',
+      {
+        faceIDPermission: false,
+      },
+    ],
     [
       'expo-build-properties',
       {

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E7EEF3" />
+      <stop offset="100%" stop-color="#D5E0E8" />
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg-grad)" />
+  <!-- Subtle philatelic meridian rings in background -->
+  <g stroke="#24479A" stroke-opacity="0.08" stroke-width="6" fill="none">
+    <circle cx="512" cy="512" r="420" />
+    <circle cx="512" cy="512" r="340" stroke-dasharray="16 14" />
+    <line x1="92" y1="512" x2="932" y2="512" stroke-dasharray="12 14" />
+    <line x1="512" y1="92" x2="512" y2="932" stroke-dasharray="12 14" />
+  </g>
+</svg>
