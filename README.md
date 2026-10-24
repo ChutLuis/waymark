@@ -42,14 +42,15 @@ iOS, Android and web.
 
 - **Supabase done properly.** Postgres Row Level Security on every table,
   privileged writes only through reviewed `security definer` RPCs, and a pgTAP
-  suite (104 assertions in 11 files) that proves private-versus-shared
+  suite (113 assertions in 12 files) that proves private-versus-shared
   isolation and the database rules: RPC-only trip and invite creation, owners
   who can't orphan a trip, throttled and expiring invites, and resumable
   account deletion through an Edge Function. See `docs/SECURITY.md`.
 - **Production React Native.** Expo SDK 57, React Native 0.86 on the New
   Architecture, Reanimated 4 worklets for all motion, TanStack Query with an
-  offline queue, typed Supabase access, and native notifications on an
-  Android channel.
+  offline queue and cache that survive restarts, typed Supabase access, and
+  native notifications on an Android channel, with exact alarms when the
+  person allows them.
 - **Deliberate design.** A complete design system (tokens, type roles,
   contrast-checked palettes in light and dark) and a motion spec implemented to
   the frame. It honours Reduce Motion and screen readers, and holds up at 200%
@@ -84,7 +85,7 @@ Quality gates (all green):
 ```
 pnpm typecheck         # TypeScript
 pnpm lint              # ESLint, 0 errors / 0 warnings
-pnpm test              # Vitest, 611 tests (pure logic)
+pnpm test              # Vitest, 661 tests (pure logic)
 supabase test db       # pgTAP, 104 assertions (RLS and RPCs)
 ```
 
@@ -114,5 +115,6 @@ build (which needs macOS).
 ## Non-goals for v1
 
 Maps and geosearch, in-app chat, real-time collaborative editing, AI features,
-payments and subscriptions, offline write sync with conflict resolution, and
-social feeds.
+payments and subscriptions, conflict resolution for offline writes (changes
+made offline are queued, kept across restarts and sent in order, and the last
+write wins), and social feeds.

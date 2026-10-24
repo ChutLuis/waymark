@@ -191,6 +191,51 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
   `useItinerary(tripId)`, `useCreateNote`). Query hooks own loading, error, and
   cache behavior; mutations invalidate the relevant queries.
 - No raw table access from components. Components call feature hooks only.
+- **Offline queue that survives restarts.** Writes that can wait for the
+  connection have a stable mutation key (`src/lib/query/keys.ts`) and register
+  their whole behaviour with `queryClient.setMutationDefaults` at startup
+  (`register…Mutations` in each feature's `hooks.ts`, called from
+  `app/_layout.tsx`): create and edit trip; save and delete stop; stop status;
+  save and delete note; save, pack and delete packing item. Their hooks go
+  through `useQueuedMutation` (`src/lib/query/queued.ts`), which adds to the
+  variables the trip id, the account that made the write (`ownerId`) and a
+  client id for new rows (`expo-crypto`), so a write queued before the app
+  closed runs without the screen that made it. Writes run one at a time per
+  trip (`scope`, stored with the write). New stops, notes and packing items are
+  inserted with their client id, so a retry after a lost response or a replay
+  after a restart finds its own row (`23505` counts as done) instead of making
+  a second one; idempotent writes retry a dropped request. Create passes its
+  client id to `create_trip` (`_id`), which returns the caller's existing trip
+  for an id it has seen, so Create retries like the rest. A write whose account is no longer
+  signed in refuses to run and leaves the cache alone (AuthContext moves the
+  owner before it clears the cache). Optimistic updates live in those
+  defaults and their rollbacks restore only the fields they changed; a stop's
+  reminder follows its saved or deleted stop there too, so it stays right
+  after a restart. Everything else (account deletion, invite preview
+  and accept, cover and avatar uploads, leaving or deleting a trip, sign-in)
+  stays online-only, with its own messages.
+- **Persisted cache.** `src/lib/query/persistence.ts` stores the query cache
+  and paused mutations with `@tanstack/query-async-storage-persister` in
+  AsyncStorage, one key per account (`waymark.query.v1.<userId>`), restores it
+  after the session is known (`QueryPersistence`, which holds queries in
+  TanStack's restoring state meanwhile) and then calls
+  `resumePausedMutations()` once TanStack knows whether the device is really
+  online (NetInfo). It is a small custom provider rather than
+  `PersistQueryClientProvider`, because the key depends on the signed-in
+  account and a restore that finishes after the account changed must not
+  hydrate. Rules (`persist.ts`, Vitest-covered): only the trip list, trip,
+  members, profile, stops, notes and packing are stored (never invites,
+  invite previews or signed URLs); stored note lists drop private notes; a
+  queued save of a private note, and a trip created with a picked photo, stay
+  in memory only; only paused writes are stored, never ones in flight. Only
+  the stored families get a 7-day `gcTime`. AuthContext stops persisting, clears the cache
+  and deletes that account's key whenever a session ends or the account
+  changes, and a launch with nobody signed in deletes every stored cache.
+  Conflicts: last write wins (no conflict resolution in v1).
+- **Failures after the fact.** A queued write that fails once sent is reported
+  app-wide (`src/features/offline`: a mutation-cache watcher and a pinned
+  `ErrorBanner` with Dismiss), unless the sheet that made it is still open and
+  showed the error itself.
 
 ## 7. State management
 
@@ -203,7 +248,16 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
 ## 8. Notifications (v1)
 
 - `expo-notifications` schedules a local notification for an itinerary item's
-  start time, offset by a chosen lead time.
+  start time, offset by a chosen lead time. Reminders stay on the scheduling
+  device and are never part of the persisted query cache.
+- Android picks an exact alarm only with `SCHEDULE_EXACT_ALARM`, which people
+  grant in system settings (denied by default on Android 14+). The local Expo
+  module `modules/exact-alarms` (Android only; iOS and web report "not
+  applicable") exposes `canScheduleExactAlarms()` and opens the setting;
+  `src/lib/notifications` wraps it. The reminder switches show one caption with
+  a link to the setting while it is off, and reminders are rescheduled under
+  the same ids whenever the access changes (checked on every return to the
+  foreground).
 - A priming screen explains the value before the OS permission prompt.
 - A notification response handler routes to the trip and item.
 - Server-driven push is deferred to v1.1; the schema leaves room to add a

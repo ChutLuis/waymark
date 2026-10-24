@@ -74,11 +74,34 @@ Email → minimum password length 8 (same rule as above: never
   on the device that asked, then asks for a new 8+ character password. The
   request screen answers the same way whether or not the email has an account.
 - Whenever a session ends (sign-out, account deletion, a revoked session,
-  another account signing in) the TanStack Query cache is cleared, that
-  account's scheduled reminders are cancelled and delivered ones removed, its
-  on-device reminder list is deleted, and any pending invite code is dropped.
-  Reminder notifications carry trip and stop titles, so they must not outlive
-  the account that set them.
+  another account signing in) the TanStack Query cache is cleared, its stored
+  copy and any queued offline changes are deleted (nothing queued is sent
+  afterwards), that account's scheduled reminders are cancelled and delivered
+  ones removed, its on-device reminder list is deleted, and any pending invite
+  code is dropped. Reminder notifications carry trip and stop titles, so they
+  must not outlive the account that set them. A launch with nobody signed in
+  deletes every stored cache.
+- **Data at rest on the device.** To work offline across restarts, the trip
+  list, trip details, members, profile, stops, shared notes and packing items,
+  plus offline changes not yet sent, are stored unencrypted in the app's
+  private AsyncStorage, one key per account (`waymark.query.v1.<userId>`,
+  `src/lib/query/persist.ts`). Never stored: private note bodies (dropped from
+  stored note lists; a queued save of a private note stays in memory only),
+  invite codes and previews, signed image URLs, and the session (secure store
+  only). The store is app-private on Android and iOS; on a rooted or
+  jailbroken device, or in an unencrypted backup, shared trip content is
+  readable, which matches what the person can already see in the app.
+  Android auto-backup is on (`allowBackup`), but the stored cache is not part
+  of it: expo-secure-store's backup rules (`fullBackupContent` and
+  `dataExtractionRules`, for cloud backup and device transfer) include only
+  shared preferences and exclude its `SecureStore` file, so the session stays
+  out too, and AsyncStorage's SQLite database (`databases/RKStorage`) is never
+  included. A local-transport backup with the parser's logging on
+  (`bmgr backupnow`, `BackupXmlParserLogging`) listed only `shared_prefs/`
+  files. Shared preferences do include expo-notifications' store of scheduled
+  reminders (trip and stop titles). If those rules are ever replaced (another
+  plugin's backup rules, `configureAndroidBackup: false`), check the merged
+  manifest again (`BUILDS.md` §7).
 - Release builds (`test`, `production`) are not debuggable, ship no dev
   client, block cleartext HTTP, and run R8 with Hermes bytecode. The only
   bundled configuration is the Supabase URL and anon key, from the profile's
@@ -209,7 +232,10 @@ create policy trips_delete on trips for delete
 `create_trip(...)` validates its input (trimmed non-blank name up to 200
 characters, destination up to 120, end not before start, at most 366 days) and
 inserts the trip and the owner's `trip_members` row atomically, so a trip is
-never left without an owner. Table checks repeat the same rules for owner
+never left without an owner. It takes an optional `_id` made on the device: a
+second call with an id the caller already created returns that trip unchanged
+(an offline create sent twice lands once), and an id that belongs to anyone
+else's trip is refused with `23505` without showing that trip. Table checks repeat the same rules for owner
 edits. `trips.created_by` can't be changed by a client update
 (`prevent_trip_creator_mutation`), only by the account-deletion handover, and
 its foreign key is `on delete restrict`: deleting a user who still owns trips
@@ -482,6 +508,7 @@ scenario row can contain multiple assertions. "A" and "B" are members of Trip 1;
 | S20 | A reads own avatar; B reads A's avatar; C reads A's avatar; B writes A's avatar | own and trip-mate reads allowed; non-member read and non-owner write denied |
 | F1 | anon and authenticated call `is_trip_member` | anon denied; authenticated allowed |
 | I1–I6 | A client inserts a trip directly; `create_trip` with a padded, blank, backwards or over-a-year trip | direct insert denied; name trimmed, caller is owner; the rest rejected |
+| C1–C9 | `create_trip` with a device id, sent twice; without an id; another user sends the same id; anon calls it | the device id is used; the replay returns the unchanged trip with one membership; an id is made when none is sent; the other user is refused and still can't see it; anon denied |
 | I7–I10 | The owner deletes their own membership; a member leaves | owner denied; member leaves, their packing items unassigned, their unused invite deleted |
 | I11–I14 | Assign a packing item to a non-member; add a stop claiming another creator; blank note | assignment denied; stop attributed to the caller; note refused |
 | I15–I19 | A client inserts an invite; a member asks for an invite twice; a non-member asks | insert denied; one 8-character, 7-day code reused; non-member denied |
@@ -545,3 +572,6 @@ test('a partner cannot read a private note', async () => {
 - New tables and functions in `public` revoke the default anon/authenticated
   grants Supabase adds unless a client really needs them.
 - New storage buckets have matching object policies.
+- A new query that returns private or secret data stays out of the persisted
+  cache (`PERSISTED_QUERIES` in `src/lib/query/persist.ts`), and a new
+  queueable write that carries such data is memory-only (`isMemoryOnlyMutation`).

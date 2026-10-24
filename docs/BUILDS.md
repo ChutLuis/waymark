@@ -251,6 +251,20 @@ owner's certificate rather than `CN=Android Debug`. For an AAB, unzip
 `base/manifest/AndroidManifest.xml` and `base/assets/` into an empty
 directory and run the same checks.
 
+Backups: the merged manifest must point at expo-secure-store's rules, which
+back up only shared preferences (so neither the session nor the offline
+cache in AsyncStorage's database, `docs/SECURITY.md` §2):
+
+```sh
+$BT/aapt2 dump xmltree --file AndroidManifest.xml build/waymark.apk | grep -E "allowBackup|fullBackupContent|dataExtractionRules"
+# R8 shortens resource paths (res/Hq.xml): look the file up by name first
+RULES=$($BT/aapt2 dump resources build/waymark.apk | grep -A1 'xml/secure_store_data_extraction_rules$' | grep -oE 'res/[^ ]+\.xml')
+$BT/aapt2 dump xmltree --file "$RULES" build/waymark.apk | grep -E "E:|domain|path"
+```
+
+Expect `include domain="sharedpref" path="."` and `exclude domain="sharedpref"
+path="SecureStore"` under both `cloud-backup` and `device-transfer`.
+
 Permissions: `app.config.ts` blocks everything libraries merge in that the app
 doesn't use (camera, microphone, overlay, legacy storage, biometrics, FCM
 `c2dm.RECEIVE`, launcher-badge permissions). Check the merged list of a built
@@ -262,9 +276,13 @@ $BT/aapt2 dump permissions build/waymark-test.apk
 
 Expect only `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`,
 `VIBRATE`, `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `POST_NOTIFICATIONS`,
-`SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` if a notification library adds them,
-the install-referrer binding and the app's own
-`DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. Anything else is a regression.
+`SCHEDULE_EXACT_ALARM` (declared in `app.config.ts` so trip reminders can be
+exact once the person allows it), the install-referrer binding and the app's
+own `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. `USE_EXACT_ALARM` must **not**
+appear: Play reserves it for alarm-clock and calendar apps, and
+`app.config.ts` blocks it. Anything else is a regression. The Play Console
+may ask about exact alarms in the app content declarations: Waymark uses
+`SCHEDULE_EXACT_ALARM` for user-set reminders and asks for it in context.
 An artefact built before a config change (for example the 13 October test APK)
 still carries the old permissions: rebuild before checking.
 
@@ -275,38 +293,39 @@ An AAB's manifest is protobuf, so `aapt2` can't read it. Use bundletool (the
 are libraries without a main class):
 
 ```sh
-BT_JAR=/path/to/bundletool-all-1.18.1.jar
+BT_JAR=/path/to/bundletool-all-1.18.3.jar
 java -jar $BT_JAR dump manifest --bundle build/waymark.aab > /tmp/manifest.xml
 grep -oE 'package="[^"]*"|android:(versionCode|targetSdkVersion|debuggable|usesCleartextTraffic)="[^"]*"' /tmp/manifest.xml
 grep -oE '<uses-permission[^>]*' /tmp/manifest.xml | grep -oE 'android:name="[^"]*"'
 keytool -printcert -jarfile build/waymark.aab | grep -E "Owner|SHA256:"
 unzip -p build/waymark.aab base/assets/index.android.bundle | head -c 4 | xxd   # c61f bc03
 # 16 KB: what Play will serve. Every split must pass zipalign -P 16 with its .so files stored.
-java -jar $BT_JAR build-apks --bundle=build/waymark.aab --output=/tmp/w.apks --device-spec=spec.json
+java -jar $BT_JAR build-apks --bundle=build/waymark.aab --output=/tmp/w.apks   # every split; unsigned is fine here
+mkdir /tmp/w-splits && unzip -q /tmp/w.apks -d /tmp/w-splits
+for a in $(find /tmp/w-splits -name '*.apk'); do $BT/zipalign -c -P 16 4 "$a" || echo "FAIL $a"; done
 ```
 
 ELF alignment: every 64-bit `.so` under `base/lib/arm64-v8a` and
 `base/lib/x86_64` needs `PT_LOAD` alignment of 16384 or more.
 
-**Last checked 22 October 2026** (`build/waymark.aab` and
-`build/waymark.apk`, version 0.1.0, versionCode 10000): package `app.waymark`;
-target and compile SDK 36, min 24; no `debuggable`;
+**Last checked 24 October 2026** (`build/waymark.aab` and
+`build/waymark.apk`, version 0.1.0, versionCode 10000, built with
+`eas build --local`; `expo doctor` 21/21 in both builds): package
+`app.waymark`; target and compile SDK 36, min 24; no `debuggable`;
 `usesCleartextTraffic=false`; embedded URL `https: remote`; signed by
 `CN=Luis Ortiz, OU=LFOrtiz` with the SHA-256 in §4; Hermes bytecode; no
-dev-client assets; no `service_role` string; merged permissions exactly
-`INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `VIBRATE`,
-`WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `POST_NOTIFICATIONS`, the
-install-referrer binding and `app.waymark.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`
-(no exact-alarm permission); 50/50 64-bit libraries aligned to 16 KB, and
-the APK and every bundletool split pass `zipalign -c -P 16` with stored
-`.so` files. Those artefacts predate later JS and native-config changes
-(the time-picker dialog theme, editor and large-text fixes): rebuild before
-uploading.
+dev-client assets; no `service_role` string; backup rules from
+expo-secure-store (shared preferences only, `SecureStore` excluded); merged
+permissions exactly `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`,
+`VIBRATE`, `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `POST_NOTIFICATIONS`,
+`SCHEDULE_EXACT_ALARM`, the install-referrer binding and
+`app.waymark.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (no
+`USE_EXACT_ALARM`); 50/50 64-bit libraries with every `LOAD` segment aligned
+to 16 KB, and the APK and all 87 bundletool splits (bundletool 1.18.3) pass
+`zipalign -c -P 16 4` with stored `.so` files.
 
-The local build runs `expo doctor`, which reported patch-level mismatches
-(`expo` 57.0.31, `expo-notifications` 57.0.24, `expo-router` 57.0.29,
-`@expo/ui` 57.0.26 expected); the build doesn't stop for it. Updating them
-needs `pnpm add` with those versions and a dev-client rebuild.
+The local build runs `expo doctor`. Locally, zero-byte `yarn.lock`/`package-lock.json` stubs (git-excluded, made
+by agent tooling) fail its lock-file check; EAS and CI never see them.
 
 `app.config.ts` also loads a local config plugin,
 `plugins/withTimePickerDialogTheme.js`. It is shipped in the EAS archive
