@@ -17,6 +17,7 @@ import {
   type QueuedVars,
 } from '@/lib/query/queued';
 import { useAuth } from '@/features/auth/AuthContext';
+import { TripUnavailableError, isInvalidId, retryTripLoad } from './errors';
 import type { PickedImage } from '@/lib/images';
 import type { Profile, Trip, TripMember } from '@/lib/types';
 
@@ -94,10 +95,13 @@ export function useTrip(tripId: string) {
         .from('trips')
         .select(TRIP_SELECT)
         .eq('id', tripId)
-        .single();
-      if (error) throw error;
+        .maybeSingle();
+      // No row, or an id that isn't one (a malformed link): nothing to retry.
+      if (error && !isInvalidId(error)) throw error;
+      if (!data) throw new TripUnavailableError();
       return tripRowToTrip(data);
     },
+    retry: retryTripLoad,
   });
 }
 

@@ -31,7 +31,7 @@ import {
   stampName,
   tripDays,
 } from '@/features/trips/destinations';
-import { OFFLINE_MESSAGE, failureMessage } from '@/features/trips/errors';
+import { OFFLINE_MESSAGE, TRIP_UNAVAILABLE, TripUnavailableError, failureMessage } from '@/features/trips/errors';
 import { sheetDays, sheetHeader, stampLabel, usedRange, usedSummary } from '@/features/trips/sheet';
 import { tripSheet } from '@/features/trips/expandStore';
 import { getLastTab } from '@/features/trips/shellMotion';
@@ -156,6 +156,16 @@ export default function TripPageScreen() {
 
   const body = (() => {
     if (trip.isPending) return <LoadingState />;
+    if (trip.error instanceof TripUnavailableError) {
+      return (
+        <ErrorState
+          title={TRIP_UNAVAILABLE.title}
+          body={TRIP_UNAVAILABLE.body}
+          actionLabel={TRIP_UNAVAILABLE.action}
+          onRetry={() => router.replace('/')}
+        />
+      );
+    }
     if (trip.isError) return <ErrorState title="Couldn't load the trip" onRetry={() => trip.refetch()} />;
 
     const data = trip.data;

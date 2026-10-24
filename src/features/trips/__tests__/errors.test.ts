@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { OFFLINE_MESSAGE, failureMessage, isNetworkError, serverMessage } from '../errors';
+import {
+  OFFLINE_MESSAGE,
+  TripUnavailableError,
+  failureMessage,
+  isInvalidId,
+  isNetworkError,
+  retryTripLoad,
+  serverMessage,
+} from '../errors';
 
 describe('isNetworkError', () => {
   it('recognises a fetch that never reached the server', () => {
@@ -64,5 +72,26 @@ describe('failureMessage', () => {
     );
     expect(failureMessage(new Error('boom'), fallback)).toBe(fallback);
     expect(failureMessage(null, fallback)).toBe(fallback);
+  });
+});
+
+describe('retryTripLoad', () => {
+  it('retries a failed load once', () => {
+    const dropped = { message: 'TypeError: Network request failed', code: '' };
+    expect(retryTripLoad(0, dropped)).toBe(true);
+    expect(retryTripLoad(1, dropped)).toBe(false);
+  });
+
+  it('never retries a trip that is gone', () => {
+    expect(retryTripLoad(0, new TripUnavailableError())).toBe(false);
+    expect(isNetworkError(new TripUnavailableError())).toBe(false);
+  });
+});
+
+describe('isInvalidId', () => {
+  it('recognises an id Postgres refuses as a uuid', () => {
+    expect(isInvalidId({ code: '22P02', message: 'invalid input syntax for type uuid: "undefined"' })).toBe(true);
+    expect(isInvalidId({ code: 'PGRST116', message: 'no rows' })).toBe(false);
+    expect(isInvalidId(null)).toBe(false);
   });
 });

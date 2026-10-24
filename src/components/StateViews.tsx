@@ -90,12 +90,15 @@ interface ErrorStateProps {
   title: string;
   body?: string;
   onRetry: () => void;
+  /** For a way out instead of a retry (e.g. a trip that is gone). */
+  actionLabel?: string;
 }
 
 export function ErrorState({
   title,
   body = "Check your connection and try again — nothing was lost.",
   onRetry,
+  actionLabel = 'Try again',
 }: ErrorStateProps) {
   return (
     <StateShell>
@@ -106,7 +109,7 @@ export function ErrorState({
       <AppText tone="secondary" style={styles.body}>
         {body}
       </AppText>
-      <Button label="Try again" onPress={onRetry} variant="secondary" style={styles.action} />
+      <Button label={actionLabel} onPress={onRetry} variant="secondary" style={styles.action} />
     </StateShell>
   );
 }

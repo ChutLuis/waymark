@@ -40,6 +40,7 @@ import {
   tripSheet,
 } from '@/features/trips/expandStore';
 import { useTrip, useTripMembers } from '@/features/trips/hooks';
+import { TRIP_UNAVAILABLE, TripUnavailableError } from '@/features/trips/errors';
 import { DESTINATION_ART } from '@/features/trips/destinationArt';
 import {
   CROPS,
@@ -396,7 +397,16 @@ export default function TripTabsLayout() {
                   onOpenTrip={() => {}}
                   onInvite={() => {}}
                 />
-                <ErrorState title="Couldn't load the trip" onRetry={() => trip.refetch()} />
+                {trip.error instanceof TripUnavailableError ? (
+                  <ErrorState
+                    title={TRIP_UNAVAILABLE.title}
+                    body={TRIP_UNAVAILABLE.body}
+                    actionLabel={TRIP_UNAVAILABLE.action}
+                    onRetry={goHome}
+                  />
+                ) : (
+                  <ErrorState title="Couldn't load the trip" onRetry={() => trip.refetch()} />
+                )}
               </View>
             ) : (
               <>
