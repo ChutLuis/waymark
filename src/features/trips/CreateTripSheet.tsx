@@ -1,8 +1,7 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { onlineManager } from '@tanstack/react-query';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { DateRangeField } from '@/components/DateRangeField';
@@ -33,6 +32,7 @@ import { findCountry } from './countries';
 import { CountryField } from './CountryField';
 import { CountryPicker } from './CountryPicker';
 import { failureMessage } from './errors';
+import { markErrorShown } from '@/features/offline/queuedErrors';
 import { addressDates, envelopeNote, isDaysAway } from './stack';
 import type { Trip } from '@/lib/types';
 
@@ -52,8 +52,13 @@ const DISCARD_NEW_TRIP: DiscardConfirm = {
 /** Above this text scale the photo button no longer fits beside its copy. */
 const HELPER_STACK_FONT_SCALE = 1.3;
 
-const OFFLINE_HINT = 'You’re offline. Tap Create and the trip will be created when you’re back online.';
-const QUEUED_MESSAGE = 'You’re offline — the trip will be created when you’re back online.';
+const OFFLINE_HINT = 'You’re offline. Tap Create and the trip will be created when you’re back online, even if you close Waymark.';
+const QUEUED_MESSAGE = 'You’re offline — the trip will be created when you’re back online, even if you close Waymark.';
+// A picked photo is a temporary file, so a trip with one is queued in memory only.
+const PHOTO_OFFLINE_HINT =
+  'You’re offline. Tap Create and the trip will be created when you’re back online. Keep Waymark open until then: a trip with a photo isn’t kept on this device.';
+const PHOTO_QUEUED_MESSAGE =
+  'You’re offline — the trip will be created when you’re back online. Keep Waymark open: a trip with a photo isn’t kept on this device.';
 
 export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheetProps) {
   const { colors } = useTheme();
@@ -63,10 +68,6 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
   const todayIso = useMemo(() => toDateOnly(new Date()), []);
   const [photo, setPhoto] = useState<PickedImage | null>(null);
   const [pickingCountry, setPickingCountry] = useState(false);
-  // Create was tapped offline: it is sent as soon as the connection is back,
-  // with whatever the form holds by then. Closing the sheet drops it.
-  const [queued, setQueued] = useState(false);
-  const sending = useRef(false);
   const mounted = useRef(false);
   const lastAutoName = useRef<string>('');
 
@@ -131,13 +132,10 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
     if (picked) setPhoto(picked);
   };
 
+  // Offline, Create queues the trip (TanStack pauses the mutation, and it is
+  // kept on the device unless it carries a photo); it is created once the
+  // connection is back, even if this sheet was closed or the app restarted.
   const submitTrip = async (form: TripForm) => {
-    if (!onlineManager.isOnline()) {
-      // The notice announces itself to screen readers once it shows the queue.
-      setQueued(true);
-      return;
-    }
-    setQueued(false);
     const normalizedEnd = form.endDate ?? form.startDate;
     try {
       const trip = await createTrip.mutateAsync({
@@ -150,32 +148,21 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
       // The route wrapper (`trips/new.tsx`) navigates on onCreated; a sheet
       // closed while the request was out must not navigate.
       if (mounted.current) onCreated(trip);
-    } catch {
-      // Mutation error state is surfaced via createTrip.isError.
+    } catch (error) {
+      // Surfaced via createTrip.isError while the sheet is open.
+      if (mounted.current) markErrorShown(error);
     }
   };
   // handleSubmit runs at tap time, not during render, so the refs the
   // submit reads are only touched in an event.
-  const create = () => handleSubmit(submitTrip, () => setQueued(false))();
-
   const onCreate = () => {
-    void create();
+    void handleSubmit(submitTrip)();
   };
 
-  const sendQueued = useEffectEvent(() => {
-    if (sending.current) return;
-    sending.current = true;
-    void create().finally(() => {
-      sending.current = false;
-    });
-  });
-
-  useEffect(() => {
-    if (queued && online) sendQueued();
-  }, [queued, online]);
-
-  const busy = formState.isSubmitting || createTrip.isPending || queued;
-  const discardConfirm = formState.isDirty || photo ? DISCARD_NEW_TRIP : null;
+  const queued = createTrip.isPending && !online;
+  const busy = formState.isSubmitting || createTrip.isPending;
+  // A trip already queued or on its way can't be discarded.
+  const discardConfirm = (formState.isDirty || photo) && !busy ? DISCARD_NEW_TRIP : null;
 
   // Swap the contents of the same sheet: no stacked native modals, and RHF
   // retains the name, dates and photo while its fields are temporarily hidden.
@@ -214,8 +201,11 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
       onAction={onCreate}
       actionDisabled={name.trim().length === 0 || busy}
     >
-      {queued || !online ? (
-        <OfflineNotice message={queued ? QUEUED_MESSAGE : OFFLINE_HINT} reveal={queued} />
+      {!online ? (
+        <OfflineNotice
+          message={photo ? (queued ? PHOTO_QUEUED_MESSAGE : PHOTO_OFFLINE_HINT) : queued ? QUEUED_MESSAGE : OFFLINE_HINT}
+          reveal={queued}
+        />
       ) : null}
 
       <TripPreviewCard

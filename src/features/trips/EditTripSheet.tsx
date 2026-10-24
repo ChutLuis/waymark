@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, StyleSheet, View } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,9 +13,12 @@ import type { Trip } from '@/lib/types';
 import { useUpdateTrip } from './hooks';
 import { CountryField } from './CountryField';
 import { CountryPicker } from './CountryPicker';
-import { OfflineNotice } from '@/components/OfflineNotice';
+import { EDITOR_OFFLINE_HINT, EDITOR_OFFLINE_QUEUED, OfflineNotice } from '@/components/OfflineNotice';
+import { markErrorShown } from '@/features/offline/queuedErrors';
 import { useIsOnline } from '@/lib/useIsOnline';
 import { failureMessage } from './errors';
+import { useItinerary } from '@/features/itinerary/hooks';
+import { stopsLeavingDates } from '@/features/itinerary/group';
 
 function defaultsFor(trip: Trip): TripForm {
   return {
@@ -57,10 +60,18 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
   // must not survive into the next open, like the other editors.
   const { reset: resetUpdate } = update;
   const [wasVisible, setWasVisible] = useState(visible);
+  const [sessionId, setSessionId] = useState(0);
   if (visible !== wasVisible) {
     setWasVisible(visible);
+    setSessionId(sessionId + 1);
     if (visible) setPickingCountry(false);
   }
+  // An edit queued offline can land after the sheet closed (or reopened): it
+  // may only close, or report into, the session it was made in.
+  const liveSession = useRef(0);
+  useEffect(() => {
+    liveSession.current = visible ? sessionId : -1;
+  }, [visible, sessionId]);
   useEffect(() => {
     if (visible) {
       reset(defaultsFor(trip));
@@ -76,20 +87,42 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
     name: ['startDate', 'endDate', 'name', 'destination'],
   });
 
-  const onSave = handleSubmit(async (form) => {
-    const normalizedEnd = form.endDate ?? form.startDate;
-    try {
-      await update.mutateAsync({
-        name: form.name,
-        destination: form.destination || null,
-        startDate: form.startDate,
-        endDate: normalizedEnd,
-      });
-      onClose();
-    } catch {
-      // Mutation error state is surfaced via update.isError.
-    }
-  });
+  // Stops the new dates leave out move under Plan's trailing stamp; say so
+  // before saving (nothing is blocked or deleted).
+  const itinerary = useItinerary(trip.id);
+  const leaving = useMemo(
+    () =>
+      stopsLeavingDates(
+        itinerary.data ?? [],
+        { startDate: trip.startDate, endDate: trip.endDate },
+        { startDate, endDate: endDate ?? startDate },
+      ),
+    [itinerary.data, trip.startDate, trip.endDate, startDate, endDate],
+  );
+
+  // Offline the edit waits for the connection (kept on the device), and the
+  // last edit sent wins (DESIGN_DECISIONS §8).
+  // handleSubmit runs from the tap, not during render.
+  const onSave = () =>
+    handleSubmit(async (form) => {
+      const id = sessionId;
+      // Only what changed: an edit queued earlier (offline, not sent yet) must
+      // not be undone by this one carrying the older values.
+      const dirty = formState.dirtyFields;
+      const datesChanged = Boolean(dirty.startDate || dirty.endDate);
+      try {
+        await update.mutateAsync({
+          ...(dirty.name ? { name: form.name } : {}),
+          ...(dirty.destination ? { destination: form.destination || null } : {}),
+          ...(datesChanged ? { startDate: form.startDate, endDate: form.endDate ?? form.startDate } : {}),
+        });
+        if (liveSession.current === id) onClose();
+      } catch (error) {
+        // Shown below via update.isError while this sheet is still open.
+        if (liveSession.current === id) markErrorShown(error);
+      }
+    })();
+  const busy = formState.isSubmitting || update.isPending;
 
   if (pickingCountry) {
     return (
@@ -120,54 +153,61 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
       visible={visible}
       title="Edit trip"
       onClose={onClose}
-      discardConfirm={formState.isDirty ? DISCARD_EDITS : null}
+      // A save already on its way can't be discarded.
+      discardConfirm={formState.isDirty && !busy ? DISCARD_EDITS : null}
       actionLabel="Save"
       onAction={onSave}
-      // Offline, a save would wait silently; the notice says why it's off.
-      actionDisabled={name.trim().length === 0 || !online || formState.isSubmitting || update.isPending}
+      actionDisabled={name.trim().length === 0 || busy}
     >
-      {!online ? (
-        <OfflineNotice message="You’re offline. You can save your changes once you’re back online." />
-      ) : null}
-      <Controller
-        control={control}
-        name="name"
-        render={({ field, fieldState }) => (
-          <TextField
-            label="TRIP NAME"
-            value={field.value}
-            onChangeText={field.onChange}
-            onBlur={field.onBlur}
-            error={fieldState.error?.message}
-          />
-        )}
-      />
-      <Controller
-        control={control}
-        name="destination"
-        render={({ field, fieldState }) => (
-          <CountryField
-            value={field.value}
-            onBlur={field.onBlur}
-            error={fieldState.error?.message}
-            onSelect={(selected) => {
-              setValue('destination', selected, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
-            }}
-            onOpen={() => {
-              Keyboard.dismiss();
-              setPickingCountry(true);
-            }}
-          />
-        )}
-      />
-      <DateRangeField
-        startDate={startDate}
-        endDate={endDate}
-        onChange={({ startDate: nextStart, endDate: nextEnd }) => {
-          setValue('startDate', nextStart, { shouldDirty: true, shouldValidate: true });
-          setValue('endDate', nextEnd, { shouldDirty: true, shouldValidate: true });
-        }}
-      />
+      {!online ? <OfflineNotice message={busy ? EDITOR_OFFLINE_QUEUED : EDITOR_OFFLINE_HINT} reveal={busy} /> : null}
+      {/* Locked until what was sent lands, like the other editors. */}
+      <View pointerEvents={busy ? 'none' : 'auto'} style={styles.fields}>
+        <Controller
+          control={control}
+          name="name"
+          render={({ field, fieldState }) => (
+            <TextField
+              label="TRIP NAME"
+              value={field.value}
+              onChangeText={field.onChange}
+              onBlur={field.onBlur}
+              error={fieldState.error?.message}
+              editable={!busy}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="destination"
+          render={({ field, fieldState }) => (
+            <CountryField
+              value={field.value}
+              onBlur={field.onBlur}
+              error={fieldState.error?.message}
+              onSelect={(selected) => {
+                setValue('destination', selected, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+              }}
+              onOpen={() => {
+                Keyboard.dismiss();
+                setPickingCountry(true);
+              }}
+            />
+          )}
+        />
+        <DateRangeField
+          startDate={startDate}
+          endDate={endDate}
+          onChange={({ startDate: nextStart, endDate: nextEnd }) => {
+            setValue('startDate', nextStart, { shouldDirty: true, shouldValidate: true });
+            setValue('endDate', nextEnd, { shouldDirty: true, shouldValidate: true });
+          }}
+        />
+        {leaving > 0 ? (
+          <AppText role="bodySm" tone="secondary" accessibilityLiveRegion="polite">
+            {leaving === 1 ? '1 stop will move to Unscheduled.' : `${leaving} stops will move to Unscheduled.`}
+          </AppText>
+        ) : null}
+      </View>
       {update.isError ? (
         <View style={styles.failure}>
           <AppText role="bodySm" tone="danger" accessibilityRole="alert">
@@ -176,7 +216,7 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
           <Button
             label="Try again"
             variant="secondary"
-            disabled={!online || formState.isSubmitting || update.isPending}
+            disabled={busy}
             onPress={onSave}
           />
         </View>
@@ -187,4 +227,5 @@ export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
 
 const styles = StyleSheet.create({
   failure: { gap: spacing.s4 },
+  fields: { gap: spacing.s6 },
 });

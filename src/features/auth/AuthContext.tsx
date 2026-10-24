@@ -11,6 +11,8 @@ import { AppState, Platform } from 'react-native';
 import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
+import { endPersistedSession, purgePersistedQueries, removePersistedQueries } from '@/lib/query/persistence';
+import { setQueryOwner } from '@/lib/query/queued';
 import { clearPendingInviteCode } from '@/features/invites/pendingInvite';
 import { purgeAllReminders, purgeUserReminders, setReminderUser } from '@/features/reminders/store';
 
@@ -45,13 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         if (!eventSeen) {
           cachedUserId.current = data.session?.user.id ?? null;
+          setQueryOwner(cachedUserId.current);
           setReminderUser(cachedUserId.current);
           setSession(data.session);
         }
         // Nobody signed in, and not because the network is down: the last
         // session was revoked or expired while the app was closed, so none of
         // that person's reminders may fire for whoever uses the device now.
-        if (cachedUserId.current === null && !isAuthRetryableFetchError(error)) void purgeAllReminders();
+        if (cachedUserId.current === null && !isAuthRetryableFetchError(error)) {
+          void purgeAllReminders();
+          void purgePersistedQueries(null);
+        }
         setIsRestoring(false);
       },
       () => {
@@ -65,15 +71,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const nextUserId = next?.user.id ?? null;
       // A session ending any way (sign-out, token-refresh failure, remote
       // revocation, account deletion) or a different user signing in must not
-      // leave the previous user's cached trips/notes readable, their reminders
+      // leave the previous user's cached trips/notes readable (in memory or
+      // stored), their queued writes waiting to be sent, their reminders
       // scheduled, or their stashed invite waiting — clear before the new user
       // reads.
       if (nextUserId !== cachedUserId.current) {
         const previousUserId = cachedUserId.current;
+        // Stop storing first, so the cleared cache isn't written back, and
+        // retire the previous account's queued writes: one still in flight or
+        // waiting to retry refuses to run, or to touch the cache, from now on.
+        endPersistedSession();
+        setQueryOwner(nextUserId);
         queryClient.clear();
         cachedUserId.current = nextUserId;
         setReminderUser(nextUserId);
         if (previousUserId !== null) {
+          void removePersistedQueries(previousUserId);
           void purgeUserReminders(previousUserId);
           clearPendingInviteCode();
         }

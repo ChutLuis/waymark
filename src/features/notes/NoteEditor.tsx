@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Users } from 'lucide-react-native';
 import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Card';
 import { ErrorBanner } from '@/components/ErrorBanner';
-import { EDITOR_OFFLINE_HINT, EDITOR_OFFLINE_QUEUED, OfflineNotice } from '@/components/OfflineNotice';
+import {
+  EDITOR_OFFLINE_HINT,
+  EDITOR_OFFLINE_QUEUED,
+  OfflineNotice,
+  PRIVATE_NOTE_OFFLINE_HINT,
+  PRIVATE_NOTE_OFFLINE_QUEUED,
+} from '@/components/OfflineNotice';
 import { Sheet, type DiscardConfirm } from '@/components/Sheet';
 import { TextField } from '@/components/TextField';
 import { Toggle } from '@/components/Toggle';
@@ -15,6 +21,7 @@ import { noteSchema, type NoteForm } from '@/lib/validation/schemas';
 import { confirmDestructive } from '@/lib/confirm';
 import type { TripNote } from '@/lib/types';
 import { useIsOnline } from '@/lib/useIsOnline';
+import { markErrorShown } from '@/features/offline/queuedErrors';
 import { useDeleteNote, useSaveNote } from './hooks';
 
 interface NoteEditorProps {
@@ -78,6 +85,17 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
   }, [visible, sessionId]);
   const isLive = (id: number) => liveSession.current === id;
 
+  // A private note's text is never stored on the device, so offline its save
+  // only waits while the app stays open.
+  const isPrivate = useWatch({ control, name: 'isPrivate' });
+  const offlineMessage = isPrivate
+    ? busy
+      ? PRIVATE_NOTE_OFFLINE_QUEUED
+      : PRIVATE_NOTE_OFFLINE_HINT
+    : busy
+      ? EDITOR_OFFLINE_QUEUED
+      : EDITOR_OFFLINE_HINT;
+
   // handleSubmit runs from the tap, not during render.
   const onSave = () =>
     handleSubmit(async (form) => {
@@ -87,8 +105,11 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
       try {
         await save.mutateAsync({ noteId: note?.id ?? null, input: form });
         if (isLive(id)) onClose();
-      } catch {
-        if (isLive(id)) setError('root.server', { message: "Couldn't save your note. Your draft is still here — try Save again." });
+      } catch (error) {
+        if (isLive(id)) {
+          markErrorShown(error);
+          setError('root.server', { message: "Couldn't save your note. Your draft is still here — try Save again." });
+        }
       }
     })();
 
@@ -105,10 +126,13 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
     const id = sessionId;
     clearErrors('root');
     try {
-      await remove.mutateAsync(note.id);
+      await remove.mutateAsync({ noteId: note.id });
       if (isLive(id)) onClose();
-    } catch {
-      if (isLive(id)) setError('root.server', { message: "Couldn't delete your note. Your draft is still here — try again." });
+    } catch (error) {
+      if (isLive(id)) {
+        markErrorShown(error);
+        setError('root.server', { message: "Couldn't delete your note. Your draft is still here — try again." });
+      }
     }
   };
 
@@ -123,7 +147,7 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
       onAction={onSave}
       actionDisabled={busy}
     >
-      {!online ? <OfflineNotice message={busy ? EDITOR_OFFLINE_QUEUED : EDITOR_OFFLINE_HINT} reveal={busy} /> : null}
+      {!online ? <OfflineNotice message={offlineMessage} reveal={busy} /> : null}
       {errors.root?.server?.message ? <ErrorBanner message={errors.root.server.message} /> : null}
       <Controller
         control={control}

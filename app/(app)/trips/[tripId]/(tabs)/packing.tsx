@@ -165,10 +165,12 @@ export default function PackingScreen() {
       setHiddenId(id);
       setClaimedIds((prev) => new Set(prev).add(id));
       setClaimKeys((prev) => ({ ...prev, [bagId]: (prev[bagId] ?? 0) + 1 }));
-      save.mutate(
-        { itemId: id, input: { label: item.label, quantity: item.quantity, assignedTo: bagId } },
-        { onSettled: () => setHiddenId(null) },
-      );
+      // The promise settles for every claim; per-call callbacks only run for
+      // the latest one, and queued claims can overlap.
+      save
+        .mutateAsync({ itemId: id, input: { label: item.label, quantity: item.quantity, assignedTo: bagId } })
+        .catch(() => {})
+        .finally(() => setHiddenId(null));
     },
     [items, save, rects],
   );

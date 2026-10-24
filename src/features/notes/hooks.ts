@@ -1,7 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { NOTE_SELECT } from '@/lib/supabase/selects';
-import { useAuth } from '@/features/auth/AuthContext';
+import { mutationKeys } from '@/lib/query/keys';
+import {
+  assertCurrentOwner,
+  isCurrentOwner,
+  isDuplicateKey,
+  queuedWriteDefaults,
+  useQueuedMutation,
+  type QueuedVars,
+} from '@/lib/query/queued';
 import type { TripNote } from '@/lib/types';
 
 const keys = {
@@ -31,40 +39,72 @@ export interface NoteInput {
   isPrivate: boolean;
 }
 
-export function useSaveNote(tripId: string) {
-  const { userId } = useAuth();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ noteId, input }: { noteId: string | null; input: NoteInput }) => {
+export interface SaveNoteVars extends QueuedVars {
+  tripId: string;
+  /** null = a new note. */
+  noteId: string | null;
+  input: NoteInput;
+}
+
+export interface DeleteNoteVars extends QueuedVars {
+  tripId: string;
+  noteId: string;
+}
+
+/**
+ * The note writes, registered once at startup so a queued one can be sent
+ * after a restart. A queued private note is never stored on the device
+ * (lib/query/persist.ts), so it is only sent if the app stays open.
+ */
+export function registerNoteMutations(queryClient: QueryClient): void {
+  const refetch = (ownerId: string, tripId: string) => {
+    if (isCurrentOwner(ownerId)) void queryClient.invalidateQueries({ queryKey: keys.list(tripId), refetchType: 'all' });
+  };
+
+  queryClient.setMutationDefaults<void, Error, SaveNoteVars>(mutationKeys.saveNote, {
+    ...queuedWriteDefaults,
+    mutationFn: async ({ ownerId, clientId, tripId, noteId, input }: SaveNoteVars) => {
+      assertCurrentOwner(ownerId);
       if (noteId) {
-        const { error } = await supabase
+        // An update that matched nothing (the note was deleted meanwhile) is a failure too.
+        const { data, error } = await supabase
           .from('trip_notes')
           .update({ body: input.body, is_private: input.isPrivate })
-          .eq('id', noteId);
+          .eq('id', noteId)
+          .select('id');
         if (error) throw error;
+        if (data.length === 0) throw new Error('This note no longer exists.');
         return;
       }
-      if (!userId) throw new Error('Not signed in');
       // The insert policy requires author_id = auth.uid().
       const { error } = await supabase.from('trip_notes').insert({
+        id: clientId,
         trip_id: tripId,
-        author_id: userId,
+        author_id: ownerId,
         body: input.body,
         is_private: input.isPrivate,
       });
-      if (error) throw error;
+      // A duplicate id: sent before (a retry, or a replay after a restart).
+      if (error && !isDuplicateKey(error)) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.list(tripId) }),
+    onSuccess: (_data, { ownerId, tripId }) => refetch(ownerId, tripId),
   });
-}
 
-export function useDeleteNote(tripId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (noteId: string) => {
+  queryClient.setMutationDefaults<void, Error, DeleteNoteVars>(mutationKeys.deleteNote, {
+    ...queuedWriteDefaults,
+    mutationFn: async ({ ownerId, noteId }: DeleteNoteVars) => {
+      assertCurrentOwner(ownerId);
       const { error } = await supabase.from('trip_notes').delete().eq('id', noteId);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.list(tripId) }),
+    onSuccess: (_data, { ownerId, tripId }) => refetch(ownerId, tripId),
   });
+}
+
+export function useSaveNote(tripId: string) {
+  return useQueuedMutation<void, SaveNoteVars>(mutationKeys.saveNote, tripId);
+}
+
+export function useDeleteNote(tripId: string) {
+  return useQueuedMutation<void, DeleteNoteVars>(mutationKeys.deleteNote, tripId);
 }

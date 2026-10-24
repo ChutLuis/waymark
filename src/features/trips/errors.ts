@@ -3,19 +3,11 @@
  * as pure functions.
  */
 
+import { isNetworkError, messageOf } from '@/lib/errors';
+
 export const OFFLINE_MESSAGE = 'You’re offline — check your connection and try again.';
 
-function messageOf(error: unknown): string {
-  if (typeof error === 'string') return error;
-  if (typeof error !== 'object' || error === null) return '';
-  const { message } = error as { message?: unknown };
-  return typeof message === 'string' ? message : '';
-}
-
-/** A request that never reached the server (React Native, Chrome, Firefox and Safari wordings). */
-export function isNetworkError(error: unknown): boolean {
-  return /network request failed|failed to fetch|networkerror|load failed/i.test(messageOf(error));
-}
+export { isNetworkError } from '@/lib/errors';
 
 /**
  * SQLSTATEs the app's database functions raise with sentences written for

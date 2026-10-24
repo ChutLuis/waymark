@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import {
   PROFILE_SELECT,
@@ -8,6 +8,14 @@ import {
   tripRowToTrip,
 } from '@/lib/supabase/selects';
 import { uploadImage } from '@/lib/supabase/storage';
+import { mutationKeys } from '@/lib/query/keys';
+import {
+  assertCurrentOwner,
+  isCurrentOwner,
+  queuedWriteDefaults,
+  useQueuedMutation,
+  type QueuedVars,
+} from '@/lib/query/queued';
 import { useAuth } from '@/features/auth/AuthContext';
 import type { PickedImage } from '@/lib/images';
 import type { Profile, Trip, TripMember } from '@/lib/types';
@@ -123,37 +131,97 @@ export interface CreateTripInput {
 }
 
 /** Trip + owner membership are created atomically by the RPC — never insert directly. */
-export function useCreateTrip() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: CreateTripInput): Promise<Trip> => {
-      const { data, error } = await supabase.rpc('create_trip', {
-        _name: input.name,
-        ...(input.destination ? { _destination: input.destination } : {}),
-        ...(input.startDate ? { _start: input.startDate } : {}),
-        ...(input.endDate ? { _end: input.endDate } : {}),
-      });
-      if (error) throw error;
-      const trip = tripRowToTrip(data);
-      if (input.coverImage) {
-        // The trip already exists; a cover upload failure must not fail the
-        // whole mutation (or a retry would create a second trip). Best effort.
-        try {
-          const path = `${trip.id}/cover-${Date.now()}.${input.coverImage.extension}`;
-          await uploadImage('trip-covers', path, input.coverImage.uri, input.coverImage.contentType);
-          const { error: coverError } = await supabase
-            .from('trips')
-            .update({ cover_image_path: path })
-            .eq('id', trip.id);
-          if (!coverError) return { ...trip, coverImagePath: path };
-        } catch {
-          // Cover is optional; the trip is still created.
-        }
-      }
-      return trip;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: tripKeys.list() }),
+async function createTrip(input: CreateTripInput): Promise<Trip> {
+  const { data, error } = await supabase.rpc('create_trip', {
+    _name: input.name,
+    ...(input.destination ? { _destination: input.destination } : {}),
+    ...(input.startDate ? { _start: input.startDate } : {}),
+    ...(input.endDate ? { _end: input.endDate } : {}),
   });
+  if (error) throw error;
+  const trip = tripRowToTrip(data);
+  if (input.coverImage) {
+    // The trip already exists; a cover upload failure must not fail the
+    // whole mutation (or a retry would create a second trip). Best effort.
+    try {
+      const path = `${trip.id}/cover-${Date.now()}.${input.coverImage.extension}`;
+      await uploadImage('trip-covers', path, input.coverImage.uri, input.coverImage.contentType);
+      const { error: coverError } = await supabase
+        .from('trips')
+        .update({ cover_image_path: path })
+        .eq('id', trip.id);
+      if (!coverError) return { ...trip, coverImagePath: path };
+    } catch {
+      // Cover is optional; the trip is still created.
+    }
+  }
+  return trip;
+}
+
+export interface CreateTripVars extends CreateTripInput, QueuedVars {}
+
+export interface UpdateTripVars extends QueuedVars {
+  tripId: string;
+  /** Only the fields the person changed: a later queued edit must not put back older values. */
+  name?: string;
+  destination?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+async function updateTrip({ ownerId, tripId, name, destination, startDate, endDate }: UpdateTripVars): Promise<Trip> {
+  assertCurrentOwner(ownerId);
+  const row: {
+    name?: string;
+    destination?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+  } = {};
+  if (name !== undefined) row.name = name;
+  if (destination !== undefined) row.destination = destination;
+  if (startDate !== undefined) row.start_date = startDate;
+  if (endDate !== undefined) row.end_date = endDate;
+  const { data, error } = await supabase
+    .from('trips')
+    .update(row)
+    .eq('id', tripId)
+    .select(TRIP_SELECT)
+    .single();
+  if (error) throw error;
+  return tripRowToTrip(data);
+}
+
+/**
+ * Creating and editing a trip may wait for the connection and be sent after
+ * a restart (registered once at startup). A create is never retried: the
+ * create_trip RPC can't take an id from the device, so a retry after a lost
+ * response could make a second trip. An edit sends only the changed fields,
+ * and the last edit sent wins.
+ */
+export function registerTripMutations(queryClient: QueryClient): void {
+  queryClient.setMutationDefaults<Trip, Error, CreateTripVars>(mutationKeys.createTrip, {
+    retry: false,
+    mutationFn: ({ ownerId, clientId: _clientId, ...input }: CreateTripVars) => {
+      assertCurrentOwner(ownerId);
+      return createTrip(input);
+    },
+    onSuccess: (_trip, { ownerId }) => {
+      if (isCurrentOwner(ownerId)) void queryClient.invalidateQueries({ queryKey: tripKeys.list(), refetchType: 'all' });
+    },
+  });
+  queryClient.setMutationDefaults<Trip, Error, UpdateTripVars>(mutationKeys.updateTrip, {
+    ...queuedWriteDefaults,
+    mutationFn: updateTrip,
+    onSuccess: (_trip, { ownerId, tripId }) => {
+      if (!isCurrentOwner(ownerId)) return;
+      void queryClient.invalidateQueries({ queryKey: tripKeys.trip(tripId), refetchType: 'all' });
+      void queryClient.invalidateQueries({ queryKey: tripKeys.list(), refetchType: 'all' });
+    },
+  });
+}
+
+export function useCreateTrip() {
+  return useQueuedMutation<Trip, CreateTripVars>(mutationKeys.createTrip, null);
 }
 
 export function useDeleteTrip() {
@@ -181,38 +249,7 @@ export function useDeleteTrip() {
 
 /** Update trip details (name, destination, dates); RLS limits this to the owner. */
 export function useUpdateTrip(tripId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
-      name?: string;
-      destination?: string | null;
-      startDate?: string | null;
-      endDate?: string | null;
-    }) => {
-      const row: {
-        name?: string;
-        destination?: string | null;
-        start_date?: string | null;
-        end_date?: string | null;
-      } = {};
-      if (input.name !== undefined) row.name = input.name;
-      if (input.destination !== undefined) row.destination = input.destination;
-      if (input.startDate !== undefined) row.start_date = input.startDate;
-      if (input.endDate !== undefined) row.end_date = input.endDate;
-      const { data, error } = await supabase
-        .from('trips')
-        .update(row)
-        .eq('id', tripId)
-        .select(TRIP_SELECT)
-        .single();
-      if (error) throw error;
-      return tripRowToTrip(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tripKeys.trip(tripId) });
-      queryClient.invalidateQueries({ queryKey: tripKeys.list() });
-    },
-  });
+  return useQueuedMutation<Trip, UpdateTripVars>(mutationKeys.updateTrip, tripId);
 }
 
 /**

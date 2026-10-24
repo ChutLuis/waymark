@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,13 +15,13 @@ import { Sheet, type DiscardConfirm } from '@/components/Sheet';
 import { TextField } from '@/components/TextField';
 import { Toggle } from '@/components/Toggle';
 import { hitTargetMin, iconStrokeWidth, spacing, typeScale, useTheme } from '@/theme';
-import { itineraryItemSchema, type ItineraryItemForm } from '@/lib/validation/schemas';
+import { itineraryItemSchemaFor, type ItineraryItemForm } from '@/lib/validation/schemas';
 import { confirmDestructive } from '@/lib/confirm';
 import { formatDateTime } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
 import { useIsOnline } from '@/lib/useIsOnline';
 import { useDeleteItineraryItem, useSaveItineraryItem } from './hooks';
-import { newItemStartAt } from './group';
+import { newItemStartAt, tripDayBounds } from './group';
 import {
   REMINDER_OFFSETS,
   ensureReminderPermission,
@@ -31,6 +31,8 @@ import {
   useSetReminder,
   type ReminderOffset,
 } from '@/features/reminders/hooks';
+import { markErrorShown } from '@/features/offline/queuedErrors';
+import { ExactAlarmHint } from '@/features/reminders/ExactAlarmHint';
 import { useRemindersEnabled } from '@/features/reminders/preference';
 
 interface ItineraryItemEditorProps {
@@ -39,8 +41,9 @@ interface ItineraryItemEditorProps {
   tripId: string;
   /** null = creating a new item. */
   item: ItineraryItem | null;
-  /** Used to seed the date picker for new items. */
+  /** Used to seed the date picker for new items, and with the end to keep stops within the trip. */
   tripStartDate: string | null;
+  tripEndDate: string | null;
   /** Selected Plan day for a new item; ANY/null keep it unscheduled. */
   selectedDay?: string | null;
 }
@@ -80,9 +83,21 @@ export function ItineraryItemEditor({
   tripId,
   item,
   tripStartDate,
+  tripEndDate,
   selectedDay = null,
 }: ItineraryItemEditorProps) {
   const { colors } = useTheme();
+  // A dated trip keeps its stops on its days (an end may run into the day
+  // after): the pickers stop at its edges, and a prefilled or older date
+  // outside them is a field error, not a save.
+  const bounds = useMemo(() => tripDayBounds(tripStartDate, tripEndDate), [tripStartDate, tripEndDate]);
+  const schema = useMemo(
+    () =>
+      itineraryItemSchemaFor(
+        bounds && tripStartDate && tripEndDate ? { startDate: tripStartDate, endDate: tripEndDate } : null,
+      ),
+    [bounds, tripStartDate, tripEndDate],
+  );
   const save = useSaveItineraryItem(tripId);
   const remove = useDeleteItineraryItem(tripId);
   const existingReminder = useReminder(item?.id ?? null);
@@ -90,7 +105,7 @@ export function ItineraryItemEditor({
   const clearReminder = useClearReminder();
 
   const { control, handleSubmit, reset, setValue, formState: { isDirty, isSubmitting } } = useForm<ItineraryItemForm>({
-    resolver: zodResolver(itineraryItemSchema),
+    resolver: zodResolver(schema),
     defaultValues: defaultsFor(item, selectedDay),
   });
 
@@ -198,8 +213,11 @@ export function ItineraryItemEditor({
           status: form.status,
         },
       });
-    } catch {
-      setSaveError("Couldn't save this stop. Check your connection and try again.");
+    } catch (error) {
+      if (liveSession.current === sessionId) {
+        markErrorShown(error);
+        setSaveError("Couldn't save this stop. Check your connection and try again.");
+      }
       return;
     }
     // The stop is saved; a reminder that can't be set doesn't undo that.
@@ -232,9 +250,12 @@ export function ItineraryItemEditor({
     if (!confirmed) return;
     setSaveError(null);
     try {
-      await remove.mutateAsync(item.id);
-    } catch {
-      setSaveError("Couldn't delete this stop. Check your connection and try again.");
+      await remove.mutateAsync({ itemId: item.id });
+    } catch (error) {
+      if (liveSession.current === sessionId) {
+        markErrorShown(error);
+        setSaveError("Couldn't delete this stop. Check your connection and try again.");
+      }
       return;
     }
     if (existingReminder.data) await clearReminder.mutateAsync(item.id).catch(() => {});
@@ -322,7 +343,7 @@ export function ItineraryItemEditor({
           <Controller
             control={control}
             name="startAt"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <DateTimeField
                 label="STARTS"
                 size="md"
@@ -330,6 +351,9 @@ export function ItineraryItemEditor({
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Add date"
+                error={fieldState.error?.message}
+                minimumDate={bounds?.minimumDate}
+                maximumDate={bounds?.maximumDate}
                 initialDate={
                   selectedDay && selectedDay !== 'ANY'
                     ? new Date(`${selectedDay}T10:00:00`)
@@ -353,6 +377,8 @@ export function ItineraryItemEditor({
                 placeholder="Add date"
                 error={fieldState.error?.message}
                 initialDate={startAt ? new Date(startAt) : undefined}
+                minimumDate={bounds?.minimumDate}
+                maximumDate={bounds?.latestEnd}
               />
             )}
           />
@@ -418,6 +444,7 @@ export function ItineraryItemEditor({
                   Notifies this device {formatDateTime(fireDate.toISOString())}.
                 </AppText>
               ) : null}
+              <ExactAlarmHint />
             </>
           ) : null}
         </Card>

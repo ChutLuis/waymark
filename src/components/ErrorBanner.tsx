@@ -1,10 +1,19 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { AppText } from './AppText';
-import { radius, spacing, useTheme } from '@/theme';
+import { hitTargetMin, pressedOpacity, radius, spacing, useTheme } from '@/theme';
 
-/** Inline error banner (wax) used above forms, per the auth spec. */
-export function ErrorBanner({ message }: { message: string }) {
+/**
+ * Inline error banner (wax) used above forms, per the auth spec. `action` adds
+ * a text button at its end (the app-wide report's Dismiss).
+ */
+export function ErrorBanner({
+  message,
+  action,
+}: {
+  message: string;
+  action?: { label: string; accessibilityLabel?: string; onPress: () => void };
+}) {
   const { colors } = useTheme();
   return (
     <View
@@ -18,6 +27,18 @@ export function ErrorBanner({ message }: { message: string }) {
       <AppText role="bodySm" style={[styles.message, { color: colors.danger }]}>
         {message}
       </AppText>
+      {action ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={action.accessibilityLabel ?? action.label}
+          onPress={action.onPress}
+          style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+        >
+          <AppText role="link" style={styles.actionLabel}>
+            {action.label}
+          </AppText>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -40,4 +61,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 19,
   },
+  // 44 pt, reaching into the banner's padding so the banner keeps its height.
+  action: {
+    minHeight: hitTargetMin,
+    minWidth: hitTargetMin,
+    marginVertical: -(hitTargetMin - 19) / 2,
+    marginRight: -spacing.s3,
+    paddingHorizontal: spacing.s3,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionLabel: { textDecorationLine: 'underline' },
+  pressed: { opacity: pressedOpacity },
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -19,6 +19,14 @@ import {
 } from '@expo-google-fonts/besley';
 import { CourierPrime_700Bold } from '@expo-google-fonts/courier-prime';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
+import { registerItineraryMutations } from '@/features/itinerary/hooks';
+import { registerNoteMutations } from '@/features/notes/hooks';
+import { QueuedChangeErrors } from '@/features/offline/QueuedChangeErrors';
+import { clearQueuedFailures, watchQueuedWrites } from '@/features/offline/queuedErrors';
+import { registerPackingMutations } from '@/features/packing/hooks';
+import { registerTripMutations } from '@/features/trips/hooks';
+import { PERSIST_MAX_AGE, PERSISTED_QUERY_FAMILIES } from '@/lib/query/persist';
+import { QueryPersistence } from '@/lib/query/QueryPersistence';
 import { watchAuthCallback } from '@/features/auth/authDeepLink';
 import { useMyProfile } from '@/features/auth/hooks';
 import { getLaunchUrl } from '@/features/auth/launchUrl';
@@ -34,6 +42,21 @@ const queryClient = new QueryClient({
     queries: { staleTime: 30_000, retry: 1 },
   },
 });
+
+// The families stored on the device stay in memory as long as their stored
+// copy may be restored; everything else (invites, signed URLs) keeps the
+// default.
+for (const family of PERSISTED_QUERY_FAMILIES) {
+  queryClient.setQueryDefaults([family], { gcTime: PERSIST_MAX_AGE });
+}
+
+// Writes that may wait offline and be sent after a restart need their
+// functions registered before the stored cache is restored.
+registerTripMutations(queryClient);
+registerItineraryMutations(queryClient);
+registerNoteMutations(queryClient);
+registerPackingMutations(queryClient);
+watchQueuedWrites(queryClient);
 
 // Feed device connectivity into TanStack Query so cached data is served
 // while offline instead of hammering retries (STATE-2). Web uses the
@@ -75,6 +98,15 @@ function RootStack() {
   const pathname = usePathname();
   const { session, isRestoring, userId } = useAuth();
   const profile = useMyProfile();
+
+  // Reports of a failed offline change belong to the session that made it:
+  // any change of account (or signing out) drops them.
+  const reportsFor = useRef(userId);
+  useEffect(() => {
+    if (reportsFor.current === userId) return;
+    reportsFor.current = userId;
+    clearQueuedFailures();
+  }, [userId]);
   // Read by long-lived listeners, which would otherwise see the first render's values.
   const userIdRef = useRef(userId);
   const restoringRef = useRef(isRestoring);
@@ -169,7 +201,18 @@ function RootStack() {
           contentStyle: { backgroundColor: colors.bg, flex: 1, minHeight: 0 },
         }}
       />
+      {session ? <QueuedChangeErrors /> : null}
     </View>
+  );
+}
+
+/** The signed-in person's cache and queued writes, kept across restarts. */
+function PersistedQueries({ children }: { children: ReactNode }) {
+  const { userId, isRestoring } = useAuth();
+  return (
+    <QueryPersistence userId={userId} waiting={isRestoring}>
+      {children}
+    </QueryPersistence>
   );
 }
 
@@ -195,7 +238,9 @@ export default function RootLayout() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <RootStack />
+            <PersistedQueries>
+              <RootStack />
+            </PersistedQueries>
           </AuthProvider>
         </QueryClientProvider>
       </ThemeProvider>

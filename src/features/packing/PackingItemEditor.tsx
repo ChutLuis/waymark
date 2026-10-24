@@ -15,6 +15,7 @@ import { packingItemSchema, type PackingItemForm } from '@/lib/validation/schema
 import { confirmDestructive } from '@/lib/confirm';
 import type { PackingItem, TripMember } from '@/lib/types';
 import { useIsOnline } from '@/lib/useIsOnline';
+import { markErrorShown } from '@/features/offline/queuedErrors';
 import { useDeletePackingItem, useSavePackingItem } from './hooks';
 
 interface PackingItemEditorProps {
@@ -111,9 +112,12 @@ export function PackingItemEditor({
           },
         });
         if (isLive(id)) onClose();
-      } catch {
+      } catch (error) {
         // Keep the sheet open with what the user typed; the banner explains.
-        if (isLive(id)) setSaveError("Couldn't save your item — check your connection and try again.");
+        if (isLive(id)) {
+          markErrorShown(error);
+          setSaveError("Couldn't save your item — check your connection and try again.");
+        }
       } finally {
         saving.current = false;
       }
@@ -130,10 +134,13 @@ export function PackingItemEditor({
     if (!confirmed) return;
     setSaveError(null);
     try {
-      await remove.mutateAsync(item.id);
+      await remove.mutateAsync({ itemId: item.id });
       if (isLive(id)) onClose();
-    } catch {
-      if (isLive(id)) setSaveError("Couldn't delete your item — check your connection and try again.");
+    } catch (error) {
+      if (isLive(id)) {
+        markErrorShown(error);
+        setSaveError("Couldn't delete your item — check your connection and try again.");
+      }
     }
   };
 

@@ -5,9 +5,17 @@ import { AppText } from './AppText';
 import { useSheetReveal } from './Sheet';
 import { iconSizes, iconStrokeWidth, radius, spacing, useTheme } from '@/theme';
 
-/** Item and note editors: their saves and deletes wait for the connection, then go through. */
-export const EDITOR_OFFLINE_HINT = 'You’re offline. What you save is sent when you’re back online, while Waymark stays open.';
-export const EDITOR_OFFLINE_QUEUED = 'You’re offline — this will finish when you’re back online. Keep Waymark open.';
+/**
+ * Item, note and trip editors: their saves and deletes wait for the
+ * connection, kept on the device so closing the app doesn't lose them.
+ */
+export const EDITOR_OFFLINE_HINT = 'You’re offline. What you save is sent when you’re back online, even if you close Waymark.';
+export const EDITOR_OFFLINE_QUEUED = 'You’re offline — this will be sent when you’re back online, even if you close Waymark.';
+/** A private note's text is never stored on the device, so its queued save lasts only while the app is open. */
+export const PRIVATE_NOTE_OFFLINE_HINT =
+  'You’re offline. A private note is sent when you’re back online, as long as Waymark stays open: it isn’t kept on this device.';
+export const PRIVATE_NOTE_OFFLINE_QUEUED =
+  'You’re offline — this private note will be sent when you’re back online. Keep Waymark open: it isn’t kept on this device.';
 
 /**
  * Why a sheet's action waits: shown while offline, and scrolled into view
