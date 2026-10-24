@@ -69,6 +69,30 @@ describe('itineraryItemSchemaFor', () => {
     expect(itineraryItemSchemaFor(range).safeParse({ ...overnight, endAt: '2026-11-12T23:59:00' }).success).toBe(true);
   });
 
+  it('lets an older stop off the trip days be edited without moving it', () => {
+    const old = { ...stop, startAt: '2026-11-03T19:00:00', endAt: '2026-11-03T21:00:00' };
+    const saved = { startAt: old.startAt, endAt: old.endAt };
+    expect(itineraryItemSchemaFor(range, saved).safeParse({ ...old, title: 'Le Bouillon' }).success).toBe(true);
+    // A new stop with the same dates is still refused.
+    expect(itineraryItemSchemaFor(range, null).safeParse(old).success).toBe(false);
+  });
+
+  it('still checks a date the edit changes', () => {
+    const saved = { startAt: '2026-11-03T19:00:00', endAt: '2026-11-03T21:00:00' };
+    const moved = itineraryItemSchemaFor(range, saved).safeParse({
+      ...stop,
+      startAt: '2026-11-02T19:00:00',
+      endAt: saved.endAt,
+    });
+    expect(moved.error?.issues.map((i) => i.path.join('.'))).toEqual(['startAt']);
+    const intoTrip = itineraryItemSchemaFor(range, saved).safeParse({
+      ...stop,
+      startAt: '2026-11-09T19:00:00',
+      endAt: '2026-11-09T21:00:00',
+    });
+    expect(intoTrip.success).toBe(true);
+  });
+
   it('takes any date for a trip without dates', () => {
     expect(itineraryItemSchemaFor(null).safeParse({ ...stop, startAt: '2030-01-01T10:00:00', endAt: null }).success).toBe(
       true,

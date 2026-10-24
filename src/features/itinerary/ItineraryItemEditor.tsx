@@ -88,15 +88,19 @@ export function ItineraryItemEditor({
 }: ItineraryItemEditorProps) {
   const { colors } = useTheme();
   // A dated trip keeps its stops on its days (an end may run into the day
-  // after): the pickers stop at its edges, and a prefilled or older date
-  // outside them is a field error, not a save.
+  // after): the pickers stop at its edges, and a new or changed date outside
+  // them is a field error, not a save. A date the stop already had is left
+  // alone, so an older stop off the trip's days can still be edited.
   const bounds = useMemo(() => tripDayBounds(tripStartDate, tripEndDate), [tripStartDate, tripEndDate]);
+  const savedStartAt = item?.startAt ?? null;
+  const savedEndAt = item?.endAt ?? null;
   const schema = useMemo(
     () =>
       itineraryItemSchemaFor(
         bounds && tripStartDate && tripEndDate ? { startDate: tripStartDate, endDate: tripEndDate } : null,
+        item ? { startAt: savedStartAt, endAt: savedEndAt } : null,
       ),
-    [bounds, tripStartDate, tripEndDate],
+    [bounds, tripStartDate, tripEndDate, item, savedStartAt, savedEndAt],
   );
   const save = useSaveItineraryItem(tripId);
   const remove = useDeleteItineraryItem(tripId);

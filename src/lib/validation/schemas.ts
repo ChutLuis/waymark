@@ -49,22 +49,31 @@ export interface TripDayRange {
   endDate: string;
 }
 
+/** A stop's dates as they were saved, for an edit. */
+export interface SavedStopDates {
+  startAt: string | null;
+  endAt: string | null;
+}
+
 /**
  * The stop schema for a trip with dates: a stop must start on one of the
  * trip's days, or it would never appear under a day in Plan, and may end on
- * them or the day after, so a last evening can run past midnight. Trips
+ * them or the day after, so a last evening can run past midnight. Only a date
+ * that is new or changed is checked: an older stop already outside the trip
+ * (from before this rule, or the trip's dates moved) can still be edited
+ * otherwise, and stays under the ANY stamp until its date is moved. Trips
  * without dates take any date.
  */
-export function itineraryItemSchemaFor(range: TripDayRange | null) {
+export function itineraryItemSchemaFor(range: TripDayRange | null, saved: SavedStopDates | null = null) {
   if (!range) return itineraryItemSchema;
   const lastEndDate = addDays(range.endDate, 1);
   const startMessage = `Pick a day within the trip (${formatDateRange(range.startDate, range.endDate)})`;
   const endMessage = `End within the trip or the day after (${formatDateRange(range.startDate, lastEndDate)})`;
   return itineraryItemSchema.superRefine((value, ctx) => {
-    if (value.startAt && !isDayWithin(value.startAt, range.startDate, range.endDate)) {
+    if (value.startAt && value.startAt !== saved?.startAt && !isDayWithin(value.startAt, range.startDate, range.endDate)) {
       ctx.addIssue({ code: 'custom', message: startMessage, path: ['startAt'] });
     }
-    if (value.endAt && !isDayWithin(value.endAt, range.startDate, lastEndDate)) {
+    if (value.endAt && value.endAt !== saved?.endAt && !isDayWithin(value.endAt, range.startDate, lastEndDate)) {
       ctx.addIssue({ code: 'custom', message: endMessage, path: ['endAt'] });
     }
   });
