@@ -15,6 +15,7 @@ import { packingItemSchema, type PackingItemForm } from '@/lib/validation/schema
 import { confirmDestructive } from '@/lib/confirm';
 import type { PackingItem, TripMember } from '@/lib/types';
 import { useIsOnline } from '@/lib/useIsOnline';
+import { useDraftId, useResetOnOpen } from '@/lib/query/queued';
 import { markErrorShown } from '@/features/offline/queuedErrors';
 import { useDeletePackingItem, useSavePackingItem } from './hooks';
 
@@ -60,6 +61,9 @@ export function PackingItemEditor({
   const { colors } = useTheme();
   const save = useSavePackingItem(tripId);
   const remove = useDeletePackingItem(tripId);
+  // Only this sheet's own writes lock it (a save queued offline earlier is still pending).
+  useResetOnOpen(visible, save.reset);
+  useResetOnOpen(visible, remove.reset);
   const [saveError, setSaveError] = useState<string | null>(null);
   const online = useIsOnline();
 
@@ -90,6 +94,7 @@ export function PackingItemEditor({
     liveSession.current = visible ? sessionId : -1;
   }, [visible, sessionId]);
   const isLive = (id: number) => liveSession.current === id;
+  const draftId = useDraftId(sessionId);
 
   useEffect(() => {
     if (visible) reset(defaultsFor(item, members));
@@ -104,6 +109,7 @@ export function PackingItemEditor({
       setSaveError(null);
       try {
         await save.mutateAsync({
+          clientId: draftId,
           itemId: item?.id ?? null,
           input: {
             label: form.label,

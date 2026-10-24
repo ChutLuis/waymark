@@ -28,6 +28,7 @@ import { haptic } from '@/lib/haptics';
 import { pickImage, type PickedImage } from '@/lib/images';
 import { tripSchema, type TripForm } from '@/lib/validation/schemas';
 import { useCreateTrip } from './hooks';
+import { useDraftId } from '@/lib/query/queued';
 import { findCountry } from './countries';
 import { CountryField } from './CountryField';
 import { CountryPicker } from './CountryPicker';
@@ -63,6 +64,8 @@ const PHOTO_QUEUED_MESSAGE =
 export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheetProps) {
   const { colors } = useTheme();
   const createTrip = useCreateTrip();
+  // One id per opening: Create tapped again after a failure can't make a second trip.
+  const draftId = useDraftId(visible ? 1 : 0);
   const online = useIsOnline();
   const stackHelper = useWindowDimensions().fontScale > HELPER_STACK_FONT_SCALE;
   const todayIso = useMemo(() => toDateOnly(new Date()), []);
@@ -139,6 +142,7 @@ export function CreateTripSheet({ visible, onClose, onCreated }: CreateTripSheet
     const normalizedEnd = form.endDate ?? form.startDate;
     try {
       const trip = await createTrip.mutateAsync({
+        clientId: draftId,
         name: form.name,
         destination: form.destination || null,
         startDate: form.startDate,

@@ -20,6 +20,7 @@ import { confirmDestructive } from '@/lib/confirm';
 import { formatDateTime } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
 import { useIsOnline } from '@/lib/useIsOnline';
+import { useDraftId, useResetOnOpen } from '@/lib/query/queued';
 import { useDeleteItineraryItem, useSaveItineraryItem } from './hooks';
 import { newItemStartAt, tripDayBounds } from './group';
 import {
@@ -107,6 +108,11 @@ export function ItineraryItemEditor({
   const existingReminder = useReminder(item?.id ?? null);
   const setReminder = useSetReminder();
   const clearReminder = useClearReminder();
+  // Only this sheet's own writes lock it (a save queued offline earlier is still pending).
+  useResetOnOpen(visible, save.reset);
+  useResetOnOpen(visible, remove.reset);
+  useResetOnOpen(visible, setReminder.reset);
+  useResetOnOpen(visible, clearReminder.reset);
 
   const { control, handleSubmit, reset, setValue, formState: { isDirty, isSubmitting } } = useForm<ItineraryItemForm>({
     resolver: zodResolver(schema),
@@ -135,13 +141,14 @@ export function ItineraryItemEditor({
     item: ItineraryItem | null;
     selectedDay: string | null;
   }>({ id: 0, visible: false, item: null, selectedDay: null });
-  // Until this device's reminders have loaded, the stop's reminder is unknown:
-  // not a change, and not something a save may clear.
+  // Until this device's reminders have loaded, an existing stop's reminder is
+  // unknown: not a change, and not something a save may clear. A new stop has
+  // none, so it is known from the start.
   const [reminderKnown, setReminderKnown] = useState(false);
   if (session.visible !== visible || session.item !== item || session.selectedDay !== selectedDay) {
     setSession({ id: session.id + 1, visible, item, selectedDay });
     if (visible) {
-      setReminderKnown(existingReminder.data !== undefined);
+      setReminderKnown(item === null || existingReminder.data !== undefined);
       setReminderEnabled(existingReminder.data != null);
       setReminderOffset(existingReminder.data?.offsetMinutes ?? 60);
       setPermissionDenied(false);
@@ -201,46 +208,63 @@ export function ItineraryItemEditor({
       }
     })();
 
+  const draftId = useDraftId(session.id);
   const saveStop = async (form: ItineraryItemForm) => {
     const sessionId = session.id;
     setSaveError(null);
-    let saved: ItineraryItem;
+    // A new stop's id is known before the save lands, so its reminder can be
+    // set now: offline, the save may land after Waymark was closed.
+    const stopId = item?.id ?? draftId;
+    const saving = save.mutateAsync({
+      clientId: stopId,
+      itemId: item?.id ?? null,
+      input: {
+        title: form.title,
+        description: form.description || null,
+        location: form.location || null,
+        startAt: form.startAt,
+        endAt: form.endAt,
+        status: form.status,
+      },
+    });
+    // Handled below, once the reminder is set.
+    saving.catch(() => {});
+    // A reminder that can't be set doesn't stop the save.
+    const reminderSet = await applyReminder(form, stopId);
     try {
-      saved = await save.mutateAsync({
-        itemId: item?.id ?? null,
-        input: {
-          title: form.title,
-          description: form.description || null,
-          location: form.location || null,
-          startAt: form.startAt,
-          endAt: form.endAt,
-          status: form.status,
-        },
-      });
+      await saving;
     } catch (error) {
+      // The stop doesn't exist, so neither may its reminder. (The save's own
+      // failure handler does the same if it fails after a restart.)
+      if (!item && reminderSet) await clearReminder.mutateAsync(stopId).catch(() => {});
       if (liveSession.current === sessionId) {
         markErrorShown(error);
         setSaveError("Couldn't save this stop. Check your connection and try again.");
       }
       return;
     }
-    // The stop is saved; a reminder that can't be set doesn't undo that.
+    closeSession(sessionId);
+  };
+
+  /** Sets, moves or clears the stop's reminder as the sheet says; true when one was set. */
+  const applyReminder = async (form: ItineraryItemForm, stopId: string): Promise<boolean> => {
     try {
       if (!reminderKnown) {
         // Nothing to decide yet: leave whatever reminder this device has.
       } else if (remindersOn && reminderEnabled && form.startAt) {
         await setReminder.mutateAsync({
-          item: { id: saved.id, title: saved.title, tripId },
+          item: { id: stopId, title: form.title, tripId },
           startAt: form.startAt,
           offsetMinutes: reminderOffset,
         });
+        return true;
       } else if (item && existingReminder.data) {
         await clearReminder.mutateAsync(item.id);
       }
     } catch {
       // Reminders are best-effort and local to this device.
     }
-    closeSession(sessionId);
+    return false;
   };
 
   const onDelete = async () => {

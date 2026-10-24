@@ -11,6 +11,7 @@
  *   request that fails because the connection dropped is tried again (it
  *   pauses if the device is offline) instead of being reported as a failure.
  */
+import { useLayoutEffect, useState } from 'react';
 import { onlineManager, useMutation, type MutationKey, type MutationOptions } from '@tanstack/react-query';
 import NetInfo from '@react-native-community/netinfo';
 import { randomUUID } from 'expo-crypto';
@@ -57,7 +58,8 @@ export async function syncOnlineState(): Promise<void> {
   }
 }
 
-type QueuedInput<TVars extends QueuedVars> = Omit<TVars, keyof QueuedVars>;
+/** A caller that needs the new row's id before the write lands (a stop's reminder) may pick it. */
+type QueuedInput<TVars extends QueuedVars> = Omit<TVars, keyof QueuedVars> & { clientId?: string };
 
 /**
  * A queued write's hook: fills in the account, a client id and the trip, and
@@ -74,7 +76,12 @@ export function useQueuedMutation<TData, TVars extends QueuedVars, TContext = un
     scope: { id: tripId ? `trip:${tripId}` : mutationKey.join(':') },
   });
   const fill = (input: QueuedInput<TVars>): TVars =>
-    ({ ...input, ...(tripId ? { tripId } : {}), ownerId: getQueryOwner() ?? '', clientId: randomUUID() }) as unknown as TVars;
+    ({
+      ...input,
+      ...(tripId ? { tripId } : {}),
+      ownerId: getQueryOwner() ?? '',
+      clientId: input.clientId ?? randomUUID(),
+    }) as unknown as TVars;
   return {
     ...mutation,
     mutate: (input: QueuedInput<TVars>, options?: Parameters<typeof mutation.mutate>[1]) =>
@@ -82,4 +89,40 @@ export function useQueuedMutation<TData, TVars extends QueuedVars, TContext = un
     mutateAsync: (input: QueuedInput<TVars>, options?: Parameters<typeof mutation.mutateAsync>[1]) =>
       mutation.mutateAsync(fill(input), options),
   };
+}
+
+/**
+ * An editor stays mounted between sheets, and a write queued offline stays
+ * pending until it lands, so a sheet opened later would take that earlier
+ * write for its own and open locked. Each time the sheet opens this forgets
+ * the earlier write's state (`reset`, which must be stable: a mutation's own
+ * `reset` is). The write itself carries on: its behaviour lives in the
+ * registered defaults, and each sheet acts only on its own session's result.
+ * A layout effect, so the sheet never paints locked.
+ */
+export function useResetOnOpen(visible: boolean, reset: () => void): void {
+  useLayoutEffect(() => {
+    if (visible) reset();
+  }, [visible, reset]);
+}
+
+/**
+ * The id a sheet's new row is inserted with, one per sheet session
+ * (`session` changes each time the sheet opens). Tapping Save again after a
+ * failure sends the same id, so a request that reached the server although
+ * the app gave up on it (a timeout) lands once instead of twice.
+ */
+export function useDraftId(session: number): string {
+  // Kept out of the React Compiler, which treats render as pure and reused the
+  // first random id for every later session (seen on the device): a reused id
+  // makes the next new row look already saved (duplicate key = done), so it
+  // was silently dropped.
+  'use no memo';
+  const [draft, setDraft] = useState(() => ({ session, id: randomUUID() }));
+  if (draft.session !== session) {
+    const next = { session, id: randomUUID() };
+    setDraft(next);
+    return next.id;
+  }
+  return draft.id;
 }

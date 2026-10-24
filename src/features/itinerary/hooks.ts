@@ -126,6 +126,19 @@ export function registerItineraryMutations(queryClient: QueryClient): void {
       refetch(tripId);
       void followStopReminder({ id: saved.id, title: saved.title, tripId, startAt: saved.startAt });
     },
+    // The editor sets a stop's reminder when the save is made, not when it
+    // lands, so it survives a restart. A save that fails for good undoes that:
+    // a new stop that never existed loses its reminder; an edited one moves
+    // its reminder back to the stop as the server has it.
+    onError: (_error, { ownerId, clientId, tripId, itemId }) => {
+      if (!isCurrentOwner(ownerId)) return;
+      if (!itemId) {
+        void clearStopReminder(clientId).catch(() => {});
+        return;
+      }
+      const stop = queryClient.getQueryData<ItineraryItem[]>(keys.list(tripId))?.find((s) => s.id === itemId);
+      if (stop) void followStopReminder({ id: stop.id, title: stop.title, tripId, startAt: stop.startAt });
+    },
   });
 
   queryClient.setMutationDefaults<void, Error, DeleteItineraryItemVars>(mutationKeys.deleteStop, {

@@ -21,6 +21,7 @@ import { noteSchema, type NoteForm } from '@/lib/validation/schemas';
 import { confirmDestructive } from '@/lib/confirm';
 import type { TripNote } from '@/lib/types';
 import { useIsOnline } from '@/lib/useIsOnline';
+import { useDraftId, useResetOnOpen } from '@/lib/query/queued';
 import { markErrorShown } from '@/features/offline/queuedErrors';
 import { useDeleteNote, useSaveNote } from './hooks';
 
@@ -55,6 +56,9 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
   const { colors } = useTheme();
   const save = useSaveNote(tripId);
   const remove = useDeleteNote(tripId);
+  // Only this sheet's own writes lock it (a save queued offline earlier is still pending).
+  useResetOnOpen(visible, save.reset);
+  useResetOnOpen(visible, remove.reset);
 
   const { control, handleSubmit, reset, setError, clearErrors, formState: { errors, isDirty, isSubmitting } } = useForm<NoteForm>({
     resolver: zodResolver(noteSchema),
@@ -84,6 +88,7 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
     liveSession.current = visible ? sessionId : -1;
   }, [visible, sessionId]);
   const isLive = (id: number) => liveSession.current === id;
+  const draftId = useDraftId(sessionId);
 
   // A private note's text is never stored on the device, so offline its save
   // only waits while the app stays open.
@@ -103,7 +108,7 @@ export function NoteEditor({ visible, onClose, tripId, note }: NoteEditorProps) 
       const id = sessionId;
       clearErrors('root');
       try {
-        await save.mutateAsync({ noteId: note?.id ?? null, input: form });
+        await save.mutateAsync({ clientId: draftId, noteId: note?.id ?? null, input: form });
         if (isLive(id)) onClose();
       } catch (error) {
         if (isLive(id)) {

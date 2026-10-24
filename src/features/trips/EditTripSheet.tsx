@@ -16,6 +16,7 @@ import { CountryPicker } from './CountryPicker';
 import { EDITOR_OFFLINE_HINT, EDITOR_OFFLINE_QUEUED, OfflineNotice } from '@/components/OfflineNotice';
 import { markErrorShown } from '@/features/offline/queuedErrors';
 import { useIsOnline } from '@/lib/useIsOnline';
+import { useResetOnOpen } from '@/lib/query/queued';
 import { failureMessage } from './errors';
 import { useItinerary } from '@/features/itinerary/hooks';
 import { stopsLeavingDates } from '@/features/itinerary/group';
@@ -48,6 +49,8 @@ interface EditTripSheetProps {
  */
 export function EditTripSheet({ visible, onClose, trip }: EditTripSheetProps) {
   const update = useUpdateTrip(trip.id);
+  // Only this sheet's own edit locks it (one queued offline earlier is still pending).
+  useResetOnOpen(visible, update.reset);
   const online = useIsOnline();
   const [pickingCountry, setPickingCountry] = useState(false);
 
