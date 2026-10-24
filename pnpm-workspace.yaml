@@ -2,6 +2,10 @@ allowBuilds:
   supabase: true
   unrs-resolver: true
 
+# Same release-age gate as pnpm 11 in CI (one day), so a lockfile made
+# locally passes CI's supply-chain check.
+minimumReleaseAge: 1440
+
 # Patched releases of transitive dependencies (pnpm audit), each within the
 # major line its dependents ask for. All are build, dev-server, lint or test
 # tooling; none ships in the app bundle.
