@@ -185,6 +185,10 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
 
 - A single Supabase client is created in `src/lib/supabase`, configured with
   secure-store session persistence on native and the default storage on web.
+  Its fetch (`timeoutFetch.ts`) gives up on database and auth requests after
+  20 s without a response with a "Network request failed" error, so queued
+  writes treat a stalled request like a dropped one; Storage and Edge
+  Functions are not limited.
 - Database types are generated with the Supabase CLI and re-exported; feature
   hooks consume typed rows.
 - Each feature exposes TanStack Query hooks (for example `useTrips`,
@@ -211,7 +215,13 @@ Indexes: add btree indexes on every `trip_id` foreign key, on
   owner before it clears the cache). Optimistic updates live in those
   defaults and their rollbacks restore only the fields they changed; a stop's
   reminder follows its saved or deleted stop there too, so it stays right
-  after a restart. Everything else (account deletion, invite preview
+  after a restart, and a save that fails for good undoes the reminder the
+  editor set when the save was made. Editors stay mounted between sheets:
+  `useResetOnOpen` forgets an earlier session's write state when a sheet
+  opens (so a change still queued doesn't lock the next one), and
+  `useDraftId` gives each opening one id for its new row, so Save tapped
+  again after a failure can't insert twice (it is kept out of the React
+  Compiler, which reused one random id across sessions). Everything else (account deletion, invite preview
   and accept, cover and avatar uploads, leaving or deleting a trip, sign-in)
   stays online-only, with its own messages.
 - **Persisted cache.** `src/lib/query/persistence.ts` stores the query cache

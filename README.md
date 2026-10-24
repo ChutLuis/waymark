@@ -85,7 +85,7 @@ Quality gates (all green):
 ```
 pnpm typecheck         # TypeScript
 pnpm lint              # ESLint, 0 errors / 0 warnings
-pnpm test              # Vitest, 661 tests (pure logic)
+pnpm test              # Vitest, 671 tests (pure logic)
 supabase test db       # pgTAP, 104 assertions (RLS and RPCs)
 ```
 
