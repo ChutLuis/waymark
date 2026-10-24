@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
+import { withRequestTimeout } from './timeoutFetch';
 
 /**
  * Session tokens live in the device keychain on native (AUTH-4). Web has no
@@ -97,4 +98,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+  // Database and auth requests give up after 20 s with no response, so one
+  // stalled request can't hold back a trip's queued changes (timeoutFetch.ts).
+  global: { fetch: withRequestTimeout((input, init) => fetch(input, init)) },
 });
