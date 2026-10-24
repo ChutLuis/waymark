@@ -24,6 +24,7 @@ import { failureMessage } from '@/features/trips/errors';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useDeleteAccount, useMyProfile, useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
+import { ExactAlarmHint } from '@/features/reminders/ExactAlarmHint';
 import { hydrateReminderPreference, setRemindersEnabled, useRemindersEnabled } from '@/features/reminders/preference';
 import { hairlineWidth, hitTargetMin, iconStrokeWidth, radius, shadows, spacing, useTheme, type ThemePreference } from '@/theme';
 import { pickImage } from '@/lib/images';
@@ -352,13 +353,16 @@ export default function ProfileScreen() {
               stretch={false}
             />
           </View>
-          <View style={[styles.settingsRow, { borderBottomWidth: hairlineWidth, borderBottomColor: colors.hairline }]}>
-            <AppText role="link">Trip reminders</AppText>
-            <Toggle
-              value={remindersEnabled}
-              onValueChange={setRemindersEnabled}
-              accessibilityLabel="Trip reminders"
-            />
+          <View style={{ borderBottomWidth: hairlineWidth, borderBottomColor: colors.hairline }}>
+            <View style={styles.settingsRow}>
+              <AppText role="link">Trip reminders</AppText>
+              <Toggle
+                value={remindersEnabled}
+                onValueChange={setRemindersEnabled}
+                accessibilityLabel="Trip reminders"
+              />
+            </View>
+            {remindersEnabled ? <ExactAlarmHint style={styles.settingsHint} /> : null}
           </View>
           <Pressable
             accessibilityRole="button"
@@ -431,6 +435,8 @@ const styles = StyleSheet.create({
   albumEmptyText: { textAlign: 'center' },
   settingsCard: { marginTop: spacing.s6, marginHorizontal: spacing.cardGutter, borderRadius: radius.card, paddingHorizontal: 16 },
   settingsRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s5 },
+  // The row's 56 pt already spaces it from the switch; tuck the caption under it.
+  settingsHint: { marginTop: -spacing.s3, marginBottom: spacing.s1 },
   signOutWrap: { paddingTop: spacing.s5, paddingHorizontal: spacing.cardGutter, gap: spacing.s2 },
   deleteRow: {
     flexDirection: 'row',

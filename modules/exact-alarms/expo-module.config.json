@@ -1,0 +1,6 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": ["app.waymark.exactalarms.ExactAlarmsModule"]
+  }
+}

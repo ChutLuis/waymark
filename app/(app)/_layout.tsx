@@ -3,12 +3,16 @@ import { Redirect, Stack, usePathname } from 'expo-router';
 import { ErrorState, LoadingState } from '@/components/StateViews';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useMyProfile } from '@/features/auth/hooks';
-import { useReminderReconcile } from '@/features/reminders/hooks';
+import { useExactAlarmSync, useReminderReconcile } from '@/features/reminders/hooks';
 import { useTheme } from '@/theme';
 
-/** Cancels reminders for trips the person can no longer open (left, removed, deleted). */
+/**
+ * Cancels reminders for trips the person can no longer open (left, removed,
+ * deleted), and reschedules them when exact-alarm access changes.
+ */
 function ReminderReconcile() {
   useReminderReconcile();
+  useExactAlarmSync();
   return null;
 }
 
@@ -23,8 +27,9 @@ function OnboardingGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   if (profile.isPending) {
-    // Nothing is cached across launches, so a cold start offline waits here
-    // until the connection returns; say so rather than spin silently.
+    // A cold start offline shows the stored cache (lib/query/persistence.ts);
+    // with nothing stored yet (a first launch), it waits here until the
+    // connection returns, and says so rather than spin silently.
     return (
       <LoadingState
         message={

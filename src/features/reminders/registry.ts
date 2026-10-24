@@ -178,3 +178,18 @@ export function adoptLegacyReminders(
   for (const reminder of own) merged.set(reminder.itemId, reminder);
   return [...merged.values()];
 }
+
+/** Device-wide record of the exact-alarm access reminders were last scheduled under. */
+export const EXACT_ACCESS_KEY = 'waymark.reminders.exactAccess';
+
+/**
+ * Whether reminders have to be scheduled again because exact-alarm access
+ * changed since they were (or was never recorded): allowed now, inexact ones
+ * become exact; taken away, Android has cancelled the exact ones.
+ */
+export function exactAccessChanged(
+  recorded: string | null,
+  access: 'granted' | 'denied' | 'not-applicable',
+): boolean {
+  return access !== 'not-applicable' && recorded !== access;
+}

@@ -4,6 +4,7 @@ import {
   REMINDER_KIND,
   adoptLegacyReminders,
   allReminders,
+  exactAccessChanged,
   isRegistryKey,
   isTripReminder,
   parseRegistry,
@@ -195,5 +196,30 @@ describe('adoptLegacyReminders', () => {
     const own = [{ ...reminder('a', 'trip-1', 'n-new'), offsetMinutes: 0 as const }];
     const legacy = [reminder('a', null, 'n-old'), reminder('b', null)];
     expect(adoptLegacyReminders(own, legacy, [])).toEqual([own[0], reminder('b', null)]);
+  });
+});
+
+describe('exactAccessChanged', () => {
+  it('reschedules once access is allowed after reminders were set without it', () => {
+    expect(exactAccessChanged('denied', 'granted')).toBe(true);
+  });
+
+  it('reschedules when access is taken away (Android cancels the exact alarms)', () => {
+    expect(exactAccessChanged('granted', 'denied')).toBe(true);
+  });
+
+  it('reschedules when nothing was recorded yet, e.g. reminders set before this check existed', () => {
+    expect(exactAccessChanged(null, 'granted')).toBe(true);
+    expect(exactAccessChanged(null, 'denied')).toBe(true);
+  });
+
+  it('leaves reminders alone while access is unchanged', () => {
+    expect(exactAccessChanged('granted', 'granted')).toBe(false);
+    expect(exactAccessChanged('denied', 'denied')).toBe(false);
+  });
+
+  it('does nothing where exact alarms are not a thing (iOS, web)', () => {
+    expect(exactAccessChanged(null, 'not-applicable')).toBe(false);
+    expect(exactAccessChanged('granted', 'not-applicable')).toBe(false);
   });
 });

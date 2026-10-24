@@ -13,12 +13,17 @@ import {
   cancelLocalReminders,
   dismissNotifications,
   getPresentedNotifications,
+  getScheduledDateNotifications,
   getScheduledNotifications,
+  rescheduleNotification,
+  type ExactAlarmAccess,
 } from '@/lib/notifications';
 import {
+  EXACT_ACCESS_KEY,
   LEGACY_REGISTRY_KEY,
   adoptLegacyReminders,
   allReminders,
+  exactAccessChanged,
   isRegistryKey,
   parseRegistry,
   registryKey,
@@ -229,6 +234,29 @@ export function reconcileReminders(userId: string, tripIds: ReadonlySet<string>)
     const scheduled = await getScheduledNotifications();
     for (const id of remindersToReconcile(scheduled ?? [], userId, tripIds)) ids.add(id);
     await cancelLocalReminders([...ids]);
+  }).catch(() => {});
+}
+
+/**
+ * When exact-alarm access has changed since reminders were scheduled, schedules
+ * `userId`'s again under the same ids, so Android re-picks exact or inexact
+ * alarms. Never rejects.
+ */
+export function syncExactAlarmAccess(userId: string, access: ExactAlarmAccess): Promise<void> {
+  return withReminderLock(async () => {
+    const recorded = await AsyncStorage.getItem(EXACT_ACCESS_KEY);
+    if (!exactAccessChanged(recorded, access) || activeUser !== userId) return;
+    // Unreadable: try again on the next foreground instead of recording it done.
+    const scheduled = await getScheduledDateNotifications();
+    if (scheduled === null) return;
+    const own = new Set(remindersOf(scheduled, userId));
+    let allMoved = true;
+    for (const notification of scheduled) {
+      // Signed out meanwhile: the purge after this task cancels them.
+      if (activeUser !== userId) return;
+      if (own.has(notification.identifier)) allMoved = (await rescheduleNotification(notification)) && allMoved;
+    }
+    if (allMoved) await AsyncStorage.setItem(EXACT_ACCESS_KEY, access);
   }).catch(() => {});
 }
 

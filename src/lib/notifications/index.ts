@@ -98,6 +98,74 @@ export async function getScheduledNotifications(): Promise<LocalNotificationRef[
   }
 }
 
+/** A scheduled one-off notification with what it takes to schedule it again. */
+export interface ScheduledDateNotification extends LocalNotificationRef {
+  title: string | null;
+  body: string | null;
+  date: Date;
+  channelId: string | undefined;
+}
+
+/** Scheduled notifications with a fixed date; null when they can't be read. */
+export async function getScheduledDateNotifications(): Promise<ScheduledDateNotification[] | null> {
+  if (Platform.OS === 'web') return null;
+  try {
+    const requests = await Notifications.getAllScheduledNotificationsAsync();
+    const scheduled: ScheduledDateNotification[] = [];
+    for (const { identifier, content, trigger } of requests) {
+      const raw = trigger as { type?: unknown; value?: unknown; channelId?: unknown } | null;
+      if (raw?.type !== 'date' || typeof raw.value !== 'number') continue;
+      scheduled.push({
+        identifier,
+        data: content.data,
+        title: content.title,
+        body: content.body,
+        date: new Date(raw.value),
+        channelId: typeof raw.channelId === 'string' ? raw.channelId : undefined,
+      });
+    }
+    return scheduled;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Schedules a notification again under the same identifier, replacing it.
+ * Android then picks an exact or inexact alarm by the access the app has now.
+ * False if it couldn't.
+ */
+export async function rescheduleNotification(notification: ScheduledDateNotification): Promise<boolean> {
+  // A past one has fired or is about to: nothing to move.
+  if (Platform.OS === 'web' || notification.date.getTime() <= Date.now()) return true;
+  try {
+    await Notifications.scheduleNotificationAsync({
+      identifier: notification.identifier,
+      content: {
+        title: notification.title,
+        body: notification.body,
+        data: (notification.data ?? {}) as Record<string, unknown>,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: notification.date,
+        channelId: notification.channelId,
+      },
+    });
+    return true;
+  } catch {
+    // It stays scheduled as it was.
+    return false;
+  }
+}
+
+export {
+  openExactAlarmSettings,
+  refreshExactAlarmAccess,
+  useExactAlarmAccess,
+  type ExactAlarmAccess,
+} from './exactAlarms';
+
 /** This app's notifications still showing in the notification tray. */
 export async function getPresentedNotifications(): Promise<LocalNotificationRef[]> {
   if (Platform.OS === 'web') return [];

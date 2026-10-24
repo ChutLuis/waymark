@@ -59,3 +59,7 @@ example
 # Supabase CLI local state (redundant safety net; also in supabase/.gitignore)
 supabase/.temp
 supabase/.branches
+
+# Local Expo modules' native build output
+modules/*/android/build/
+modules/*/android/.gradle/

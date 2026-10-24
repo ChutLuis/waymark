@@ -130,7 +130,14 @@ const config: ExpoConfig = {
     // the system photo picker (no storage access), reminders are local
     // notifications (no FCM push, no launcher badges), and the session store
     // never asks for biometrics.
+    // SCHEDULE_EXACT_ALARM lets "1 hr before" fire on time instead of within
+    // Android's inexact window. It is user-granted (denied by default on
+    // Android 14+), so the app asks for it in context (modules/exact-alarms).
+    // USE_EXACT_ALARM is deliberately absent: Play reserves it for alarm-clock
+    // and calendar apps.
+    permissions: ['android.permission.SCHEDULE_EXACT_ALARM'],
     blockedPermissions: [
+      'android.permission.USE_EXACT_ALARM',
       'android.permission.CAMERA',
       'android.permission.RECORD_AUDIO',
       'android.permission.SYSTEM_ALERT_WINDOW',
