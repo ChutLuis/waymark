@@ -130,9 +130,14 @@ export interface CreateTripInput {
   coverImage?: PickedImage | null;
 }
 
-/** Trip + owner membership are created atomically by the RPC — never insert directly. */
-async function createTrip(input: CreateTripInput): Promise<Trip> {
+/**
+ * Trip + owner membership are created atomically by the RPC — never insert
+ * directly. The trip takes the id made on the device: sent again, the RPC
+ * returns the trip it already made instead of a second one.
+ */
+async function createTrip(id: string, input: CreateTripInput): Promise<Trip> {
   const { data, error } = await supabase.rpc('create_trip', {
+    _id: id,
     _name: input.name,
     ...(input.destination ? { _destination: input.destination } : {}),
     ...(input.startDate ? { _start: input.startDate } : {}),
@@ -140,9 +145,10 @@ async function createTrip(input: CreateTripInput): Promise<Trip> {
   });
   if (error) throw error;
   const trip = tripRowToTrip(data);
-  if (input.coverImage) {
+  // A trip that came back from an earlier send may already have its cover.
+  if (input.coverImage && !trip.coverImagePath) {
     // The trip already exists; a cover upload failure must not fail the
-    // whole mutation (or a retry would create a second trip). Best effort.
+    // whole mutation. Best effort.
     try {
       const path = `${trip.id}/cover-${Date.now()}.${input.coverImage.extension}`;
       await uploadImage('trip-covers', path, input.coverImage.uri, input.coverImage.contentType);
@@ -193,17 +199,16 @@ async function updateTrip({ ownerId, tripId, name, destination, startDate, endDa
 
 /**
  * Creating and editing a trip may wait for the connection and be sent after
- * a restart (registered once at startup). A create is never retried: the
- * create_trip RPC can't take an id from the device, so a retry after a lost
- * response could make a second trip. An edit sends only the changed fields,
- * and the last edit sent wins.
+ * a restart (registered once at startup). A create carries its client id, so
+ * a retry or a replay lands once. An edit sends only the changed fields, and
+ * the last edit sent wins.
  */
 export function registerTripMutations(queryClient: QueryClient): void {
   queryClient.setMutationDefaults<Trip, Error, CreateTripVars>(mutationKeys.createTrip, {
-    retry: false,
-    mutationFn: ({ ownerId, clientId: _clientId, ...input }: CreateTripVars) => {
+    ...queuedWriteDefaults,
+    mutationFn: ({ ownerId, clientId, ...input }: CreateTripVars) => {
       assertCurrentOwner(ownerId);
-      return createTrip(input);
+      return createTrip(clientId, input);
     },
     onSuccess: (_trip, { ownerId }) => {
       if (isCurrentOwner(ownerId)) void queryClient.invalidateQueries({ queryKey: tripKeys.list(), refetchType: 'all' });
