@@ -54,7 +54,7 @@ pnpm test
 supabase test db
 ```
 
-`pnpm test` runs Vitest. `supabase test db` runs the 33-test pgTAP RLS suite. These four commands are the required quality gate and must remain green.
+`pnpm test` runs Vitest. `supabase test db` runs the pgTAP suite (113 assertions in 12 files). These four commands are the required quality gate and must remain green.
 
 GitHub Actions CI runs all four gates on every push to `main` and every pull request. The `quality` job uses Node 24, runs `pnpm install --frozen-lockfile`, then runs typecheck, lint, and Vitest. The `rls` job runs `supabase start` followed by `supabase test db`. All four gates must stay green; contributors run them locally before review.
 

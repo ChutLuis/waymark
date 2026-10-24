@@ -108,6 +108,20 @@ Email → minimum password length 8 (same rule as above: never
   EAS environment; the build fails on a missing, non-HTTPS or loopback URL.
   See `BUILDS.md`.
 
+### Dependency advisories
+
+`pnpm audit` is kept clean apart from advisories with no fix that Expo SDK 57
+can take. Vulnerable transitive packages are pinned to a patched release in
+the same major line through `overrides` in `pnpm-workspace.yaml`; Vite is a
+direct dev dependency because it reaches Vitest as a peer, which overrides
+don't touch. Node follows the latest 24.x LTS patch.
+
+| Remaining advisory | Decision | Evidence |
+|---|---|---|
+| `node-forge` ≤ 1.4.0, RSA signature forgery (GHSA-86w9-cpqp-85rv), via `@expo/cli` | Accepted until Expo ships a fix | No patched release exists; `@expo/cli` uses it on the developer's machine (dev-server certificates), and it isn't in the app bundle. |
+| `zod` 3.25.76 memory exhaustion on unbounded arrays (GHSA-mrhx-c7xc-m3w5), via `@expo/cli` | Accepted until Expo moves to zod 4 | The fix is zod 4.6.6+, a major version `@expo/cli` 57 doesn't support; it validates the CLI's own configuration on the developer's machine. The app's schemas use zod 4. |
+| `decode-uri-component` 0.2.2, CPU exhaustion on malformed percent-encoding (GHSA-vcc3-ghjq-m6fr), via `expo-router` → `query-string` 7 | Accepted until Expo updates `query-string` | The fix (0.5.0) is ESM-only, and `query-string` 7 loads it with `require` in the app bundle, so an override would break route parsing. Exposure is a crafted link the person opens themselves, which can at worst stall their own app. |
+
 ## 3. Principles
 
 - RLS is enabled and forced on every table. Access requires both a table grant
@@ -572,6 +586,7 @@ test('a partner cannot read a private note', async () => {
 - New tables and functions in `public` revoke the default anon/authenticated
   grants Supabase adds unless a client really needs them.
 - New storage buckets have matching object policies.
+- `pnpm audit` reports nothing beyond the accepted advisories in §2.
 - A new query that returns private or secret data stays out of the persisted
   cache (`PERSISTED_QUERIES` in `src/lib/query/persist.ts`), and a new
   queueable write that carries such data is memory-only (`isMemoryOnlyMutation`).

@@ -62,10 +62,10 @@ export function itineraryItemSchemaFor(range: TripDayRange | null) {
   const endMessage = `End within the trip or the day after (${formatDateRange(range.startDate, lastEndDate)})`;
   return itineraryItemSchema.superRefine((value, ctx) => {
     if (value.startAt && !isDayWithin(value.startAt, range.startDate, range.endDate)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: startMessage, path: ['startAt'] });
+      ctx.addIssue({ code: 'custom', message: startMessage, path: ['startAt'] });
     }
     if (value.endAt && !isDayWithin(value.endAt, range.startDate, lastEndDate)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: endMessage, path: ['endAt'] });
+      ctx.addIssue({ code: 'custom', message: endMessage, path: ['endAt'] });
     }
   });
 }

@@ -191,7 +191,7 @@ keytool -list -v -keystore K.p12 | grep -iE "keystore type|entry type|chain leng
 
 | Requirement | Version |
 |---|---|
-| Node | 24 (`.nvmrc`), with pnpm; `pnpm-lock.yaml` is the only lockfile |
+| Node | 24 LTS (`.nvmrc`), latest patch release, with pnpm; `pnpm-lock.yaml` is the only lockfile |
 | eas-cli | ≥ 16 (`eas.json`), logged in with `eas login` |
 | JDK | 17 (`JAVA_HOME` pointing at it) |
 | Android SDK | `ANDROID_HOME` set; platform `android-36`, build-tools 36 |
