@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
 import { disabledOpacity, fontFamilies, radius, spacing, useTheme } from '@/theme';
-import { formatDate, formatDateTime } from '@/lib/format/date';
+import { formatDate, formatDateTime, toDateOnly } from '@/lib/format/date';
 import {
   DATE_BOX_GAP,
   DATE_BOX_HEIGHT,
@@ -12,11 +12,17 @@ import {
 } from './dateBox';
 import type { DateTimeFieldProps } from './DateTimeField';
 
-function toLocalInputValue(iso: string | null): string {
+function toLocalInputValue(iso: string | Date | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** The input's min/max attribute for a bound: a local date, or date and time. */
+function inputBound(bound: Date | undefined, isDateOnly: boolean): string | undefined {
+  if (!bound) return undefined;
+  return isDateOnly ? toDateOnly(bound) : toLocalInputValue(bound);
 }
 
 /** The browser's locale format hidden in favour of the design's day-first text. */
@@ -39,6 +45,8 @@ export function DateTimeField({
   placeholder = 'Add',
   size = 'lg',
   disabled = false,
+  minimumDate,
+  maximumDate,
 }: DateTimeFieldProps) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -53,6 +61,8 @@ export function DateTimeField({
           aria-label={label}
           disabled={disabled}
           type={isDateOnly ? 'date' : 'datetime-local'}
+          min={inputBound(minimumDate, isDateOnly)}
+          max={inputBound(maximumDate, isDateOnly)}
           value={isDateOnly ? (value ?? '') : toLocalInputValue(value)}
           onChange={(event) => {
             const raw = event.target.value;

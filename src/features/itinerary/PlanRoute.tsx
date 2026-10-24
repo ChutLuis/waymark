@@ -22,7 +22,7 @@ import {
 } from '@/components/motion/keyframes';
 import { StopStamp, STOP_STAMP_HEIGHT, STOP_STAMP_WIDTH } from '@/features/trips/StopStamp';
 import { countdownLabel, freeTimeLabel, type CountryKey } from '@/features/trips/destinations';
-import { formatTimePadded } from '@/lib/format/date';
+import { formatDate, formatTimePadded } from '@/lib/format/date';
 import { hitTargetMin, motion, radius, shadows, typeScale, useTheme } from '@/theme';
 import type { ItineraryItem } from '@/lib/types';
 import { minutesUntil, statusLabel, type DayRow } from './group';
@@ -94,6 +94,8 @@ interface PlanRouteProps {
   /** Advance a stop's status; `onFail` runs if the change doesn't stick. */
   onAdvance: (item: ItineraryItem, onFail: () => void) => void;
   onEdit: (item: ItineraryItem) => void;
+  /** Stops listed off their day (under the trailing stamp): their sub-line starts with the date. */
+  datedIds?: ReadonlySet<string>;
 }
 
 function rowTime(item: ItineraryItem): string {
@@ -146,6 +148,7 @@ function RouteStop({
   onEdit,
   onMeasure,
   reflow,
+  dated,
 }: {
   item: ItineraryItem;
   kind: RowKind;
@@ -161,6 +164,8 @@ function RouteStop({
   onMeasure: (id: string, height: number) => void;
   /** Positions animate to their new values (see useReflow). */
   reflow: boolean;
+  /** Listed off its day: say which day it's on. */
+  dated: boolean;
 }) {
   const { colors } = useTheme();
   // The status the stamp's contact delivered: only that tag stamps in.
@@ -232,7 +237,8 @@ function RouteStop({
   const stampLabel = nextStatus
     ? `Mark ${item.title} ${statusLabel(nextStatus).toLowerCase()}`
     : `Edit ${item.title}`;
-  const sub = item.location ?? item.description;
+  const place = item.location ?? item.description;
+  const sub = dated && item.startAt ? [formatDate(item.startAt), place].filter(Boolean).join(' · ') : place;
 
   const measure = (height: number) => {
     const offset = kind === 'compact' ? GEO.compactTextTop : 0;
@@ -413,7 +419,18 @@ function MarchingDashes({ top, height, reflow }: { top: number; height: number; 
  * tag pops as it arrives. After that the plane is placed each minute without
  * animation.
  */
-export function PlanRoute({ rows, country, nextId, now, day, base, entering, onAdvance, onEdit }: PlanRouteProps) {
+export function PlanRoute({
+  rows,
+  country,
+  nextId,
+  now,
+  day,
+  base,
+  entering,
+  onAdvance,
+  onEdit,
+  datedIds,
+}: PlanRouteProps) {
   const { colors } = useTheme();
   const { reduced, ms } = useMotion();
   const [heights, setHeights] = useState<Record<string, number>>({});
@@ -594,6 +611,7 @@ export function PlanRoute({ rows, country, nextId, now, day, base, entering, onA
           onEdit={onEdit}
           onMeasure={onMeasure}
           reflow={reflow}
+          dated={datedIds?.has(s.item.id) ?? false}
         />
       ))}
 

@@ -145,6 +145,15 @@ export function dayKey(iso: string): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
+/**
+ * Whether a timestamp's local calendar day falls within a trip's dates
+ * (inclusive, local "YYYY-MM-DD" strings, as trips store them).
+ */
+export function isDayWithin(iso: string, startDate: string, endDate: string): boolean {
+  const key = dayKey(iso);
+  return key >= startDate && key <= endDate;
+}
+
 /** "Mia Junot" -> "M"; the design avatars show a single initial. */
 export function firstInitial(name: string): string {
   const trimmed = name.trim();

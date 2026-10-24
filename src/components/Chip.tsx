@@ -33,7 +33,9 @@ export function Chip({ label, selected, onPress, leading, disabled = false }: Ch
       ]}
     >
       {leading}
-      <AppText role="link" style={{ color: selected ? colors.paper : colors.ink }}>
+      {/* One line: Android can measure the label a hair narrower than it draws
+          and wrap its last word out of the pill ("At start" → "At"). */}
+      <AppText role="link" numberOfLines={1} style={{ color: selected ? colors.paper : colors.ink }}>
         {label}
       </AppText>
     </Pressable>

@@ -3,6 +3,8 @@
  * from these into the editors via react-hook-form's zodResolver.
  */
 import { z } from 'zod';
+import { addDays } from '@/components/dateRange';
+import { formatDateRange, isDayWithin } from '@/lib/format/date';
 
 /**
  * Text limits the database checks enforce too
@@ -40,6 +42,33 @@ export const itineraryItemSchema = z
   );
 
 export type ItineraryItemForm = z.infer<typeof itineraryItemSchema>;
+
+/** A trip's dates as local "YYYY-MM-DD" days. */
+export interface TripDayRange {
+  startDate: string;
+  endDate: string;
+}
+
+/**
+ * The stop schema for a trip with dates: a stop must start on one of the
+ * trip's days, or it would never appear under a day in Plan, and may end on
+ * them or the day after, so a last evening can run past midnight. Trips
+ * without dates take any date.
+ */
+export function itineraryItemSchemaFor(range: TripDayRange | null) {
+  if (!range) return itineraryItemSchema;
+  const lastEndDate = addDays(range.endDate, 1);
+  const startMessage = `Pick a day within the trip (${formatDateRange(range.startDate, range.endDate)})`;
+  const endMessage = `End within the trip or the day after (${formatDateRange(range.startDate, lastEndDate)})`;
+  return itineraryItemSchema.superRefine((value, ctx) => {
+    if (value.startAt && !isDayWithin(value.startAt, range.startDate, range.endDate)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: startMessage, path: ['startAt'] });
+    }
+    if (value.endAt && !isDayWithin(value.endAt, range.startDate, lastEndDate)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: endMessage, path: ['endAt'] });
+    }
+  });
+}
 
 export const packingItemSchema = z.object({
   label: z.string().trim().min(1, 'Name the item').max(LIMITS.packingLabel, `At most ${LIMITS.packingLabel} characters`),

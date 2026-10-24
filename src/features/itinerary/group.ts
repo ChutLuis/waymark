@@ -3,7 +3,7 @@
  * calendar day, days sorted ascending, untimed items collected in an
  * "Unscheduled" section that always sorts last.
  */
-import { dayKey, formatDayHeader } from '@/lib/format/date';
+import { dayKey, formatDayHeader, isDayWithin } from '@/lib/format/date';
 import type { ItineraryItem } from '@/lib/types';
 
 export const UNSCHEDULED_KEY = 'unscheduled';
@@ -116,6 +116,103 @@ export function newItemStartAt(selectedDay: string | null): string | null {
   if (dateOnlyKey(date) !== selectedDay) return null;
   date.setHours(10, 0, 0, 0);
   return date.toISOString();
+}
+
+/**
+ * The first and last moment a stop may be dated in a trip, for the date
+ * pickers: local midnight on the first day to the last millisecond of the
+ * last, and for an end the last millisecond of the day after, so a last
+ * evening can run past midnight. Null for a trip without (valid) dates,
+ * which takes any date.
+ */
+export function tripDayBounds(
+  startDate: string | null,
+  endDate: string | null,
+): { minimumDate: Date; maximumDate: Date; latestEnd: Date } | null {
+  if (!startDate || !endDate || endDate < startDate) return null;
+  const minimumDate = parseDateOnly(startDate);
+  const maximumDate = parseDateOnly(endDate);
+  if (Number.isNaN(minimumDate.getTime()) || Number.isNaN(maximumDate.getTime())) return null;
+  maximumDate.setHours(23, 59, 59, 999);
+  const latestEnd = new Date(maximumDate);
+  latestEnd.setDate(latestEnd.getDate() + 1);
+  return { minimumDate, maximumDate, latestEnd };
+}
+
+/** What the trailing stamp holds: stops without a time, stops dated off the trip, or both. */
+export type UnscheduledKind = 'untimed' | 'outside' | 'mixed';
+
+export interface UnscheduledStops {
+  /** Stops dated outside the trip first (by date), then untimed ones (by order). */
+  items: ItineraryItem[];
+  /** The dated ones, so their rows can say which day they're on. */
+  outsideIds: ReadonlySet<string>;
+  kind: UnscheduledKind | null;
+}
+
+/**
+ * Stops no day stamp shows, collected under the trailing stamp so nothing is
+ * ever invisible: untimed stops, and stops whose local day falls outside the
+ * trip (dated before the editor kept stops in range, or left behind when the
+ * trip's dates changed). A trip without dates lists every stop in one list,
+ * so only its untimed ones count here.
+ */
+export function unscheduledStops(
+  items: readonly ItineraryItem[],
+  startDate: string | null,
+  endDate: string | null,
+): UnscheduledStops {
+  const dated = tripDayBounds(startDate, endDate) !== null;
+  const untimed = items.filter((item) => !item.startAt).sort((a, b) => a.sortOrder - b.sortOrder);
+  const outside = dated
+    ? items
+        .filter((item) => item.startAt && !isDayWithin(item.startAt, startDate as string, endDate as string))
+        .sort((a, b) => {
+          const timeDiff = new Date(a.startAt as string).getTime() - new Date(b.startAt as string).getTime();
+          return timeDiff !== 0 ? timeDiff : a.sortOrder - b.sortOrder;
+        })
+    : [];
+  const kind: UnscheduledKind | null =
+    outside.length > 0 && untimed.length > 0
+      ? 'mixed'
+      : outside.length > 0
+        ? 'outside'
+        : untimed.length > 0
+          ? 'untimed'
+          : null;
+  return { items: [...outside, ...untimed], outsideIds: new Set(outside.map((item) => item.id)), kind };
+}
+
+const UNSCHEDULED_KICKERS: Record<UnscheduledKind, string> = {
+  untimed: 'ANYTIME',
+  outside: 'OUTSIDE TRIP DATES',
+  mixed: 'ANYTIME · OTHER DAYS',
+};
+
+/** The trailing stamp's kicker for what it holds. */
+export function unscheduledKicker(kind: UnscheduledKind | null): string {
+  return UNSCHEDULED_KICKERS[kind ?? 'untimed'];
+}
+
+/**
+ * How many stops a change of trip dates moves under the trailing stamp: dated
+ * stops a day stamp (or an undated trip's list) shows now, whose day the new
+ * dates leave out. Removing the dates moves nothing: an undated trip lists
+ * every stop.
+ */
+export function stopsLeavingDates(
+  items: readonly ItineraryItem[],
+  before: { startDate: string | null; endDate: string | null },
+  after: { startDate: string | null; endDate: string | null },
+): number {
+  const was = tripDayBounds(before.startDate, before.endDate) ? before : null;
+  const next = tripDayBounds(after.startDate, after.endDate) ? after : null;
+  if (!next) return 0;
+  return items.filter((item) => {
+    if (!item.startAt) return false;
+    const shownBefore = !was || isDayWithin(item.startAt, was.startDate as string, was.endDate as string);
+    return shownBefore && !isDayWithin(item.startAt, next.startDate as string, next.endDate as string);
+  }).length;
 }
 
 export type DayRow =

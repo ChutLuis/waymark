@@ -32,6 +32,23 @@ export interface DateTimeFieldProps {
   size?: 'lg' | 'md';
   /** While a save is on its way: the box can't be opened. */
   disabled?: boolean;
+  /** The earliest pickable moment (a stop's trip start); days before it can't be chosen. */
+  minimumDate?: Date;
+  /** The latest pickable moment (the end of a stop's trip). */
+  maximumDate?: Date;
+}
+
+/**
+ * The picker opens on a day it can show: `date` moved to the nearest allowed
+ * day, keeping its time of day (the bounds are whole days), so the time step
+ * still starts from the stop's own time.
+ */
+function clampDate(date: Date, minimumDate?: Date, maximumDate?: Date): Date {
+  const edge = minimumDate && date < minimumDate ? minimumDate : maximumDate && date > maximumDate ? maximumDate : null;
+  if (!edge) return date;
+  const moved = new Date(edge);
+  moved.setHours(date.getHours(), date.getMinutes(), 0, 0);
+  return moved;
 }
 
 /**
@@ -50,14 +67,18 @@ export function DateTimeField({
   initialDate,
   size = 'lg',
   disabled = false,
+  minimumDate,
+  maximumDate,
 }: DateTimeFieldProps) {
   const { colors, scheme } = useTheme();
   const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
 
-  const current = value
-    ? new Date(mode === 'date' ? `${value}T00:00:00` : value)
-    : (initialDate ?? new Date());
+  const current = clampDate(
+    value ? new Date(mode === 'date' ? `${value}T00:00:00` : value) : (initialDate ?? new Date()),
+    minimumDate,
+    maximumDate,
+  );
 
   const [iosPickerVisible, setIosPickerVisible] = useState(false);
   const [iosPending, setIosPending] = useState<Date>(current);
@@ -204,6 +225,8 @@ export function DateTimeField({
                 onChange={(_event, date) => {
                   if (date) setIosPending(date);
                 }}
+                minimumDate={minimumDate}
+                maximumDate={maximumDate}
                 accentColor={colors.ink}
                 textColor={colors.ink}
                 themeVariant={scheme}
@@ -220,6 +243,9 @@ export function DateTimeField({
           // 0-based from Sunday (Monday = 1): the module adds 1 to reach
           // java.util.Calendar's MONDAY (2). Passing 2 started weeks on Tuesday.
           firstDayOfWeek={1}
+          // Days only: the time step can't move a picked day out of range.
+          minimumDate={androidStep === 'date' ? minimumDate : undefined}
+          maximumDate={androidStep === 'date' ? maximumDate : undefined}
           onChange={onAndroidChange}
         />
       ) : null}

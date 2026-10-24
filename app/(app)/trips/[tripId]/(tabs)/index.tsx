@@ -16,6 +16,8 @@ import {
   nextStop as findNextStop,
   stopsToGo,
   tripDaysList,
+  unscheduledKicker,
+  unscheduledStops,
   type DayRow,
 } from '@/features/itinerary/group';
 import { stopsSummary } from '@/features/itinerary/route';
@@ -142,8 +144,12 @@ export default function PlanScreen() {
   const items = useMemo(() => itinerary.data ?? [], [itinerary.data]);
   // Undated trips have no day strip: show every item in one list.
   const hasDates = days.length > 0;
-  // Untimed items get a trailing "ANY" stamp (README: Not designed fallback).
-  const untimed = useMemo(() => items.filter((item) => !item.startAt), [items]);
+  // Untimed stops, and stops dated outside the trip, get a trailing "ANY"
+  // stamp (README: Not designed fallback), so no stop is ever unreachable.
+  const unscheduled = useMemo(
+    () => unscheduledStops(items, trip.data?.startDate ?? null, trip.data?.endDate ?? null),
+    [items, trip.data?.startDate, trip.data?.endDate],
+  );
   const scheduledDayKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const item of items) {
@@ -153,14 +159,16 @@ export default function PlanScreen() {
   }, [items]);
   const strip = useMemo(() => {
     const dayStamps = days.map((d) => ({ ...d, hasStops: scheduledDayKeys.has(d.key) }));
-    return untimed.length > 0
+    return unscheduled.items.length > 0
       ? [...dayStamps, { key: 'ANY', weekday: 'ANY', day: '—', label: 'Anytime', hasStops: true }]
       : dayStamps;
-  }, [days, scheduledDayKeys, untimed.length]);
+  }, [days, scheduledDayKeys, unscheduled.items.length]);
 
   // Default the selected day (today if within the trip, else the first day)
-  // without an effect; an explicit tap overrides it.
-  const selectedDay = selectedDayChoice ?? defaultSelectedDay(days, todayKey);
+  // without an effect; an explicit tap overrides it while its stamp exists (a
+  // date change or the last unscheduled stop fixed can take it away).
+  const choice = selectedDayChoice !== null && strip.some((d) => d.key === selectedDayChoice) ? selectedDayChoice : null;
+  const selectedDay = choice ?? defaultSelectedDay(days, todayKey);
 
   const rows = useMemo<DayRow[]>(() => {
     if (!hasDates) {
@@ -170,10 +178,10 @@ export default function PlanScreen() {
         .map((item): DayRow => ({ type: 'item', key: item.id, item }));
     }
     if (selectedDay === 'ANY') {
-      return untimed.map((item): DayRow => ({ type: 'item', key: item.id, item }));
+      return unscheduled.items.map((item): DayRow => ({ type: 'item', key: item.id, item }));
     }
     return selectedDay ? buildDayRows(items, selectedDay) : [];
-  }, [hasDates, items, selectedDay, untimed]);
+  }, [hasDates, items, selectedDay, unscheduled.items]);
   const next = useMemo(() => findNextStop(items, now), [items, now]);
 
   const openEditor = (item: ItineraryItem | null) => {
@@ -201,7 +209,7 @@ export default function PlanScreen() {
   const kicker = !hasDates
     ? 'NO DATES YET'
     : selectedDay === 'ANY'
-      ? 'ANYTIME'
+      ? unscheduledKicker(unscheduled.kind)
       : dayIndex >= 0
         ? `DAY ${dayIndex + 1} OF ${days.length}`
         : '';
@@ -268,11 +276,14 @@ export default function PlanScreen() {
               nextId={next?.id ?? null}
               now={now}
               day={routeDay}
+              datedIds={selectedDay === 'ANY' ? unscheduled.outsideIds : undefined}
               base={base}
               entering={entering}
               onAdvance={(item, onFail) => {
                 const target = NEXT_STATUS[item.status];
-                if (target) setStatus.mutate({ itemId: item.id, status: target }, { onError: onFail });
+                // The promise settles for every press; per-call callbacks only run for
+                // the latest one, and queued presses can overlap.
+                if (target) setStatus.mutateAsync({ itemId: item.id, status: target }).catch(onFail);
               }}
               onEdit={openEditor}
             />
@@ -286,6 +297,7 @@ export default function PlanScreen() {
         tripId={tripId}
         item={editingItem}
         tripStartDate={trip.data?.startDate ?? null}
+        tripEndDate={trip.data?.endDate ?? null}
         selectedDay={hasDates ? selectedDay : null}
       />
     </View>
