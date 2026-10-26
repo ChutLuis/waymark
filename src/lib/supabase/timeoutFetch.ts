@@ -9,8 +9,11 @@
  * Native imports, so Vitest covers it directly.
  */
 
-type Fetch = typeof fetch;
-type FetchInput = Parameters<Fetch>[0];
+// Spelled out rather than `typeof fetch`: which global fetch type wins (DOM,
+// Node or React Native, whose input has no URL) depends on how node_modules
+// is laid out, and CI's differs from a local install.
+type FetchInput = RequestInfo | URL;
+export type Fetch = (input: FetchInput, init?: RequestInit) => Promise<Response>;
 
 export const REQUEST_TIMEOUT_MS = 20_000;
 

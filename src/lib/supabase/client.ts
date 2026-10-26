@@ -100,5 +100,5 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
   // Database and auth requests give up after 20 s with no response, so one
   // stalled request can't hold back a trip's queued changes (timeoutFetch.ts).
-  global: { fetch: withRequestTimeout((input, init) => fetch(input, init)) },
+  global: { fetch: withRequestTimeout((input, init) => fetch(input instanceof URL ? input.href : input, init)) },
 });
