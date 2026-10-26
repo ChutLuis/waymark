@@ -39,6 +39,12 @@ no code change:
 - Redirect URLs are registered on the hosted project:
   `waymark-dev://**`, `waymark-test://**`, `waymark://**`.
 
+Supabase's built-in email sender only delivers to addresses in the project's
+own organisation, with a low hourly limit, so confirmation and password-reset
+emails reach real users only through a custom SMTP sender (Dashboard →
+Authentication → Emails → SMTP Settings). Set it up before turning
+confirmation on.
+
 To re-enable: Dashboard → Authentication → Sign In / Providers → Email →
 "Confirm email" ON. The API field is `mailer_autoconfirm`, which is **inverted**
 (auto-confirm ON means confirmation OFF).

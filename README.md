@@ -98,10 +98,12 @@ Android release builds run locally with `eas build --local`
 v1 is feature-complete against a live Supabase backend: email auth and
 onboarding, trips, itinerary, packing, shared and private notes, invite
 codes, local reminders, offline handling, covers and avatars, password reset
-and in-app account deletion. Before a store release the remaining steps are
-operational: final app name and id, hosted backend migrations and auth
-settings, publishing the privacy pages, the Play Console listing, and an iOS
-build (which needs macOS).
+and in-app account deletion. The hosted project runs every migration and the
+current account-deletion function. Before a store release the remaining steps
+are operational: the hosted auth settings (password length, a custom SMTP
+sender, then email confirmation), a support address, publishing the privacy
+pages, the Play Console listing and its closed test, and an iOS build (which
+needs macOS).
 
 ## Documentation
 
