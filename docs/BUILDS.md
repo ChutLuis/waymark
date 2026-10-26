@@ -308,7 +308,7 @@ for a in $(find /tmp/w-splits -name '*.apk'); do $BT/zipalign -c -P 16 4 "$a" ||
 ELF alignment: every 64-bit `.so` under `base/lib/arm64-v8a` and
 `base/lib/x86_64` needs `PT_LOAD` alignment of 16384 or more.
 
-**Last checked 24 October 2026** (`build/waymark.aab` and
+**Last checked 25 October 2026** (`build/waymark.aab` and
 `build/waymark.apk`, version 0.1.0, versionCode 10000, built with
 `eas build --local`; `expo doctor` 21/21 in both builds): package
 `app.waymark`; target and compile SDK 36, min 24; no `debuggable`;
