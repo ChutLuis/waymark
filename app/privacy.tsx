@@ -52,7 +52,7 @@ const SECTIONS: Section[] = [
         ],
       },
       {
-        text: 'Kept only on your device and never sent to us: your trip reminders (their times and the on/off setting) and your appearance setting.',
+        text: 'Kept only on your device and never sent to us: your trip reminders (their times and the on/off setting) and your appearance setting. So Waymark works offline, it also keeps a copy of your trips (never the text of private notes) and any changes not yet sent on the device; signing out deletes them.',
       },
     ],
   },
@@ -101,7 +101,7 @@ const SECTIONS: Section[] = [
           'A trip you own that has other members passes to the member who joined it first, with everything in it.',
           'A trip only you are on is deleted, with everything in it.',
           'Itinerary stops and packing items you added to shared trips stay there for the others, but no longer show who added them.',
-          'Your reminders and your sign-in are removed from the device you deleted from.',
+          'Your reminders, your sign-in and the offline copy of your trips are removed from the device you deleted from.',
         ],
       },
       {

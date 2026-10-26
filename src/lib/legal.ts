@@ -8,12 +8,11 @@
 // publishing. Google Play requires the privacy policy to name the developer.
 export const OPERATOR_NAME = 'the Waymark developer';
 
-// Placeholder: the owner must replace this with an inbox they control and
-// check, since the privacy policy and deletion page promise replies from it.
-export const SUPPORT_EMAIL = 'support@waymark.app';
+// The owner's inbox: the privacy policy and deletion page promise replies from it.
+export const SUPPORT_EMAIL = 'me@lfortiz.com';
 
 export const PRIVACY_POLICY_URL = 'https://chutluis.github.io/waymark/privacy.html';
 
 export const ACCOUNT_DELETION_URL = 'https://chutluis.github.io/waymark/delete-account.html';
 
-export const PRIVACY_POLICY_EFFECTIVE_DATE = '19 October 2026';
+export const PRIVACY_POLICY_EFFECTIVE_DATE = '25 October 2026';
