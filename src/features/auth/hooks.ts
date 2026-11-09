@@ -1,14 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FunctionsHttpError, isAuthApiError, isAuthRetryableFetchError } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
+import { sessionGate, supabase } from '@/lib/supabase/client';
+import { isSessionGateError, sessionIdentityFromSession, type SessionIdentity } from '@/lib/supabase/sessionGate';
+import { removePersistedQueries } from '@/lib/query/persistence';
 import { PROFILE_SELECT } from '@/lib/supabase/selects';
 import { uploadImage } from '@/lib/supabase/storage';
 import type { PickedImage } from '@/lib/images';
 import type { Profile } from '@/lib/types';
 import { clearPendingInviteCode } from '@/features/invites/pendingInvite';
 import { purgeUserReminders } from '@/features/reminders/store';
-import { useAuth } from './AuthContext';
+import { isCurrentOwner } from '@/lib/query/owner';
+import { useAuth, reconcileAuthSession } from './AuthContext';
 import { authRedirectUrl, passwordResetRedirectUrl } from './authDeepLink';
+import { classifyAccountDeletion, finishAccountDeletion } from './deleteAccount';
+import { getNoticeGeneration, isNoticeGenerationCurrent, recordNoticeSession, startDeletionNotice, updateDeletionNotice } from './deletionNotice';
+import { runForAccount } from './sessionTransitions';
+import { signOutAccount } from './signOut';
+import { recoveryAuthorized, sameIdentity, syncRecoveryIdentity } from './recovery';
 import {
   OFFLINE_MESSAGE,
   normalizeEmail,
@@ -23,9 +31,10 @@ export interface Credentials {
 }
 
 /**
- * Auth actions run (or fail) at once, even offline: by default TanStack would
- * hold them until the connection returns, leaving the button spinning with no
- * word of why. Signing out then still ends the session on this device.
+ * Auth actions run at once, even offline: by default TanStack would hold them
+ * until the connection returns, leaving the button spinning with no word of
+ * why. Failing fast is what lets sign-out end the session on this device even
+ * when the server can't be reached.
  */
 const AUTH_NETWORK_MODE = 'always';
 
@@ -33,7 +42,14 @@ export function useSignIn() {
   return useMutation({
     networkMode: AUTH_NETWORK_MODE,
     mutationFn: async ({ email, password }: Credentials) => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await sessionGate.runExclusive('establish', async () => {
+        const result = await supabase.auth.signInWithPassword({ email, password });
+        if (!result.error && result.data.session) {
+          syncRecoveryIdentity(sessionIdentityFromSession(result.data.session));
+          recordNoticeSession();
+        }
+        return result;
+      });
       if (error) throw error;
     },
   });
@@ -48,13 +64,18 @@ export function useSignUp() {
   return useMutation({
     networkMode: AUTH_NETWORK_MODE,
     mutationFn: async ({ email, password }: Credentials): Promise<SignUpResult> => {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        // When the project requires email confirmation, the link must come back
-        // into this app rather than the Supabase site URL; the callback route
-        // exchanges the code it carries for a session (authDeepLink.ts).
-        options: { emailRedirectTo: authRedirectUrl() },
+      const { data, error } = await sessionGate.runExclusive('establish', async () => {
+        const result = await supabase.auth.signUp({
+          email,
+          password,
+          // Return confirmation links to this build's callback route.
+          options: { emailRedirectTo: authRedirectUrl() },
+        });
+        if (!result.error && result.data.session) {
+          syncRecoveryIdentity(sessionIdentityFromSession(result.data.session));
+          recordNoticeSession();
+        }
+        return result;
       });
       if (error) throw error;
       return { hasSession: data.session !== null };
@@ -74,79 +95,94 @@ async function clearDeviceTraces(userId: string | null): Promise<void> {
 }
 
 export function useSignOut() {
-  const queryClient = useQueryClient();
-  const { userId } = useAuth();
-  return useMutation({
+  const { session } = useAuth();
+  const actor = sessionIdentityFromSession(session);
+  const mutation = useMutation({
     networkMode: AUTH_NETWORK_MODE,
-    mutationFn: async () => {
-      await clearDeviceTraces(userId);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    },
-    // No authenticated data may remain readable after sign-out (AUTH-2).
-    onSettled: () => queryClient.clear(),
+    // Ending the session on this device must not depend on the server: the
+    // SDK's sign-out keeps an expired session when it can't refresh, so
+    // signOutAccount removes it directly. The cache is AuthContext's job —
+    // it clears on SIGNED_OUT and on the reconcile this requests.
+    mutationFn: async (captured: SessionIdentity | null) =>
+      signOutAccount(captured, {
+        gate: sessionGate,
+        isOnline: () => onlineManager.isOnline(),
+        clearDeviceTraces,
+        signOut: (options) => supabase.auth.signOut(options),
+        reconcile: reconcileAuthSession,
+      }),
   });
+  return {
+    ...mutation,
+    mutate: (_variables?: void, options?: Parameters<typeof mutation.mutate>[1]) => mutation.mutate(actor, options),
+    mutateAsync: (_variables?: void, options?: Parameters<typeof mutation.mutateAsync>[1]) => mutation.mutateAsync(actor, options),
+  };
 }
 
 export const DELETE_ACCOUNT_FAILED_MESSAGE =
-  'We couldn’t delete your account. Nothing changed — try again in a moment.';
+  'We couldn’t confirm whether your account was deleted. Your trips may have changed. Check your connection and try again.';
 
 /** The handover had already run: trips are handed over or deleted, the account isn't gone yet. */
 export const DELETE_ACCOUNT_UNFINISHED_MESSAGE =
   'Your account is partly deleted: your trips have been handed over or removed. Tap Delete account again to finish.';
 
-/** Whether the function failed after its handover committed (it says so in `stage`). */
-async function failedAfterHandover(error: unknown): Promise<boolean> {
-  if (!(error instanceof FunctionsHttpError)) return false;
-  try {
-    const body = (await (error.context as Response).clone().json()) as { stage?: unknown };
-    return body.stage === 'after_prepare';
-  } catch {
-    return false;
-  }
-}
-
-/**
- * A retry after the success response was lost: the function can't verify a
- * user who no longer exists and answers 401. Asking the auth server tells that
- * apart from a real failure.
- */
-async function deletionAlreadyFinished(error: unknown): Promise<boolean> {
-  if (!(error instanceof FunctionsHttpError) || error.context?.status !== 401) return false;
-  const { error: userError } = await supabase.auth.getUser();
-  return isAuthApiError(userError) && userError.code === 'user_not_found';
-}
-
 /**
  * Deletes the account through the delete-account Edge Function (the auth user
  * can only be deleted with the service role). The function is resumable: on
- * any failure it answers with a generic error and the person can simply retry,
- * so a failure leaves the session alone and throws a message the Profile sheet
- * shows as is — saying so when the trips were already handed over. Only after
- * success is the device cleared.
+ * uncertain outcomes keep a retry message on the Profile sheet, including a
+ * distinct message when the trips were already handed over. Device cleanup
+ * is attempted only once the account is confirmed deleted or absent.
  */
 export function useDeleteAccount() {
   const queryClient = useQueryClient();
-  const { userId } = useAuth();
+  const { userId, session } = useAuth();
   return useMutation({
     networkMode: AUTH_NETWORK_MODE,
     mutationFn: async (): Promise<void> => {
-      const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
-      if (error && !(await deletionAlreadyFinished(error).catch(() => false))) {
-        if (await failedAfterHandover(error)) {
-          // The trips list on screen is stale: refetch it before the person retries.
-          void queryClient.invalidateQueries({ queryKey: ['trips'] });
-          throw new Error(DELETE_ACCOUNT_UNFINISHED_MESSAGE);
+      const ownerId = userId;
+      const actor = sessionIdentityFromSession(session);
+      if (!ownerId || !actor || actor.userId !== ownerId || !session?.access_token) {
+        throw new Error('Please sign in again before trying to delete your account.');
+      }
+      const noticeGeneration = getNoticeGeneration();
+      const outcome = await classifyAccountDeletion(ownerId, session.access_token, {
+        isCurrent: () => isCurrentOwner(ownerId),
+        invoke: (accessToken) => supabase.functions.invoke('delete-account', {
+          method: 'POST', headers: { Authorization: `Bearer ${accessToken}` },
+        }),
+        httpStatus: (error) => error instanceof FunctionsHttpError ? error.context.status : null,
+        errorBody: async (error) => error instanceof FunctionsHttpError ? error.context.clone().json() : null,
+        getUser: async () => runForAccount(sessionGate, actor, async () => {
+          const { data, error } = await supabase.auth.getUser(session.access_token);
+          return { userId: data.user?.id ?? null, userNotFound: isAuthApiError(error) && error.code === 'user_not_found' };
+        }),
+      });
+      if (outcome !== 'confirmed' && outcome !== 'absent') {
+        if (isCurrentOwner(ownerId)) {
+          const current = await sessionGate.storedSessionIdentity().catch(() => null);
+          if (current?.kind === 'present' && sameIdentity(current.identity, actor) && isCurrentOwner(ownerId)) {
+            void queryClient.invalidateQueries({ predicate: (query) =>
+              ['trips', 'trip', 'itinerary', 'notes', 'packing'].includes(String(query.queryKey[0])) });
+          }
         }
+        if (outcome === 'partial') throw new Error(DELETE_ACCOUNT_UNFINISHED_MESSAGE);
+        if (outcome === 'unauthorized') throw new Error('Couldn’t authorize deletion. Sign in again and check your account before retrying.');
         throw new Error(DELETE_ACCOUNT_FAILED_MESSAGE);
       }
-      // The account is gone on the server; nothing of it may stay here.
-      await clearDeviceTraces(userId);
-      // Local scope: there is no server session left to revoke. supabase-js
-      // removes the stored session even when the request itself fails.
-      await supabase.auth.signOut({ scope: 'local' });
+      await finishAccountDeletion(ownerId, outcome, {
+        wasActive: (id) => isCurrentOwner(id) && isNoticeGenerationCurrent(noticeGeneration),
+        retire: sessionGate.retire,
+        runExclusive: (fn) => sessionGate.runExclusive('maintain', fn),
+        readIdentity: sessionGate.storedSessionIdentity,
+        signOut: () => supabase.auth.signOut({ scope: 'local' }),
+        removeSessionIf: (id) => sessionGate.removeSessionIf({ userId: id }),
+        purgeReminders: purgeUserReminders,
+        removePersisted: removePersistedQueries,
+        isBusy: (error) => isSessionGateError(error) && error.reason === 'busy',
+        startNotice: startDeletionNotice,
+        updateNotice: updateDeletionNotice,
+      });
     },
-    onSuccess: () => queryClient.clear(),
   });
 }
 
@@ -166,9 +202,10 @@ export function useRequestPasswordReset() {
     mutationFn: async ({ email }: { email: string }): Promise<void> => {
       const key = normalizeEmail(email);
       if (!shouldSendReset(resetRequestedAt.get(key), Date.now())) return;
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      const { error } = await sessionGate.runExclusive('maintain', () => supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: passwordResetRedirectUrl(),
-      });
+      }));
+      if (isSessionGateError(error)) throw error;
       if (error && isAuthRetryableFetchError(error)) throw new Error(OFFLINE_MESSAGE);
       resetRequestedAt.set(key, Date.now());
     },
@@ -188,15 +225,28 @@ export class PasswordUpdateError extends Error {
 
 /** Sets a new password for the signed-in (usually recovery) session. */
 export function useUpdatePassword() {
-  return useMutation({
+  const { session } = useAuth();
+  const actor = sessionIdentityFromSession(session);
+  const mutation = useMutation({
     networkMode: AUTH_NETWORK_MODE,
-    mutationFn: async ({ password }: { password: string }): Promise<void> => {
-      const { error } = await supabase.auth.updateUser({ password });
+    mutationFn: async ({ password, captured }: { password: string; captured: SessionIdentity | null }): Promise<void> => {
+      const { error } = await runForAccount(sessionGate, captured, () => {
+        if (!recoveryAuthorized(captured, sessionGate.isRetired)) throw new Error('Your reset link has expired. Request a new one.');
+        return supabase.auth.updateUser({ password });
+      });
       if (error) {
+        if (isSessionGateError(error)) throw new PasswordUpdateError({ message: error.message, expired: false });
         throw new PasswordUpdateError(updatePasswordFailure(error, isAuthRetryableFetchError(error)));
       }
     },
   });
+  return {
+    ...mutation,
+    mutate: (input: { password: string }, options?: Parameters<typeof mutation.mutate>[1]) =>
+      mutation.mutate({ ...input, captured: actor }, options),
+    mutateAsync: (input: { password: string }, options?: Parameters<typeof mutation.mutateAsync>[1]) =>
+      mutation.mutateAsync({ ...input, captured: actor }, options),
+  };
 }
 
 export const profileKeys = {

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/client';
+import { sessionGate, supabase } from '@/lib/supabase/client';
+import { sessionIdentityFromSession, type SessionIdentity } from '@/lib/supabase/sessionGate';
 import {
   PROFILE_SELECT,
   TRIP_MEMBER_REF_SELECT,
@@ -17,7 +18,10 @@ import {
   type QueuedVars,
 } from '@/lib/query/queued';
 import { useAuth } from '@/features/auth/AuthContext';
+import { runForAccount } from '@/features/auth/sessionTransitions';
+import { sameIdentity } from '@/features/auth/recovery';
 import { TripUnavailableError, isInvalidId, retryTripLoad } from './errors';
+import { deleteTripWithCovers, lockedOperations, type TripDeletionOperations } from './deleteTrip';
 import type { PickedImage } from '@/lib/images';
 import type { Profile, Trip, TripMember } from '@/lib/types';
 
@@ -235,25 +239,36 @@ export function useCreateTrip() {
 
 export function useDeleteTrip() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (tripId: string) => {
-      // Remove the cover folder first: the row delete cascades, but the stored
-      // objects live on. list() + remove() are RLS-limited to the owner's trips.
-      const { data: objects } = await supabase.storage.from('trip-covers').list(tripId);
-      if (objects && objects.length > 0) {
-        await supabase.storage.from('trip-covers').remove(objects.map((o) => `${tripId}/${o.name}`));
-      }
-      // RLS restricts the delete to the owner; cascades clean up the rest. A
-      // delete RLS filters out deletes nothing without an error, so check.
-      const { data, error } = await supabase.from('trips').delete().eq('id', tripId).select('id');
-      if (error) throw error;
-      if (data.length === 0) throw new Error("Only the trip's owner can delete it.");
+  const { session } = useAuth();
+  const actor = sessionIdentityFromSession(session);
+  const mutation = useMutation({
+    networkMode: 'always',
+    mutationFn: async ({ tripId, captured }: { tripId: string; captured: SessionIdentity | null }) => {
+      const ops: TripDeletionOperations = {
+        isCurrent: () => isCurrentOwner(captured?.userId),
+        owner: async () => supabase.from('trip_members').select('role')
+          .eq('trip_id', tripId).eq('user_id', captured?.userId ?? '').maybeSingle(),
+        list: async (limit, offset) => supabase.storage.from('trip-covers')
+          .list(tripId, { limit, offset, sortBy: { column: 'name', order: 'asc' } }),
+        remove: async (paths) => supabase.storage.from('trip-covers').remove(paths),
+        deleteRow: async () => supabase.from('trips').delete().eq('id', tripId).select('id'),
+      };
+      // One gate slot per step, not one for the whole run: a long deletion
+      // would otherwise block sign-out and sign-in for its full duration.
+      await deleteTripWithCovers(tripId, lockedOperations(ops, (fn) => runForAccount(sessionGate, captured, fn)));
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tripKeys.list() });
-      queryClient.invalidateQueries({ queryKey: ['trip'] });
+    onSettled: async (_data, _error, { captured }) => {
+      if (!captured || !isCurrentOwner(captured.userId)) return;
+      const current = await sessionGate.storedSessionIdentity().catch(() => null);
+      if (current?.kind !== 'present' || !sameIdentity(current.identity, captured) || !isCurrentOwner(captured.userId)) return;
+      void queryClient.invalidateQueries({ queryKey: tripKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: ['trip'] });
     },
   });
+  return {
+    ...mutation,
+    mutateAsync: (tripId: string) => mutation.mutateAsync({ tripId, captured: actor }),
+  };
 }
 
 /** Update trip details (name, destination, dates); RLS limits this to the owner. */

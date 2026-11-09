@@ -8,7 +8,8 @@ import { ErrorBanner } from '@/components/ErrorBanner';
 import { Sheet } from '@/components/Sheet';
 import { TextField } from '@/components/TextField';
 import type { Trip } from '@/lib/types';
-import { OFFLINE_MESSAGE, failureMessage } from './errors';
+import { OFFLINE_MESSAGE } from './errors';
+import { TripDeletionError, TRIP_DELETE_UNCERTAIN } from './deleteTrip';
 import { useDeleteTrip } from './hooks';
 
 interface DeleteTripSheetProps {
@@ -53,7 +54,7 @@ export function DeleteTripSheet({ visible, onClose, trip }: DeleteTripSheetProps
     try {
       await deleteTrip.mutateAsync(trip.id);
     } catch (cause) {
-      fail(failureMessage(cause, 'Couldn’t delete the trip. Try again.'));
+      fail(cause instanceof TripDeletionError ? cause.message : TRIP_DELETE_UNCERTAIN);
       return;
     }
     onClose();

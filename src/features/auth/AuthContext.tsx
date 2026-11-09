@@ -8,13 +8,17 @@ import {
   type ReactNode,
 } from 'react';
 import { AppState, Platform } from 'react-native';
-import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js';
+import { type Session } from '@supabase/supabase-js';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/client';
+import { sessionGate, supabase } from '@/lib/supabase/client';
+import { sessionIdentityFromSession } from '@/lib/supabase/sessionGate';
 import { endPersistedSession, purgePersistedQueries, removePersistedQueries } from '@/lib/query/persistence';
 import { setQueryOwner } from '@/lib/query/queued';
 import { clearPendingInviteCode } from '@/features/invites/pendingInvite';
 import { purgeAllReminders, purgeUserReminders, setReminderUser } from '@/features/reminders/store';
+import { clearDeletionNotice, getDeletionNotice, recordNoticeSession } from './deletionNotice';
+import { alignVerifiedOwner, createSessionReconciler, quiesceAuthRuntime } from './sessionTransitions';
+import { retireRecovery, syncRecoveryIdentity } from './recovery';
 
 interface AuthState {
   session: Session | null;
@@ -30,6 +34,17 @@ const AuthContext = createContext<AuthState>({
   isRestoring: true,
 });
 
+/**
+ * The mounted reconciler, so a sign-out that ends the session outside the SDK
+ * (expired token, offline) can still ask the provider to clear what the
+ * previous account left behind. No-op until the provider mounts.
+ */
+let mountedReconcile: (() => void) | null = null;
+
+export function reconcileAuthSession(): void {
+  mountedReconcile?.();
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isRestoring, setIsRestoring] = useState(true);
@@ -39,62 +54,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const cachedUserId = useRef<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    // An auth event carries a session at least as new as the restored one.
-    let eventSeen = false;
-    supabase.auth.getSession().then(
-      ({ data, error }) => {
-        if (!mounted) return;
-        if (!eventSeen) {
-          cachedUserId.current = data.session?.user.id ?? null;
-          setQueryOwner(cachedUserId.current);
-          setReminderUser(cachedUserId.current);
-          setSession(data.session);
+    // A provider remount can inherit module-scoped queued-write ownership.
+    // Quiesce memory immediately, but leave offline storage alone until a
+    // successful session read proves it safe to purge.
+    quiesceAuthRuntime({
+      endPersistence: endPersistedSession, setOwner: setQueryOwner,
+      setReminderOwner: setReminderUser, clearCache: () => queryClient.clear(),
+    });
+    let firstRestore = true;
+    const reconciler = createSessionReconciler<Session>({
+      readSession: async () => {
+        const { data, error } = await supabase.auth.getSession();
+        return { session: data.session, error };
+      },
+      readIdentity: sessionGate.storedSessionIdentity,
+      isRetired: sessionGate.isRetired,
+      currentUser: () => cachedUserId.current,
+      apply: (next) => {
+        const nextUserId = next?.user.id ?? null;
+        // A session ending or another user signing in must not leave the
+        // previous account's cache, queued writes or reminders readable.
+        if (nextUserId !== cachedUserId.current) {
+          const previousUserId = cachedUserId.current;
+          if (nextUserId) recordNoticeSession();
+          // Stop persistence before clearing and retire the old queued writes.
+          endPersistedSession();
+          setQueryOwner(nextUserId);
+          queryClient.clear();
+          cachedUserId.current = nextUserId;
+          setReminderUser(nextUserId);
+          if (previousUserId !== null) {
+            void removePersistedQueries(previousUserId);
+            void purgeUserReminders(previousUserId);
+            clearPendingInviteCode();
+          }
         }
-        // Nobody signed in, and not because the network is down: the last
-        // session was revoked or expired while the app was closed, so none of
-        // that person's reminders may fire for whoever uses the device now.
-        if (cachedUserId.current === null && !isAuthRetryableFetchError(error)) {
-          void purgeAllReminders();
-          void purgePersistedQueries(null);
+        alignVerifiedOwner(nextUserId, { setOwner: setQueryOwner, setReminderOwner: setReminderUser });
+        syncRecoveryIdentity(sessionIdentityFromSession(next));
+        if (nextUserId && getDeletionNotice()?.ownerId !== nextUserId) clearDeletionNotice();
+        setSession(next);
+      },
+      ready: (verifiedEmpty) => {
+        // A failed read is not proof of an empty session; retry this purge when
+        // a later successful read establishes who is signed in.
+        if (firstRestore && (verifiedEmpty || cachedUserId.current !== null)) {
+          firstRestore = false;
+          if (verifiedEmpty && cachedUserId.current === null) {
+            void purgeAllReminders();
+            void purgePersistedQueries(null);
+          }
         }
         setIsRestoring(false);
       },
-      () => {
-        // The stored session couldn't be read: continue signed out instead of
-        // waiting forever.
-        if (mounted) setIsRestoring(false);
-      },
-    );
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      eventSeen = true;
-      const nextUserId = next?.user.id ?? null;
-      // A session ending any way (sign-out, token-refresh failure, remote
-      // revocation, account deletion) or a different user signing in must not
-      // leave the previous user's cached trips/notes readable (in memory or
-      // stored), their queued writes waiting to be sent, their reminders
-      // scheduled, or their stashed invite waiting — clear before the new user
-      // reads.
-      if (nextUserId !== cachedUserId.current) {
-        const previousUserId = cachedUserId.current;
-        // Stop storing first, so the cleared cache isn't written back, and
-        // retire the previous account's queued writes: one still in flight or
-        // waiting to retry refuses to run, or to touch the cache, from now on.
-        endPersistedSession();
-        setQueryOwner(nextUserId);
-        queryClient.clear();
-        cachedUserId.current = nextUserId;
-        setReminderUser(nextUserId);
-        if (previousUserId !== null) {
-          void removePersistedQueries(previousUserId);
-          void purgeUserReminders(previousUserId);
-          clearPendingInviteCode();
-        }
-      }
-      setSession(next);
+      // An unusable stored value would otherwise mask the truth forever.
+      removeCorrupt: () => sessionGate.removeSessionIf({ corrupt: true }),
     });
+    const unsubscribeRetirement = sessionGate.onRetire((id) => { retireRecovery(id); reconciler.retire(id); });
+    mountedReconcile = reconciler.reconcile;
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      // SDK awaits subscribers: schedule the read, never await it here.
+      reconciler.reconcile();
+    });
+    reconciler.reconcile();
     return () => {
-      mounted = false;
+      if (mountedReconcile === reconciler.reconcile) mountedReconcile = null;
+      reconciler.dispose();
+      unsubscribeRetirement();
       sub.subscription.unsubscribe();
     };
   }, [queryClient]);
@@ -103,8 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const onChange = (state: string) => {
-      if (state === 'active') supabase.auth.startAutoRefresh();
-      else supabase.auth.stopAutoRefresh();
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+        // Coming back to the foreground is a free chance to catch up on a read
+        // that failed while the device was asleep or offline.
+        reconcileAuthSession();
+      } else {
+        supabase.auth.stopAutoRefresh();
+      }
     };
     onChange(AppState.currentState);
     const sub = AppState.addEventListener('change', onChange);

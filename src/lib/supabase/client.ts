@@ -5,11 +5,13 @@ import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { withRequestTimeout } from './timeoutFetch';
+import { createSessionGate, defaultAuthStorageKey } from './sessionGate';
+import { createWebStorage } from './webStorage';
 
 /**
  * Session tokens live in the device keychain on native (AUTH-4). Web has no
- * secure store, so it stays on supabase-js's browser default (localStorage) —
- * an accepted v1 tradeoff; no storage adapter is handed to web.
+ * secure store, so it uses browser localStorage when available — an accepted
+ * v1 tradeoff — and memory otherwise.
  *
  * SecureStore rejects large values (iOS has historically capped entries near
  * ~2KB) and a refreshed Supabase session can exceed that, so the adapter
@@ -89,10 +91,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+const storageKey = defaultAuthStorageKey(supabaseUrl);
+export const sessionGate = createSessionGate(Platform.OS === 'web' ? createWebStorage() : secureStoreAdapter, storageKey);
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Web has no secure store; leave it on the browser default (localStorage).
-    ...(Platform.OS !== 'web' ? { storage: secureStoreAdapter } : {}),
+    storage: sessionGate.storage,
+    storageKey,
     flowType: 'pkce',
     autoRefreshToken: true,
     persistSession: true,

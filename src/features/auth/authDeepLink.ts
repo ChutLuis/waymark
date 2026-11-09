@@ -1,7 +1,11 @@
 import * as Linking from 'expo-linking';
-import { supabase } from '@/lib/supabase/client';
+import { sessionGate, supabase } from '@/lib/supabase/client';
+import { sessionIdentityFromSession } from '@/lib/supabase/sessionGate';
 import { CALLBACK_PATH, RESET_PASSWORD_NEXT, codeFromParsedUrl } from './callbackUrl';
 import { getLaunchUrl } from './launchUrl';
+import { recordNoticeSession } from './deletionNotice';
+import { exchangeOnThisDevice } from './authExchange';
+import { createExchangeCoordinator, finalizeAuthCallback, startPasswordRecovery, syncRecoveryIdentity, type ExchangeResult } from './recovery';
 
 /**
  * The URL Supabase should send the user back to after they confirm their email.
@@ -14,26 +18,6 @@ import { getLaunchUrl } from './launchUrl';
  * The scheme is per-variant (app.config.ts), so a link sent to the test build
  * reopens the test build and not a development install.
  */
-/**
- * Set when a password-reset link has just signed the person in, so the reset
- * screen only ever opens for that recovery session — not for any signed-in
- * session that reaches `/reset-password` by a link (the server doesn't ask for
- * the current password).
- */
-let passwordRecovery = false;
-
-export function markPasswordRecovery(): void {
-  passwordRecovery = true;
-}
-
-export function isPasswordRecovery(): boolean {
-  return passwordRecovery;
-}
-
-export function endPasswordRecovery(): void {
-  passwordRecovery = false;
-}
-
 export function authRedirectUrl(): string {
   return Linking.createURL(`/${CALLBACK_PATH}`);
 }
@@ -54,10 +38,21 @@ export function passwordResetRedirectUrl(): string {
  *
  * Only successes are cached: Android keeps returning the launch URL for the
  * life of the process, so caching the success is what prevents a second
- * exchange. A failure is dropped so the user can retry a valid link after a
- * flaky network rather than being stuck with a cached `false`.
+ * exchange. A failure is dropped rather than cached — but that does not make a
+ * failed link retryable: auth-js deletes the PKCE code verifier on ANY exchange
+ * failure, network errors included, so a link whose exchange failed is spent
+ * and the person must request a new one. A refusal (a live session is stored)
+ * is dropped too, so the link is reconsidered once that session is gone. A
+ * successful result contains only coordination identity, never an auth token.
  */
-const inflight = new Map<string, Promise<boolean>>();
+const exchanges = createExchangeCoordinator((code) => exchangeOnThisDevice(code, {
+  gate: sessionGate,
+  exchangeCodeForSession: (c) => supabase.auth.exchangeCodeForSession(c),
+  onEstablished: (identity) => {
+    syncRecoveryIdentity(identity);
+    recordNoticeSession();
+  },
+}));
 
 /**
  * Exchanges a PKCE auth code for a session. The client uses
@@ -67,29 +62,33 @@ const inflight = new Map<string, Promise<boolean>>();
  * same SecureStore adapter, so the exchange can read it back.
  * `onAuthStateChange` in AuthContext then picks the session up.
  */
-export function exchangeCode(code: string): Promise<boolean> {
-  const existing = inflight.get(code);
-  if (existing) return existing;
-  const exchange = supabase.auth.exchangeCodeForSession(code).then(
-    ({ error }) => {
-      if (error) inflight.delete(code);
-      return !error;
-    },
-    () => {
-      // A SecureStore failure rejects rather than returning { error }; swallow
-      // it so a background listener never surfaces an unhandled rejection.
-      inflight.delete(code);
-      return false;
-    },
-  );
-  inflight.set(code, exchange);
-  return exchange;
+export function exchangeCode(code: string): Promise<ExchangeResult> {
+  return exchanges.exchange(code);
+}
+
+/** Claim only after this exchange matches the reconciled session. */
+export async function completeAuthCallback(code: string, result: ExchangeResult | null, session: unknown, reset: boolean, stillCurrent: () => boolean): Promise<'wait' | 'failed' | 'ready'> {
+  return finalizeAuthCallback(code, result, sessionIdentityFromSession(session), reset, {
+    isRetired: sessionGate.isRetired,
+    stillCurrent,
+    runExclusive: (fn) => sessionGate.runExclusive('maintain', fn),
+    readIdentity: sessionGate.storedSessionIdentity,
+    claim: exchanges.claim,
+    startRecovery: (identity) => startPasswordRecovery(identity, sessionGate.isRetired),
+  });
+}
+
+export function subscribeAuthRetirement(listener: () => void): () => void {
+  return sessionGate.onRetire(() => listener());
+}
+export function isAuthIdentityRetired(userId: string): boolean {
+  return sessionGate.isRetired(userId);
 }
 
 /** Exchanges the code carried by a callback URL, if it is one. */
-function handleAuthCallbackUrl(url: string | null): Promise<boolean> {
+function handleAuthCallbackUrl(url: string | null): Promise<ExchangeResult> {
   const code = url ? codeFromParsedUrl(Linking.parse(url)) : null;
-  return code ? exchangeCode(code) : Promise.resolve(false);
+  return code ? exchangeCode(code) : Promise.resolve({ kind: 'failed' });
 }
 
 /**
@@ -103,7 +102,7 @@ function handleAuthCallbackUrl(url: string | null): Promise<boolean> {
 export function watchAuthCallback(): () => void {
   // On web the launch URL is location.href, and a warm return is a real page
   // load, so the same listener works.
-  getLaunchUrl().then(handleAuthCallbackUrl).catch(() => false);
+  getLaunchUrl().then(handleAuthCallbackUrl).catch(() => ({ kind: 'failed' as const }));
   const sub = Linking.addEventListener('url', ({ url }) => {
     void handleAuthCallbackUrl(url);
   });

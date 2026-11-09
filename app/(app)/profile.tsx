@@ -24,6 +24,7 @@ import { failureMessage } from '@/features/trips/errors';
 import { useTrips, type TripListItem } from '@/features/trips/hooks';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useDeleteAccount, useMyProfile, useSignOut, useUploadAvatar, useUpsertProfile } from '@/features/auth/hooks';
+import { SIGN_OUT_FAILED_MESSAGE } from '@/features/auth/signOut';
 import { ExactAlarmHint } from '@/features/reminders/ExactAlarmHint';
 import { hydrateReminderPreference, setRemindersEnabled, useRemindersEnabled } from '@/features/reminders/preference';
 import { hairlineWidth, hitTargetMin, iconStrokeWidth, radius, shadows, spacing, useTheme, type ThemePreference } from '@/theme';
@@ -383,6 +384,11 @@ export default function ProfileScreen() {
             loading={signOut.isPending}
             onPress={() => signOut.mutate()}
           />
+          {signOut.error ? (
+            <AppText role="bodySm" style={[styles.identityError, { color: colors.danger }]}>
+              {(signOut.error as Error).message || SIGN_OUT_FAILED_MESSAGE}
+            </AppText>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Delete account"

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { View } from 'react-native';
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { LoadingState, EmptyState } from '@/components/StateViews';
 import { useAuth } from '@/features/auth/AuthContext';
-import { exchangeCode, markPasswordRecovery } from '@/features/auth/authDeepLink';
+import { completeAuthCallback, exchangeCode, isAuthIdentityRetired, subscribeAuthRetirement } from '@/features/auth/authDeepLink';
+import type { ExchangeResult } from '@/features/auth/recovery';
 import { RESET_PASSWORD_NEXT, callbackNext } from '@/features/auth/callbackUrl';
 import { spacing, useTheme } from '@/theme';
 
@@ -40,33 +41,76 @@ export default function AuthCallbackScreen() {
   const errorCodeParam = params.error_code ?? params.error;
   const errorCode = typeof errorCodeParam === 'string' ? errorCodeParam : null;
   const isReset = callbackNext(params.next) === RESET_PASSWORD_NEXT;
-  const [failed, setFailed] = useState(false);
+  const [exchange, setExchange] = useState<{ code: string; result: ExchangeResult } | null>(null);
+  const [failedCode, setFailedCode] = useState<string | null>(null);
+  const [timedOutCode, setTimedOutCode] = useState<string | null>(null);
+  const result = exchange && exchange.code === code ? exchange.result : null;
+  const failed = failedCode === code;
+  const timedOut = !!code && timedOutCode === code;
+  const navigated = useRef(false);
+  const retired = useSyncExternalStore(subscribeAuthRetirement,
+    () => result?.kind === 'success' && isAuthIdentityRetired(result.identity.userId), () => false);
+
+  // Nobody should stare at a spinner forever: a code that never settles (the
+  // exchange hung, or the reconciler could not confirm it) gets its own state.
+  // Keying the timer by code means a new link starts its own countdown.
+  useEffect(() => {
+    if (!code) return;
+    const timer = setTimeout(() => setTimedOutCode(code), 20_000);
+    return () => clearTimeout(timer);
+  }, [code]);
 
   useEffect(() => {
     if (!code) return;
+    navigated.current = false;
     let cancelled = false;
-    exchangeCode(code).then((ok) => {
+    exchangeCode(code).then((exchange) => {
       if (cancelled) return;
-      if (!ok) setFailed(true);
-      // Waits for this link's own exchange: a session that already existed
-      // isn't the recovery session the reset needs.
-      else if (isReset) {
-        markPasswordRecovery();
-        router.replace('/reset-password' as never);
-      }
+      setExchange({ code, result: exchange });
     });
     return () => {
       cancelled = true;
     };
-  }, [code, isReset, router]);
+  }, [code]);
 
-  // A live session — restored or freshly exchanged — means a confirmation
-  // worked. Once the replace runs this screen unmounts, so there is no loop.
-  if (session && !isReset) return <Redirect href="/" />;
+  useEffect(() => {
+    // A refusal is final for this screen: it renders its own message and must
+    // never fall through to the loading state.
+    if (!code || !result || result.kind === 'signed-in' || errorCode || navigated.current) return;
+    let cancelled = false;
+    void Promise.resolve().then(async () => {
+      if (cancelled || navigated.current) return;
+      const state = await completeAuthCallback(code, result, session, isReset, () => !cancelled && !navigated.current);
+      if (cancelled) return;
+      if (state === 'failed') setFailedCode(code);
+      if (state === 'ready') {
+        navigated.current = true;
+        router.replace(isReset ? '/reset-password' as never : '/');
+      }
+    });
+    return () => { cancelled = true; };
+  }, [code, result, session, isReset, errorCode, retired, router]);
 
-  // Past the session check above, a callback with neither a code nor an error is
-  // a dead link (web bookmark, an email client that stripped the query) — not a
-  // pending confirmation.
+  // A link that arrived while a live session is stored is refused outright:
+  // its code is still usable, but exchanging it here would replace the account
+  // the person is using.
+  if (result?.kind === 'signed-in') {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <EmptyState
+          title="You’re already signed in"
+          body={isReset
+            ? 'This reset link can’t be used while you’re signed in. Sign out, then ask for a new link from the sign-in screen.'
+            : 'This link can’t be used while you’re signed in. Sign out first if it was meant for another account.'}
+          actionLabel="Go to your trips"
+          onAction={() => router.replace('/')}
+        />
+      </View>
+    );
+  }
+
+  // A callback with neither a code nor an error is a dead link (web bookmark,
+  // or an email client that stripped the query), not a pending confirmation.
   if (failed || errorCode || !code) {
     if (isReset) {
       return (
@@ -105,6 +149,31 @@ export default function AuthCallbackScreen() {
           actionLabel="Back to sign in"
           onAction={() => router.replace('/sign-in')}
         />
+      </View>
+    );
+  }
+
+  // A code that never settled: the sign-in may well have worked, so send the
+  // person to their trips rather than claiming a failure.
+  if (timedOut) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <EmptyState
+          title="Couldn’t finish opening this link"
+          body="Your sign-in may still have worked. Check your connection, then go to your trips."
+          actionLabel="Go to your trips"
+          onAction={() => router.replace('/')}
+        >
+          {!session ? (
+            <Button
+              label="Back to sign in"
+              variant="text"
+              size="sm"
+              onPress={() => router.replace('/sign-in')}
+              style={{ marginTop: spacing.s3 }}
+            />
+          ) : null}
+        </EmptyState>
       </View>
     );
   }

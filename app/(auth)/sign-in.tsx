@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +22,7 @@ import { TextField } from '@/components/TextField';
 import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
 import { useSignIn } from '@/features/auth/hooks';
+import { clearDeletionNotice, deletionNoticeMessage, getDeletionNotice, getServerDeletionNotice, subscribeDeletionNotice } from '@/features/auth/deletionNotice';
 import { hitTargetMin, iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { signInSchema, type SignInForm } from '@/lib/validation/schemas';
 
@@ -84,6 +85,7 @@ export default function SignInScreen() {
   const signIn = useSignIn();
   const router = useRouter();
   const [banner, setBanner] = useState<string | null>(null);
+  const deletionNotice = useSyncExternalStore(subscribeDeletionNotice, getDeletionNotice, getServerDeletionNotice);
   const isWide = width >= 720;
 
   const { control, handleSubmit } = useForm<SignInForm>({
@@ -95,6 +97,7 @@ export default function SignInScreen() {
     setBanner(null);
     try {
       await signIn.mutateAsync(form);
+      clearDeletionNotice();
     } catch (error) {
       setBanner(friendlyMessage(error as Error));
     }
@@ -129,6 +132,11 @@ export default function SignInScreen() {
 
       <View style={styles.form}>
         <AppText role="title">Welcome back.</AppText>
+        {deletionNotice ? (
+          <View style={styles.bannerWrap}>
+            <ErrorBanner message={deletionNoticeMessage(deletionNotice)} action={{ label: 'Dismiss', onPress: clearDeletionNotice }} />
+          </View>
+        ) : null}
         {banner ? (
           <View style={styles.bannerWrap}>
             <ErrorBanner message={banner} />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -18,7 +18,9 @@ import { ScreenStatusBar } from '@/components/ScreenStatusBar';
 import { EmptyState, LoadingState } from '@/components/StateViews';
 import { TextField } from '@/components/TextField';
 import { useAuth } from '@/features/auth/AuthContext';
-import { endPasswordRecovery, isPasswordRecovery } from '@/features/auth/authDeepLink';
+import { isAuthIdentityRetired } from '@/features/auth/authDeepLink';
+import { endPasswordRecovery, getRecoveryIdentity, getServerRecoveryIdentity, recoveryAuthorized, subscribeRecovery } from '@/features/auth/recovery';
+import { sessionIdentityFromSession } from '@/lib/supabase/sessionGate';
 import { PasswordUpdateError, useSignOut, useUpdatePassword } from '@/features/auth/hooks';
 import { StrengthMeter } from '@/features/auth/StrengthMeter';
 import { spacing, useTheme } from '@/theme';
@@ -36,6 +38,8 @@ export default function ResetPasswordScreen() {
   const { width } = useWindowDimensions();
   const router = useRouter();
   const { session, isRestoring } = useAuth();
+  const recovery = useSyncExternalStore(subscribeRecovery, getRecoveryIdentity, getServerRecoveryIdentity);
+  const identity = sessionIdentityFromSession(session);
   const updatePassword = useUpdatePassword();
   const signOut = useSignOut();
   const [banner, setBanner] = useState<string | null>(null);
@@ -58,6 +62,7 @@ export default function ResetPasswordScreen() {
   const onSubmit = handleSubmit(async (form) => {
     setBanner(null);
     try {
+      if (!recoveryAuthorized(identity, isAuthIdentityRetired)) throw new Error('Your reset link has expired. Request a new one.');
       await updatePassword.mutateAsync({ password: form.password });
       goHome();
     } catch (error) {
@@ -80,7 +85,7 @@ export default function ResetPasswordScreen() {
   }
 
   // Only a session a reset link just created may set a password here.
-  if (session && !isPasswordRecovery()) return <Redirect href="/" />;
+  if (session && (!recovery || !recoveryAuthorized(identity, isAuthIdentityRetired))) return <Redirect href="/" />;
 
   if (!session) {
     return (
