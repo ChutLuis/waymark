@@ -103,8 +103,10 @@ Rules the build enforces or relies on:
   into a release bundle.
 - **The shell wins in local builds.** `eas build --local` merges the host
   environment over the EAS environment. Never export `EXPO_PUBLIC_*` in the
-  shell that runs a release build; check with `env | grep -c EXPO_PUBLIC_`
-  (which prints a count, not values).
+  shell that runs a release build. Check that both bundled variables are
+  unset without printing or reading their values:
+  `[ -z "${EXPO_PUBLIC_SUPABASE_URL+x}${EXPO_PUBLIC_SUPABASE_ANON_KEY+x}" ]`.
+  Exit status 0 means neither is set; otherwise use a clean shell.
 
 ## 4. Signing
 

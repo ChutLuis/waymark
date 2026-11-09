@@ -86,7 +86,7 @@ Quality gates (all green):
 pnpm typecheck         # TypeScript
 pnpm lint              # ESLint, 0 errors / 0 warnings
 pnpm test              # Vitest, 671 tests (pure logic)
-supabase test db       # pgTAP, 104 assertions (RLS and RPCs)
+supabase test db       # pgTAP, 113 assertions (RLS and RPCs)
 ```
 
 Android release builds run locally with `eas build --local`
@@ -99,11 +99,14 @@ v1 is feature-complete against a live Supabase backend: email auth and
 onboarding, trips, itinerary, packing, shared and private notes, invite
 codes, local reminders, offline handling, covers and avatars, password reset
 and in-app account deletion. The hosted project runs every migration and the
-current account-deletion function. Before a store release the remaining steps
-are operational: the hosted auth settings (password length, a custom SMTP
-sender, then email confirmation), a support address, publishing the privacy
-pages, the Play Console listing and its closed test, and an iOS build (which
-needs macOS).
+current account-deletion function. The hosted password minimum is eight and
+the support address is set. Before a store release the remaining steps are
+operational: a custom SMTP sender, then email confirmation; the operator's
+name and published legal pages; the Play Console listing and its closed test.
+Android (Google Play) ships first; iOS is deferred (local builds need macOS).
+Store copy, declaration notes and test instructions are prepared in `store/`
+and `docs/PLAY_RELEASE.md`. The latest release review and its open findings are
+in `docs/ANDROID_RELEASE_REVIEW.md`.
 
 ## Documentation
 
@@ -113,6 +116,10 @@ needs macOS).
 - `docs/DESIGN_DECISIONS.md` - the design system and the decisions behind it.
 - `docs/ONBOARDING.md` - developer orientation and change workflow.
 - `docs/BUILDS.md` - build profiles, environment values, signing and release checks.
+- `docs/PLAY_RELEASE.md` - Play declarations, reviewer setup and release sequence.
+- `docs/ANDROID_RELEASE_REVIEW.md` - Android release review: verdict, Play blockers, open code findings.
+- `store/listing.md` - listing copy, asset paths and alt text.
+- `store/TESTING.md` - Android closed-test instructions and feedback guide.
 
 ## Non-goals for v1
 

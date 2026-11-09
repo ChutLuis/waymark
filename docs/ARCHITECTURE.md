@@ -14,7 +14,7 @@
 | Notifications | expo-notifications | Local scheduled notifications in v1 |
 | Secure storage | expo-secure-store | Supabase session persistence on native |
 | Media | expo-image, expo-image-picker | Cover images and avatars |
-| Package manager | pnpm 11 via Corepack | Node 24 |
+| Package manager | pnpm 10 locally, pnpm 11 in CI | Node 24; shared `nodeLinker: hoisted` in `pnpm-workspace.yaml` |
 | Unit tests | Vitest + React Native Testing Library | Logic and component-state tests |
 | DB policy tests | pgTAP via Supabase CLI | Adversarial RLS tests |
 | Builds | EAS Build (`--local`) | Development, test, and production profiles |

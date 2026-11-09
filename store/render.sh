@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
-# Renders the Play listing assets in store/ without alpha (Play rejects alpha in
-# feature graphics and screenshots). Fonts come from node_modules through a
-# private fontconfig, so nothing is installed system-wide.
+# Renders Play assets: the icon is a 32-bit PNG; feature graphics and screenshots
+# have no alpha. Fonts come from node_modules through a private fontconfig, so
+# nothing is installed system-wide.
 #   store/render.sh                      -> store/feature-graphic.png
+#   store/render.sh icon                 -> assets/images/play-store-icon-512.png (RGBA)
 #   store/render.sh shot IN.png OUT.png  -> a 1080×2160 (2:1) phone screenshot
 #     (capture in tools/device/store-mode.sh on, so the crop has nothing to cut)
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [ "${1:-}" = "icon" ]; then
+  magick assets/images/play-store-icon-512.png -alpha on PNG32:assets/images/play-store-icon-512.png
+  exit 0
+fi
 FONTS=$(mktemp -d)
 trap 'rm -rf "$FONTS"' EXIT
 cp node_modules/@expo-google-fonts/besley/800ExtraBold/Besley_800ExtraBold.ttf \

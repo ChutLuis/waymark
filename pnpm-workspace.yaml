@@ -1,3 +1,7 @@
+# pnpm 11 no longer reads node-linker from .npmrc. Keep CI, local pnpm 10
+# and EAS builds on the same flat node_modules layout.
+nodeLinker: hoisted
+
 allowBuilds:
   supabase: true
   unrs-resolver: true
