@@ -50,6 +50,24 @@ export function errorFromParsedUrl(
   return typeof error === 'string' && error.length > 0 ? error : null;
 }
 
+/** Exchange failures are not specific: a used code, missing verifier or network can all fail. */
+export function confirmationCallbackFailure(errorCode: string | null, exchangeFailed: boolean): {
+  title: string; body: string; actionLabel: string;
+} {
+  if (errorCode === 'otp_expired' || errorCode === 'access_denied' || exchangeFailed) {
+    return {
+      title: 'That link may have expired',
+      body: 'This link may have expired or was already used. If you opened it on another device, your email may already be confirmed. Try signing in.',
+      actionLabel: 'Sign in',
+    };
+  }
+  return {
+    title: 'Couldn’t open this link',
+    body: 'Try signing in. If you still need to confirm your email, ask for another link.',
+    actionLabel: 'Sign in',
+  };
+}
+
 /**
  * Reads a callback's `next` value (a route param or a parsed query value).
  * Only known destinations count; anything else, including a repeated key that

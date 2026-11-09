@@ -6,7 +6,7 @@ import { LoadingState, EmptyState } from '@/components/StateViews';
 import { useAuth } from '@/features/auth/AuthContext';
 import { completeAuthCallback, exchangeCode, isAuthIdentityRetired, subscribeAuthRetirement } from '@/features/auth/authDeepLink';
 import type { ExchangeResult } from '@/features/auth/recovery';
-import { RESET_PASSWORD_NEXT, callbackNext } from '@/features/auth/callbackUrl';
+import { RESET_PASSWORD_NEXT, callbackNext, confirmationCallbackFailure } from '@/features/auth/callbackUrl';
 import { spacing, useTheme } from '@/theme';
 
 /**
@@ -141,12 +141,13 @@ export default function AuthCallbackScreen() {
         </View>
       );
     }
+    const confirmationFailure = confirmationCallbackFailure(errorCode, failed);
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <EmptyState
-          title="That link has expired"
-          body="Confirmation links only work once, and they expire. Sign in with your email and password — if you already confirmed, you're all set."
-          actionLabel="Back to sign in"
+          title={confirmationFailure.title}
+          body={confirmationFailure.body}
+          actionLabel={confirmationFailure.actionLabel}
           onAction={() => router.replace('/sign-in')}
         />
       </View>

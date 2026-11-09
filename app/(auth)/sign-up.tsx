@@ -23,6 +23,7 @@ import { TextField } from '@/components/TextField';
 import { PerforatedStamp } from '@/components/airmail/PerforatedStamp';
 import { KraftEnvelope, WaxSeal } from '@/components/airmail/KraftEnvelope';
 import { useSignUp } from '@/features/auth/hooks';
+import { ConfirmationResend } from '@/features/auth/ConfirmationResend';
 import { StrengthMeter } from '@/features/auth/StrengthMeter';
 import { peekPendingInviteCode } from '@/features/invites/pendingInvite';
 import { hitTargetMin, radius, shadows, spacing, useTheme } from '@/theme';
@@ -48,7 +49,7 @@ export default function SignUpScreen() {
   const router = useRouter();
   const signUp = useSignUp();
   const [banner, setBanner] = useState<string | null>(null);
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState<string | null>(null);
   const isWide = width >= 720;
 
   const { control, handleSubmit } = useForm<SignUpForm>({
@@ -77,7 +78,7 @@ export default function SignUpScreen() {
     setBanner(null);
     try {
       const result = await signUp.mutateAsync(form);
-      if (!result.hasSession) setAwaitingConfirmation(true);
+      if (!result.hasSession) setAwaitingConfirmation(form.email);
     } catch (error) {
       setBanner(friendlyMessage(error as Error));
     }
@@ -91,6 +92,9 @@ export default function SignUpScreen() {
         <AppText role="body" tone="secondary" style={styles.subtitle}>
           We sent a confirmation link. Open it, then sign in.
         </AppText>
+        <View style={styles.bannerWrap}>
+          <ConfirmationResend email={awaitingConfirmation} />
+        </View>
         <Link href="/sign-in" asChild>
           <Pressable accessibilityRole="link" hitSlop={8} style={styles.confirmLink}>
             <AppText role="button">Back to sign in</AppText>

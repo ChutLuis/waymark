@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   callbackNext,
+  confirmationCallbackFailure,
   codeFromParsedUrl,
   errorFromParsedUrl,
   isCallbackRoute,
@@ -16,6 +17,28 @@ const parsed = (path: string, hostname = '', queryParams: Record<string, string>
   path,
   hostname,
   queryParams,
+});
+
+describe('confirmation callback failure copy', () => {
+  it('explains an expired or used link for both Supabase URL errors', () => {
+    for (const error of ['otp_expired', 'access_denied']) {
+      const message = confirmationCallbackFailure(error, false);
+      expect(message.body).toContain('expired or was already used');
+      expect(message.body).toContain('another device');
+      expect(message.actionLabel).toBe('Sign in');
+    }
+  });
+
+  it('treats an exchange failure cautiously because its cause is unknown', () => {
+    const message = confirmationCallbackFailure(null, true);
+    expect(message.body).toContain('may have expired');
+    expect(message.actionLabel).toBe('Sign in');
+  });
+
+  it('does not claim a missing code or unrelated error expired', () => {
+    expect(confirmationCallbackFailure(null, false).title).toBe('Couldn’t open this link');
+    expect(confirmationCallbackFailure('unexpected_failure', false).title).toBe('Couldn’t open this link');
+  });
 });
 
 describe('isCallbackRoute', () => {

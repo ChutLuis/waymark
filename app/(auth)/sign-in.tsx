@@ -22,6 +22,8 @@ import { TextField } from '@/components/TextField';
 import { Postcard } from '@/components/airmail/Postcard';
 import { TripScene } from '@/features/trips/TripScene';
 import { useSignIn } from '@/features/auth/hooks';
+import { ConfirmationResend } from '@/features/auth/ConfirmationResend';
+import { isEmailNotConfirmed } from '@/features/auth/confirmation';
 import { clearDeletionNotice, deletionNoticeMessage, getDeletionNotice, getServerDeletionNotice, subscribeDeletionNotice } from '@/features/auth/deletionNotice';
 import { hitTargetMin, iconStrokeWidth, spacing, useTheme } from '@/theme';
 import { signInSchema, type SignInForm } from '@/lib/validation/schemas';
@@ -85,21 +87,25 @@ export default function SignInScreen() {
   const signIn = useSignIn();
   const router = useRouter();
   const [banner, setBanner] = useState<string | null>(null);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
   const deletionNotice = useSyncExternalStore(subscribeDeletionNotice, getDeletionNotice, getServerDeletionNotice);
   const isWide = width >= 720;
 
-  const { control, handleSubmit } = useForm<SignInForm>({
+  const { control, getValues, handleSubmit } = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
     defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = handleSubmit(async (form) => {
     setBanner(null);
+    setUnconfirmedEmail(null);
     try {
       await signIn.mutateAsync(form);
       clearDeletionNotice();
     } catch (error) {
-      setBanner(friendlyMessage(error as Error));
+      if (isEmailNotConfirmed(error)) {
+        if (getValues('email') === form.email) setUnconfirmedEmail(form.email);
+      } else setBanner(friendlyMessage(error as Error));
     }
   });
 
@@ -142,6 +148,11 @@ export default function SignInScreen() {
             <ErrorBanner message={banner} />
           </View>
         ) : null}
+        {unconfirmedEmail ? (
+          <View style={styles.bannerWrap}>
+            <ConfirmationResend email={unconfirmedEmail} banner />
+          </View>
+        ) : null}
         <View style={styles.fieldGapFirst}>
           <Controller
             control={control}
@@ -150,7 +161,7 @@ export default function SignInScreen() {
               <TextField
                 label="EMAIL"
                 value={field.value}
-                onChangeText={field.onChange}
+                onChangeText={(value) => { field.onChange(value); setUnconfirmedEmail(null); }}
                 onBlur={field.onBlur}
                 error={fieldState.error?.message}
                 autoCapitalize="none"

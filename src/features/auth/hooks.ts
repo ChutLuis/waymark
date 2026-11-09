@@ -12,6 +12,7 @@ import { purgeUserReminders } from '@/features/reminders/store';
 import { isCurrentOwner } from '@/lib/query/owner';
 import { useAuth, reconcileAuthSession } from './AuthContext';
 import { authRedirectUrl, passwordResetRedirectUrl } from './authDeepLink';
+import { isResendRateLimit, RESEND_COOLDOWN_MESSAGE, shouldSendConfirmation } from './confirmation';
 import { classifyAccountDeletion, finishAccountDeletion } from './deleteAccount';
 import { getNoticeGeneration, isNoticeGenerationCurrent, recordNoticeSession, startDeletionNotice, updateDeletionNotice } from './deletionNotice';
 import { runForAccount } from './sessionTransitions';
@@ -60,6 +61,9 @@ export interface SignUpResult {
   hasSession: boolean;
 }
 
+/** Shared across both screens; a rejected resend can discard the PKCE verifier. */
+const confirmationRequestedAt = new Map<string, number>();
+
 export function useSignUp() {
   return useMutation({
     networkMode: AUTH_NETWORK_MODE,
@@ -75,10 +79,35 @@ export function useSignUp() {
           syncRecoveryIdentity(sessionIdentityFromSession(result.data.session));
           recordNoticeSession();
         }
+        if (!result.error && !result.data.session) confirmationRequestedAt.set(normalizeEmail(email), Date.now());
         return result;
       });
       if (error) throw error;
       return { hasSession: data.session !== null };
+    },
+  });
+}
+
+export function useResendConfirmation() {
+  return useMutation({
+    networkMode: AUTH_NETWORK_MODE,
+    mutationFn: async ({ email }: { email: string }): Promise<void> => {
+      const key = normalizeEmail(email);
+      await sessionGate.runExclusive('maintain', async () => {
+        if (!shouldSendConfirmation(confirmationRequestedAt.get(key), Date.now())) {
+          throw Object.assign(new Error(RESEND_COOLDOWN_MESSAGE), { code: 'over_email_send_rate_limit' });
+        }
+        // auth-js GoTrueClient.ts:2673–2690 creates and sends a PKCE challenge;
+        // helpers.ts:309–315 stores its verifier, replacing the previous one.
+        const { error } = await supabase.auth.resend({
+          type: 'signup', email: email.trim(), options: { emailRedirectTo: authRedirectUrl() },
+        });
+        if (error) {
+          if (isResendRateLimit(error)) confirmationRequestedAt.set(key, Date.now());
+          throw error;
+        }
+        confirmationRequestedAt.set(key, Date.now());
+      });
     },
   });
 }
