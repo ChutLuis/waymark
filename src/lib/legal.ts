@@ -4,15 +4,15 @@
  * linked from the store listing stay in step.
  */
 
-// Placeholder: replace with the developer's legal name (or company) before
-// publishing. Google Play requires the privacy policy to name the developer.
-export const OPERATOR_NAME = 'the Waymark developer';
+// The developer named in the privacy policy. This must match the developer name
+// on the Google Play listing (LFOrtiz) and the site's privacy page.
+export const OPERATOR_NAME = 'Luis Ortiz (LFOrtiz)';
 
 // The owner's inbox: the privacy policy and deletion page promise replies from it.
 export const SUPPORT_EMAIL = 'me@lfortiz.com';
 
-export const PRIVACY_POLICY_URL = 'https://chutluis.github.io/waymark/privacy.html';
+export const PRIVACY_POLICY_URL = 'https://waymark-web-production.up.railway.app/privacy.html';
 
-export const ACCOUNT_DELETION_URL = 'https://chutluis.github.io/waymark/delete-account.html';
+export const ACCOUNT_DELETION_URL = 'https://waymark-web-production.up.railway.app/delete-account.html';
 
-export const PRIVACY_POLICY_EFFECTIVE_DATE = '25 October 2026';
+export const PRIVACY_POLICY_EFFECTIVE_DATE = '4 November 2026';

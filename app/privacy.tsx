@@ -86,6 +86,9 @@ const SECTIONS: Section[] = [
       {
         text: 'Waymark is hosted on Supabase, which provides our sign-in, database and file storage and handles your data only on our behalf. Everything travels between the app and Supabase encrypted with TLS. Reminders are scheduled by your phone itself; no push service is involved.',
       },
+      {
+        text: 'Waymark sends account emails (sign-up confirmation, password reset and email-address changes) through Amazon Simple Email Service (Amazon SES), provided by Amazon Web Services in the United States. Amazon SES receives your email address and the message content to deliver them.',
+      },
     ],
   },
   {
@@ -101,11 +104,14 @@ const SECTIONS: Section[] = [
           'A trip you own that has other members passes to the member who joined it first, with everything in it.',
           'A trip only you are on is deleted, with everything in it.',
           'Itinerary stops and packing items you added to shared trips stay there for the others, but no longer show who added them.',
-          'Your reminders, your sign-in and the offline copy of your trips are removed from the device you deleted from.',
+          'Your invite codes are deleted, and your reminders, your sign-in and the offline copy of your trips are removed from the device you deleted from.',
         ],
       },
       {
-        text: 'Deleted data can remain for a short time in our provider’s routine backups until those are replaced.',
+        text: 'Deleted data can remain for a short time in our provider’s routine backups until those are replaced. Our provider’s sign-in logs (such as IP address and sign-in times) are kept for a limited period for security.',
+      },
+      {
+        text: 'If an email to your address bounced or was reported as spam, Amazon SES may keep the address on a suppression list so that no further email is sent to it. Email delivery logs are kept by our providers for a limited period.',
       },
     ],
   },

@@ -64,11 +64,17 @@ export default function DeleteAccountPage() {
             <AppText role="rowTitle" accessibilityRole="header">What gets deleted</AppText>
             <AppText role="body" tone="secondary" style={styles.sectionBody}>
               Your account, profile, photo and every note you wrote, sealed or shared, plus
-              any trip no one else is on (with its itinerary, packing list and notes). A trip
-              you own that other people are on stays with them: it passes to the member who
-              joined first. The plan and packing items you added to shared trips stay in
-              them, without your name. Your reminders are removed from the device you
-              delete from.
+              any trip no one else is on (with its itinerary, packing list and notes) and
+              your invite codes. A trip you own that other people are on stays with them: it
+              passes to the member who joined first. The plan and packing items you added to
+              shared trips stay in them, without your name. Your reminders are removed from
+              the device you delete from.
+            </AppText>
+            <AppText role="body" tone="secondary" style={styles.sectionBody}>
+              Deleted data can remain for a short time in our provider&apos;s routine
+              backups until those are replaced, and our provider&apos;s sign-in logs (such as
+              IP address and sign-in times) are kept for a limited period for security.
+              Nothing is kept for marketing.
             </AppText>
           </View>
 
